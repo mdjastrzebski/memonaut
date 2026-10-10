@@ -14,4 +14,5 @@ HTMLMediaElement.prototype.play = () => Promise.resolve();
 
 afterEach(() => {
   cleanup();
+  localStorage.clear();
 });

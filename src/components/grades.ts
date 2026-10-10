@@ -42,3 +42,10 @@ export function getProgress(state: State): Progress {
   if (state === State.New) return 'new';
   return state === State.Review ? 'learned' : 'learning';
 }
+
+/** A word is learned once all its Cards are, and new until any of them is practised. */
+export function getWordProgress(states: State[]): Progress {
+  const progress = states.map(getProgress);
+  if (progress.every((value) => value === 'learned')) return 'learned';
+  return progress.every((value) => value === 'new') ? 'new' : 'learning';
+}

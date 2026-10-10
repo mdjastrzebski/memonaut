@@ -1,9 +1,16 @@
 import { expect, test } from 'vitest';
 
-import type { Concept, Deck } from '@/domain/types';
-import { Rating, State, type Grade } from '@/srs/scheduler';
+import type { Card, Concept, Deck } from '@/domain/types';
+import { Rating, reviewSrsCard, State, type Grade } from '@/srs/scheduler';
 
-import { createSession, getCurrentCard, getSessionProgress, submitReview } from './session';
+import {
+  countDueToday,
+  createSession,
+  getConceptCards,
+  getCurrentCard,
+  getSessionProgress,
+  submitReview,
+} from './session';
 
 const concepts: Concept[] = [
   { id: 'one', subjectId: 'german', local: 'jeden', foreign: 'eins' },
@@ -38,6 +45,50 @@ test('creates one new card per concept and exercise type', () => {
     'two:translation',
   ]);
   expect(Object.values(session.cards).every((card) => card.srs.state === State.New)).toBe(true);
+});
+
+test('keeps the review state of cards practised in an earlier session', () => {
+  const earlier = submitReview(create(), {
+    input: 'x',
+    elapsedMs: 1000,
+    issues: [],
+    rating: Rating.Again,
+    now: start,
+  });
+  const [practised] = earlier.queue.slice(-1);
+
+  const session = createSession({ deck, concepts, cards: earlier.cards, now: minutes(30) });
+  expect(session.cards[practised]).toBe(earlier.cards[practised]);
+  expect(session.cards['one:dictation'].srs.state).toBe(State.New);
+});
+
+test('practises at most the given number of concepts, with all their exercises', () => {
+  const session = createSession({ deck, concepts, maxConcepts: 1, now: start });
+  expect(Object.keys(session.concepts)).toEqual(['one']);
+  expect(session.queue.toSorted()).toEqual(['one:dictation', 'one:translation']);
+});
+
+test('picks half-practised concepts first, then new ones, then learned ones not yet due', () => {
+  const { cards } = createSession({ deck, concepts, now: start });
+  const practise = (id: string) => ({
+    ...cards[id],
+    srs: reviewSrsCard(cards[id].srs, Rating.Easy, start).card,
+  });
+  const pick = (practised: Record<string, Card>) =>
+    Object.keys(
+      createSession({ deck, concepts, cards: practised, maxConcepts: 1, now: minutes(30) })
+        .concepts,
+    );
+
+  // "two" was heard but not yet translated.
+  expect(pick({ 'two:dictation': practise('two:dictation') })).toEqual(['two']);
+  // "two" is learned and not due for days, so the new "one" comes first.
+  expect(
+    pick({
+      'two:dictation': practise('two:dictation'),
+      'two:translation': practise('two:translation'),
+    }),
+  ).toEqual(['one']);
 });
 
 test('queues every dictation card before the translation cards', () => {
@@ -122,4 +173,29 @@ test('progress counts answered cards half and finished cards fully', () => {
   // Easy on a new card graduates it straight to review.
   review(Rating.Easy);
   expect(getSessionProgress(session)).toBe(0.75);
+});
+
+test('counts words due by the end of the day, or with an exercise not practised yet', () => {
+  const morning = new Date(2026, 0, 1, 8);
+  const reviewed = (conceptId: string, exerciseType: Card['exerciseType'], due: Date): Card => ({
+    ...getConceptCards(conceptId, {}, morning).find((card) => card.exerciseType === exerciseType)!,
+    srs: {
+      ...reviewSrsCard(getConceptCards(conceptId, {}, morning)[0].srs, Rating.Good, morning).card,
+      due,
+    },
+  });
+  const cards = Object.fromEntries(
+    [
+      // Due tonight, local time.
+      reviewed('one', 'dictation', new Date(2026, 0, 1, 23)),
+      reviewed('one', 'translation', new Date(2026, 0, 5)),
+      // Translation not practised yet.
+      reviewed('two', 'dictation', new Date(2026, 0, 5)),
+      // Not due until tomorrow.
+      reviewed('three', 'dictation', new Date(2026, 0, 2, 0, 30)),
+      reviewed('three', 'translation', new Date(2026, 0, 5)),
+    ].map((card) => [card.id, card]),
+  );
+
+  expect(countDueToday(['one', 'two', 'three', 'four'], cards, morning)).toBe(2);
 });

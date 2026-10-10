@@ -1,37 +1,64 @@
 import { useEffect, useState } from 'react';
 
 import { ExerciseScreen } from '@/components/exercise-screen';
+import { loadSetupChoice, saveSetupChoice, type SessionSize } from '@/components/setup-choice';
+import { SetupScreen } from '@/components/setup-screen';
 import { SummaryScreen } from '@/components/summary-screen';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { content } from '@/data/content';
-import { createSession, getCurrentCard, submitReview } from '@/session/session';
-
-const deck = content.decks.find((deck) => deck.id === 'german/numbers-0-10')!;
-const subject = content.subjects.find((subject) => subject.id === deck.subjectId)!;
-
-function startSession() {
-  return createSession({ deck, concepts: content.concepts });
-}
+import type { Card } from '@/domain/types';
+import { loadProgress, saveProgress } from '@/progress/progress-storage';
+import {
+  createSession,
+  getCurrentCard,
+  submitReview,
+  type Session,
+  type SubmitReviewInput,
+} from '@/session/session';
 
 export default function App() {
-  const [session, setSession] = useState(startSession);
-  const [ended, setEnded] = useState(false);
-  // Open by default for languages that need special characters, e.g. German umlauts.
-  const [showSpecialCharacters, setShowSpecialCharacters] = useState(
-    () => (subject.specialCharacters?.length ?? 0) > 0,
+  // Remembered across reloads, so the next visit starts where the last one left off.
+  const [initialChoice] = useState(() => loadSetupChoice(content));
+  const [deck, setDeck] = useState(initialChoice.deck);
+  const [session, setSession] = useState<Session | null>(null);
+  // Cards practised in earlier sessions, of every Subject.
+  const [cards, setCards] = useState<Record<string, Card>>(() =>
+    Object.assign({}, ...content.subjects.map((subject) => loadProgress(subject.id))),
   );
+  const [sessionSize, setSessionSize] = useState<SessionSize>(initialChoice.sessionSize);
+  const [ended, setEnded] = useState(false);
+  const [showSpecialCharacters, setShowSpecialCharacters] = useState(false);
   const [showSrsDetails, setShowSrsDetails] = useState(false);
 
-  const finished = ended || !getCurrentCard(session);
+  const subject = content.subjects.find((subject) => subject.id === deck.subjectId)!;
+  const finished = session !== null && (ended || !getCurrentCard(session));
+  const allCards = session ? { ...cards, ...session.cards } : cards;
 
-  // Nothing is saved, so ask before a reload or closed tab throws the session away. Browsers show
-  // their own message here.
-  useEffect(() => {
-    if (finished) return;
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
-    window.addEventListener('beforeunload', warn);
-    return () => window.removeEventListener('beforeunload', warn);
-  }, [finished]);
+  const start = () => {
+    setCards(allCards);
+    setSession(
+      createSession({
+        deck,
+        concepts: content.concepts,
+        cards: allCards,
+        maxConcepts: sessionSize ?? undefined,
+      }),
+    );
+    setEnded(false);
+    // Open by default for languages that need special characters, e.g. German umlauts.
+    setShowSpecialCharacters((subject.specialCharacters?.length ?? 0) > 0);
+  };
+
+  // Saved after every answer, so closing the page mid-session keeps what was practised.
+  const review = (input: SubmitReviewInput) => {
+    if (!session) return;
+    const next = submitReview(session, input);
+    const cardId = next.reviews.at(-1)?.cardId;
+    if (cardId) saveProgress(session.deck.subjectId, [next.cards[cardId]]);
+    setSession(next);
+  };
+
+  useEffect(() => saveSetupChoice({ deck, sessionSize }), [deck, sessionSize]);
 
   return (
     <TooltipProvider>
@@ -41,12 +68,23 @@ export default function App() {
           <h1 className="font-display text-2xl font-extrabold tracking-tight">Memonaut</h1>
         </header>
 
-        {finished ? (
+        {session === null ? (
+          <SetupScreen
+            content={content}
+            cards={cards}
+            deck={deck}
+            onSelectDeck={setDeck}
+            sessionSize={sessionSize}
+            onSessionSizeChange={setSessionSize}
+            onStart={start}
+          />
+        ) : finished ? (
           <SummaryScreen
             session={session}
-            onRestart={() => {
-              setSession(startSession());
-              setEnded(false);
+            onRestart={start}
+            onChooseSet={() => {
+              setCards(allCards);
+              setSession(null);
             }}
             showSrsDetails={showSrsDetails}
             onToggleSrsDetails={() => setShowSrsDetails((show) => !show)}
@@ -55,10 +93,9 @@ export default function App() {
           <ExerciseScreen
             key={session.reviews.length}
             session={session}
-            onReview={(review) => setSession((current) => submitReview(current, review))}
+            onReview={review}
             onEnd={() => window.confirm('End this session?') && setEnded(true)}
-            foreignLanguage={subject.foreignLanguage}
-            specialCharacters={subject.specialCharacters}
+            subject={subject}
             showSpecialCharacters={showSpecialCharacters}
             onToggleSpecialCharacters={() => setShowSpecialCharacters((show) => !show)}
             showSrsDetails={showSrsDetails}
@@ -75,20 +112,20 @@ function Logo() {
   return (
     <svg viewBox="0 0 48 48" className="size-11 shrink-0" aria-hidden>
       <g className="origin-center animate-orbit">
-        <circle cx="24" cy="4" r="3.5" className="fill-almost stroke-foreground" strokeWidth="2" />
+        <circle cx="24" cy="5" r="3.5" className="fill-almost stroke-foreground" strokeWidth="2" />
       </g>
-      <circle cx="24" cy="24" r="12" className="fill-rocket stroke-foreground" strokeWidth="2.5" />
-      <ellipse
-        cx="24"
-        cy="24"
-        rx="20"
-        ry="6"
+      <g
         transform="rotate(-20 24 24)"
         fill="none"
         className="stroke-foreground"
         strokeWidth="2.5"
-        strokeDasharray="40 8"
-      />
+        strokeLinecap="round"
+      >
+        {/* Back half of the ring, hidden behind the planet. */}
+        <path d="M4 24 A20 6 0 0 1 44 24" />
+        <circle cx="24" cy="24" r="12" className="fill-rocket" />
+        <path d="M44 24 A20 6 0 0 1 4 24" />
+      </g>
     </svg>
   );
 }

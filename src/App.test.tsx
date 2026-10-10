@@ -33,12 +33,26 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+const numbers = content.decks.find((deck) => deck.id === 'german/numbers-0-10')!;
+const numberConcepts = content.concepts.filter((concept) =>
+  numbers.conceptIds.includes(concept.id),
+);
+
+/** Opens the app and starts a session of German numbers 0–10. */
+async function startNumbersSession(user: ReturnType<typeof userEvent.setup>) {
+  render(<App />);
+  await user.click(screen.getByRole('radio', { name: 'German' }));
+  await user.click(screen.getByRole('radio', { name: 'Numbers 0–10' }));
+  await user.click(screen.getByRole('radio', { name: 'No limit' }));
+  await user.click(screen.getByRole('button', { name: 'Start session' }));
+}
+
 /** The word read aloud in a dictation exercise, or the one shown in a translation exercise. */
 function currentConcept() {
   const heading = screen.queryByRole('heading', { level: 2 });
   return heading
-    ? content.concepts.find((concept) => concept.local === heading.textContent)!
-    : content.concepts.find((concept) => concept.foreign === spoken.at(-1))!;
+    ? numberConcepts.find((concept) => concept.local === heading.textContent)!
+    : numberConcepts.find((concept) => concept.foreign === spoken.at(-1))!;
 }
 
 /** The session progress bar's value, in percent. */
@@ -53,7 +67,7 @@ async function retypeAnswer(user: ReturnType<typeof userEvent.setup>) {
 
 test('rates a fast exact answer as Easy and continues on Enter', async () => {
   const user = userEvent.setup();
-  render(<App />);
+  await startNumbersSession(user);
 
   expect(progress()).toBe(0);
 
@@ -67,7 +81,7 @@ test('rates a fast exact answer as Easy and continues on Enter', async () => {
 
 test('rates an answer with wrong capitalization as Hard and asks to retype it', async () => {
   const user = userEvent.setup();
-  render(<App />);
+  await startNumbersSession(user);
 
   const { foreign: answer } = currentConcept();
   const capitalized = answer[0].toUpperCase() + answer.slice(1);
@@ -96,7 +110,7 @@ test('rates an answer with wrong capitalization as Hard and asks to retype it', 
 
 test('rates a wrong answer as Again and shows it next to the answer', async () => {
   const user = userEvent.setup();
-  render(<App />);
+  await startNumbersSession(user);
 
   const { foreign: answer, local } = currentConcept();
   await user.type(screen.getByRole('textbox', { name: 'Answer' }), 'falsch{Enter}');
@@ -115,7 +129,7 @@ test('rates a wrong answer as Again and shows it next to the answer', async () =
 
 test('SRS details start collapsed and stay expanded across exercises', async () => {
   const user = userEvent.setup();
-  render(<App />);
+  await startNumbersSession(user);
 
   const toggle = () => screen.getByRole('button', { name: 'SRS details' });
   expect(toggle()).toHaveAttribute('aria-expanded', 'false');
@@ -142,7 +156,7 @@ test('SRS details start collapsed and stay expanded across exercises', async () 
 
 test('ending the session shows results with SRS details collapsed', async () => {
   const user = userEvent.setup();
-  render(<App />);
+  await startNumbersSession(user);
 
   await user.type(screen.getByRole('textbox', { name: 'Answer' }), 'falsch{Enter}');
   await retypeAnswer(user);
@@ -159,7 +173,7 @@ test('ending the session shows results with SRS details collapsed', async () => 
 
 test('typing after the answer box loses focus types into it, and Enter checks the answer', async () => {
   const user = userEvent.setup();
-  render(<App />);
+  await startNumbersSession(user);
 
   const input = screen.getByRole('textbox', { name: 'Answer' });
   await user.click(document.body);
@@ -182,7 +196,7 @@ test('typing after the answer box loses focus types into it, and Enter checks th
 
 test('special characters keyboard starts open for German and can be hidden', async () => {
   const user = userEvent.setup();
-  render(<App />);
+  await startNumbersSession(user);
 
   const toggle = screen.getByRole('button', { name: 'Show special characters' });
   expect(toggle).toHaveAttribute('aria-pressed', 'true');
@@ -195,7 +209,7 @@ test('special characters keyboard starts open for German and can be hidden', asy
 
 test('special characters keyboard inserts at the caret', async () => {
   const user = userEvent.setup();
-  render(<App />);
+  await startNumbersSession(user);
 
   const keyboard = screen.getByRole('group', { name: 'Special characters' });
 
@@ -211,7 +225,7 @@ test('special characters keyboard inserts at the caret', async () => {
 
 test('dictation reads the word aloud and shows its meaning only after checking', async () => {
   const user = userEvent.setup();
-  render(<App />);
+  await startNumbersSession(user);
 
   expect(spoken).toHaveLength(1);
   const { local, foreign, hint } = currentConcept();
@@ -228,7 +242,7 @@ test('dictation reads the word aloud and shows its meaning only after checking',
 
 test('translation exercises come after every dictation exercise', async () => {
   const user = userEvent.setup();
-  render(<App />);
+  await startNumbersSession(user);
 
   let dictations = 0;
   while (screen.queryByRole('button', { name: 'Listen' })) {
@@ -256,7 +270,7 @@ test('translation exercises come after every dictation exercise', async () => {
 
 test('ending the session asks first and stays on cancel', async () => {
   const user = userEvent.setup();
-  render(<App />);
+  await startNumbersSession(user);
 
   confirm.mockReturnValueOnce(false);
   await user.click(screen.getByRole('button', { name: 'End session' }));
@@ -264,10 +278,169 @@ test('ending the session asks first and stays on cancel', async () => {
   expect(screen.getByRole('textbox', { name: 'Answer' })).toBeInTheDocument();
 });
 
-test('asks before leaving the page during a session', () => {
+test('keeps progress after a reload, even mid-session, without asking before leaving', async () => {
+  const user = userEvent.setup();
+  const { unmount } = render(<App />);
+  await user.click(screen.getByRole('radio', { name: 'German' }));
+  await user.click(screen.getByRole('radio', { name: 'Numbers 0–10' }));
+  await user.click(screen.getByRole('button', { name: 'Start session' }));
+
+  // A fast exact dictation is rated Easy, so the word is due again in a few days.
+  await user.type(
+    screen.getByRole('textbox', { name: 'Answer' }),
+    `${currentConcept().foreign}{Enter}`,
+  );
+  await user.keyboard('{Enter}');
+  const leave = new Event('beforeunload', { cancelable: true });
+  window.dispatchEvent(leave);
+  expect(leave.defaultPrevented).toBe(false);
+  unmount();
   render(<App />);
 
-  const event = new Event('beforeunload', { cancelable: true });
-  window.dispatchEvent(event);
-  expect(event.defaultPrevented).toBe(true);
+  expect(screen.getByRole('radio', { name: 'Numbers 0–10' }).closest('label')).toHaveTextContent(
+    'Learned0Learning1New10',
+  );
+  // Its translation hasn't been practised yet, so the word is due today.
+  expect(screen.getByRole('radio', { name: 'Numbers 0–10' }).closest('label')).toHaveTextContent(
+    '1 word due today',
+  );
+  expect(screen.getByRole('radio', { name: 'German' }).closest('label')).toHaveTextContent(
+    '1 word due today',
+  );
+  expect(screen.getByRole('radio', { name: 'English' }).closest('label')).toHaveTextContent(
+    'Nothing due today',
+  );
+});
+
+test('setup offers each subject with its core set selected first', async () => {
+  const user = userEvent.setup();
+  render(<App />);
+
+  const subjects = screen.getByRole('group', { name: 'Subject' });
+  expect(
+    within(subjects)
+      .getAllByRole('radio')
+      .map((radio) => radio.getAttribute('aria-label')),
+  ).toEqual(['English', 'German']);
+
+  await user.click(screen.getByRole('radio', { name: 'German' }));
+  expect(screen.getByRole('radio', { name: 'Essentials' })).toBeChecked();
+  expect(screen.getByRole('radio', { name: 'Kapitel 1' })).not.toBeChecked();
+
+  const selected = screen.getByRole('region', { name: 'Selected set' });
+  expect(within(selected).getByRole('heading', { name: 'Essentials' })).toBeInTheDocument();
+  expect(within(selected).getByText('Words', { selector: 'dt' }).nextSibling).toHaveTextContent(
+    '30',
+  );
+  expect(within(selected).getByText('Exercises').nextSibling).toHaveTextContent('60');
+});
+
+test('picking a unit shows its stats and words, and starts a session of it', async () => {
+  const user = userEvent.setup();
+  render(<App />);
+
+  await user.click(screen.getByRole('radio', { name: 'German' }));
+  await user.click(screen.getByRole('radio', { name: 'Numbers 0–10' }));
+
+  const selected = screen.getByRole('region', { name: 'Selected set' });
+  expect(within(selected).getByText('Words', { selector: 'dt' }).nextSibling).toHaveTextContent(
+    '11',
+  );
+
+  const words = within(selected).getByRole('list', { name: 'Words in set' });
+  expect(within(words).getAllByRole('listitem')).toHaveLength(11);
+  expect(words).toHaveTextContent('zwei');
+  expect(within(words).getAllByRole('button', { name: 'New' })).toHaveLength(11);
+
+  await user.click(within(selected).getByRole('button', { name: 'Start session' }));
+  expect(screen.getByText('Numbers 0–10')).toBeInTheDocument();
+  expect(screen.getByRole('textbox', { name: 'Answer' })).toBeInTheDocument();
+});
+
+test('switching subject selects its core set and English has no special characters', async () => {
+  const user = userEvent.setup();
+  render(<App />);
+
+  await user.click(screen.getByRole('radio', { name: 'German' }));
+  await user.click(screen.getByRole('radio', { name: 'Kapitel 0' }));
+  await user.click(screen.getByRole('radio', { name: 'English' }));
+  expect(screen.getByRole('radio', { name: 'Essentials' })).toBeChecked();
+
+  await user.click(screen.getByRole('radio', { name: 'Colours' }));
+  await user.click(screen.getByRole('button', { name: 'Start session' }));
+  expect(screen.queryByRole('button', { name: 'Show special characters' })).not.toBeInTheDocument();
+});
+
+test('the summary leads back to the setup screen with the same set selected', async () => {
+  const user = userEvent.setup();
+  await startNumbersSession(user);
+
+  await user.click(screen.getByRole('button', { name: 'End session' }));
+  await user.click(screen.getByRole('button', { name: 'Choose another set' }));
+
+  expect(screen.getByRole('radio', { name: 'Numbers 0–10' })).toBeChecked();
+});
+
+test('words practised in a session show their status, with details on hover', async () => {
+  const user = userEvent.setup();
+  await startNumbersSession(user);
+
+  // A fast exact dictation is rated Easy and learned; the word's translation is still new.
+  const { foreign } = currentConcept();
+  await user.type(screen.getByRole('textbox', { name: 'Answer' }), `${foreign}{Enter}`);
+  await user.keyboard('{Enter}');
+  await user.click(screen.getByRole('button', { name: 'End session' }));
+  await user.click(screen.getByRole('button', { name: 'Choose another set' }));
+
+  const words = screen.getByRole('list', { name: 'Words in set' });
+  const row = within(words).getByText(foreign).closest('li')!;
+  const status = within(row).getByRole('button', { name: 'Learning' });
+  expect(within(words).getAllByRole('button', { name: 'New' })).toHaveLength(10);
+  // The set's tile and its overview count the word as learning.
+  expect(screen.getByRole('radio', { name: 'Numbers 0–10' }).closest('label')).toHaveTextContent(
+    'Learned0Learning1New10',
+  );
+  expect(screen.getByRole('region', { name: 'Selected set' })).toHaveTextContent(
+    'Learned0Learning1New10',
+  );
+
+  await user.hover(status);
+  const tooltip = await screen.findByRole('tooltip');
+  expect(tooltip).toHaveTextContent(/Dictation: learned, back in \d+d/);
+  expect(tooltip).toHaveTextContent('Translation: not practised yet');
+});
+
+test('a session practises 10 words by default, or as many as chosen', async () => {
+  const user = userEvent.setup();
+  render(<App />);
+
+  await user.click(screen.getByRole('radio', { name: 'German' }));
+  await user.click(screen.getByRole('radio', { name: 'Kapitel 0' }));
+  expect(screen.getByRole('radio', { name: '10' })).toBeChecked();
+  expect(screen.getByText(/10 words · 20 exercises/)).toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: 'Start session' }));
+  await user.click(screen.getByRole('button', { name: 'End session' }));
+  expect(screen.getByText('20 · Waiting for the next session.')).toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: 'Choose another set' }));
+  await user.click(screen.getByRole('radio', { name: '5' }));
+  await user.click(screen.getByRole('button', { name: 'Start session' }));
+  await user.click(screen.getByRole('button', { name: 'End session' }));
+  expect(screen.getByText('10 · Waiting for the next session.')).toBeInTheDocument();
+});
+
+test('remembers the subject, set and words per session after a reload', async () => {
+  const user = userEvent.setup();
+  const { unmount } = render(<App />);
+
+  await user.click(screen.getByRole('radio', { name: 'German' }));
+  await user.click(screen.getByRole('radio', { name: 'Kapitel 0' }));
+  await user.click(screen.getByRole('radio', { name: '20' }));
+  unmount();
+  render(<App />);
+
+  expect(screen.getByRole('radio', { name: 'German' })).toBeChecked();
+  expect(screen.getByRole('radio', { name: 'Kapitel 0' })).toBeChecked();
+  expect(screen.getByRole('radio', { name: '20' })).toBeChecked();
 });

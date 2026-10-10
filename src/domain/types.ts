@@ -6,6 +6,8 @@ import type { AnswerIssue } from '@/exercises/type-answer';
 export interface Subject {
   id: string;
   name: string;
+  /** Shown next to the name, e.g. a flag. */
+  emoji?: string;
   /** BCP 47 tag of the language being learned, used to read words aloud, e.g. "de-DE". */
   foreignLanguage: string;
   /** Characters offered on the on-screen keyboard, e.g. German umlauts. */

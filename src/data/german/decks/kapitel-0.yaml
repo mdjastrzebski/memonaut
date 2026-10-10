@@ -1,0 +1,62 @@
+id: kapitel-0
+name: Kapitel 0
+concepts:
+  - { id: der-hamburger, local: hamburger, foreign: der Hamburger }
+  - { id: die-natur, local: natura, foreign: die Natur }
+  - { id: das-kapitel, local: rozdział, foreign: das Kapitel }
+  - { id: der-sport, local: sport, foreign: der Sport }
+  - { id: der-zoo, local: zoo, foreign: der Zoo }
+  - { id: die-mode, local: moda, foreign: die Mode }
+  - { id: das-kino, local: kino, foreign: das Kino }
+  - { id: die-musik, local: muzyka, foreign: die Musik }
+  - { id: der-computer, local: komputer, foreign: der Computer }
+  - { id: die-torte, local: tort, foreign: die Torte }
+  - { id: das-wort, local: słowo, foreign: das Wort }
+  - { id: die-woerter, local: słowa, foreign: die Wörter }
+  - { id: ich-kenne, local: znam, foreign: ich kenne }
+  - { id: das-tablet, local: tablet, foreign: das Tablet }
+  - { id: die-alpen, local: Alpy, foreign: die Alpen }
+  - { id: der-fussball, local: piłka nożna, foreign: der Fußball }
+  - { id: die-giraffe, local: żyrafa, foreign: die Giraffe }
+  - { id: der-film, local: film, foreign: der Film }
+  - { id: der-tourist, local: turysta, foreign: der Tourist }
+  - { id: die-familie, local: rodzina, foreign: die Familie }
+  - { id: die-gitarre, local: gitara, foreign: die Gitarre }
+  - { id: das-model, local: modelka, foreign: das Model }
+  - { id: die-schokolade, local: czekolada, foreign: die Schokolade }
+  - { id: der-laptop, local: laptop, foreign: der Laptop }
+  - { id: das-konzert, local: koncert, foreign: das Konzert }
+  - { id: die-lektion, local: lekcja, foreign: die Lektion }
+  - { id: deutsch, local: język niemiecki, foreign: Deutsch }
+  - { id: das-foto, local: zdjęcie, foreign: das Foto }
+  - { id: die-computerspiele, local: gry komputerowe, foreign: die Computerspiele }
+  - { id: die-katzen, local: koty, foreign: die Katzen }
+  - { id: die-gymnastik, local: gimnastyka, foreign: die Gymnastik }
+  - { id: die-limonade, local: lemoniada, foreign: die Limonade }
+  - { id: die-pizza, local: pizza, foreign: die Pizza }
+  - { id: die-pandas, local: pandy, foreign: die Pandas }
+  - { id: die-bananen, local: banany, foreign: die Bananen }
+  - { id: die-filme, local: filmy, foreign: die Filme }
+  - { id: das-domino, local: domino, foreign: das Domino }
+  - { id: die-comics, local: komiksy, foreign: die Comics }
+  - { id: das-boxen, local: boks, foreign: das Boxen }
+  - { id: ich-mag, local: lubię, foreign: ich mag }
+  - { id: ich-mag-limonade, local: lubię lemoniadę, foreign: ich mag Limonade }
+  - { id: ich-mag-pizza, local: lubię pizzę, foreign: ich mag Pizza }
+  - { id: die-person, local: osoba, foreign: die Person }
+  - { id: ich-verstehe-nicht, local: nie rozumiem, foreign: ich verstehe nicht, core: true }
+  - { id: ich-bin-fertig, local: jestem gotowy, foreign: ich bin fertig }
+  - { id: ist-alles-klar, local: czy wszystko jasne?, foreign: Ist alles klar? }
+  - { id: noch-einmal-bitte, local: 'jeszcze raz, proszę', foreign: 'noch einmal, bitte' }
+  - { id: gute-arbeit, local: dobra robota, foreign: gute Arbeit }
+  - { id: kein-problem, local: nie ma problemu, foreign: kein Problem }
+  - { id: ich-helfe-dir, local: pomogę ci, foreign: ich helfe dir }
+  - { id: ja, local: tak, foreign: ja, core: true }
+  - { id: nein, local: nie, foreign: nein, core: true }
+  - { id: bitte, local: proszę, foreign: bitte, core: true }
+  - { id: danke, local: dziękuję, foreign: danke, core: true }
+  - { id: die-uebung, local: ćwiczenie, foreign: die Übung }
+  - { id: toll, local: świetnie, foreign: toll }
+  - { id: super, local: super, foreign: super }
+  - { id: sehr-schoen, local: bardzo ładnie, foreign: sehr schön }
+  - { id: fantastisch, local: fantastycznie, foreign: fantastisch }

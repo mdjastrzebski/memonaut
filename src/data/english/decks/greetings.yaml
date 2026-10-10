@@ -1,0 +1,17 @@
+id: greetings
+name: Hello!
+concepts:
+  - { id: hello, local: cześć, foreign: hello, core: true }
+  - { id: goodbye, local: do widzenia, foreign: goodbye, core: true }
+  - { id: bye, local: pa, foreign: bye }
+  - { id: good-morning, local: dzień dobry (rano), foreign: good morning }
+  - { id: good-afternoon, local: dzień dobry (po południu), foreign: good afternoon }
+  - { id: good-evening, local: dobry wieczór, foreign: good evening }
+  - { id: good-night, local: dobranoc, foreign: good night }
+  - { id: please, local: proszę, foreign: please, core: true }
+  - { id: thank-you, local: dziękuję, foreign: thank you, core: true }
+  - { id: sorry, local: przepraszam, foreign: sorry, core: true }
+  - { id: yes, local: tak, foreign: yes, core: true }
+  - { id: no, local: nie, foreign: no, core: true }
+  - { id: how-are-you, local: jak się masz?, foreign: how are you? }
+  - { id: whats-your-name, local: jak masz na imię?, foreign: what's your name? }
