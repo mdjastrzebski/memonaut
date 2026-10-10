@@ -25,6 +25,14 @@ describe('exact answers', () => {
     expect(gradeAnswer('sieben', 'sieben', limit).grade).toBe(Rating.Easy);
     expect(gradeAnswer('sieben', 'sieben', limit + 1).grade).toBe(Rating.Good);
   });
+
+  test('special characters get extra time', () => {
+    expect(getFastLimitMs('fünf')).toBeGreaterThan(getFastLimitMs('funf'));
+    expect(getFastLimitMs('größer')).toBeGreaterThan(getFastLimitMs('grösser'));
+    const limit = getFastLimitMs('fünf');
+    expect(gradeAnswer('fünf', 'fünf', limit).grade).toBe(Rating.Easy);
+    expect(gradeAnswer('fünf', 'fünf', limit + 1).grade).toBe(Rating.Good);
+  });
 });
 
 describe('almost correct answers are Hard', () => {
