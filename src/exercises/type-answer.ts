@@ -74,7 +74,7 @@ export function normalizeSpacing(value: string): string {
 /**
  * Tidies up differences that aren't mistakes, so they don't count against the answer: spacing,
  * curly quotes from phone keyboards and a missing or extra ".", "?" or "!" at the end.
- * "Wie geht’s dir ?" → "wie geht's dir" (keeping case).
+ * "Wie geht’s dir ?" → "Wie geht's dir".
  */
 export function normalizeAnswer(value: string): string {
   return splitEndPunctuation(normalizePunctuation(value))[0];
