@@ -380,7 +380,11 @@ function DeckOverview({ content, cards, subject, deck, now, onStart }: DeckOverv
       </div>
 
       <dl className="grid grid-cols-2 gap-3">
-        <StatTile label="Words" value={concepts.length} />
+        <StatTile
+          label="Words"
+          value={concepts.length}
+          note={`Exercises: ${concepts.length * EXERCISE_TYPES.length}`}
+        />
         <StatTile
           label="Due today"
           value={countDueToday(deck.conceptIds, cards, now)}

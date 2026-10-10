@@ -10,6 +10,8 @@ const spoken: string[] = [];
 const confirm = vi.fn(() => true);
 
 beforeEach(() => {
+  // Keeps the session queue in deck order, so it starts with the first Essentials word.
+  vi.spyOn(Math, 'random').mockReturnValue(0.99);
   spoken.length = 0;
   confirm.mockClear();
   vi.stubGlobal('confirm', confirm);
@@ -30,6 +32,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
@@ -371,11 +374,12 @@ test('picking a unit shows its stats and words, and starts a session of it', asy
   expect(within(selected).getByText('Words', { selector: 'dt' }).nextSibling).toHaveTextContent(
     String(size),
   );
+  expect(within(selected).getByText(`Exercises: ${size * 2}`)).toBeInTheDocument();
 
   await user.click(within(selected).getByRole('button', { name: 'Words' }));
   const words = within(selected).getByRole('list', { name: 'Words in set' });
   expect(within(words).getAllByRole('listitem')).toHaveLength(size);
-  expect(words).toHaveTextContent('zwei');
+  expect(words).toHaveTextContent('der Hamburger');
   expect(within(words).getAllByRole('button', { name: 'New' })).toHaveLength(size);
 
   await user.click(within(selected).getByRole('button', { name: 'Start session' }));

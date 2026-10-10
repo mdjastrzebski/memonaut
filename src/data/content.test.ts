@@ -8,7 +8,7 @@ test('loads the bundled content', () => {
   expect(content.subjects.map((subject) => subject.id)).toContain('german');
   const kapitel0 = content.decks.find((deck) => deck.id === 'german/kapitel-0');
   const core = content.decks.find((deck) => deck.id === 'german/core');
-  expect(kapitel0?.conceptIds).toContain('german/number-10');
+  expect(kapitel0?.conceptIds).not.toContain('german/number-10');
   expect(core?.conceptIds).toContain('german/number-0');
   expect(core?.conceptIds).toContain('german/number-10');
 });
@@ -60,6 +60,38 @@ concepts:
   expect(concepts.map((concept) => concept.id)).toEqual(['german/der-hund', 'german/die-katze']);
 });
 
+test('the core deck starts with core.yaml, which is not a unit', () => {
+  const { decks, concepts } = buildContent({
+    './german/subject.yaml': subject,
+    './german/core.yaml': `
+concepts:
+  - { id: ja, local: tak, foreign: ja }
+  - { id: der-hund, local: pies, foreign: der Hund }
+`,
+    './german/decks/animals.yaml': `
+id: animals
+name: Animals
+concepts:
+  - { id: die-katze, local: kot, foreign: die Katze, core: true }
+  - { id: der-hund, local: pies, foreign: der Hund }
+`,
+  });
+  expect(decks.map((deck) => [deck.id, deck.kind])).toEqual([
+    ['german/animals', 'unit'],
+    ['german/core', 'core'],
+  ]);
+  expect(decks.find((deck) => deck.kind === 'core')?.conceptIds).toEqual([
+    'german/ja',
+    'german/der-hund',
+    'german/die-katze',
+  ]);
+  expect(concepts.map((concept) => concept.id)).toEqual([
+    'german/ja',
+    'german/der-hund',
+    'german/die-katze',
+  ]);
+});
+
 test('has no core deck when no concept is marked core', () => {
   const { decks } = buildContent({
     './german/subject.yaml': subject,
@@ -100,6 +132,15 @@ test('rejects invalid content', () => {
   expect(() =>
     build({ './german/decks/a.yaml': deck('  - { id: a, local: x, foreign: y, core: yes }\n') }),
   ).toThrow(/a\.yaml/);
+  expect(() =>
+    build({
+      './german/core.yaml': 'concepts:\n  - { id: a, local: x, foreign: y }\n',
+      './german/decks/a.yaml': deck('  - { id: a, local: x, foreign: z }\n'),
+    }),
+  ).toThrow('a.yaml: concept "a" is defined differently in another deck');
+  expect(() =>
+    build({ './german/core.yaml': 'concepts:\n  - { id: a, local: x, foreign: y, core: true }\n' }),
+  ).toThrow(/core\.yaml/);
   expect(() => buildContent({ './german/decks/a.yaml': deck('') })).toThrow(
     'subject.yaml: missing',
   );
