@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { ExerciseScreen } from '@/components/exercise-screen';
-import { SetupScreen } from '@/components/setup-screen';
+import { DEFAULT_SESSION_SIZE, SetupScreen, type SessionSize } from '@/components/setup-screen';
 import { SummaryScreen } from '@/components/summary-screen';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { content } from '@/data/content';
@@ -14,6 +14,7 @@ export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   // Cards practised in earlier sessions, so progress carries over until the page is reloaded.
   const [cards, setCards] = useState<Record<string, Card>>({});
+  const [sessionSize, setSessionSize] = useState<SessionSize>(DEFAULT_SESSION_SIZE);
   const [ended, setEnded] = useState(false);
   const [showSpecialCharacters, setShowSpecialCharacters] = useState(false);
   const [showSrsDetails, setShowSrsDetails] = useState(false);
@@ -25,7 +26,14 @@ export default function App() {
 
   const start = () => {
     setCards(allCards);
-    setSession(createSession({ deck, concepts: content.concepts, cards: allCards }));
+    setSession(
+      createSession({
+        deck,
+        concepts: content.concepts,
+        cards: allCards,
+        maxConcepts: sessionSize ?? undefined,
+      }),
+    );
     setEnded(false);
     // Open by default for languages that need special characters, e.g. German umlauts.
     setShowSpecialCharacters((subject.specialCharacters?.length ?? 0) > 0);
@@ -54,6 +62,8 @@ export default function App() {
             cards={cards}
             deck={deck}
             onSelectDeck={setDeck}
+            sessionSize={sessionSize}
+            onSessionSizeChange={setSessionSize}
             onStart={start}
           />
         ) : finished ? (

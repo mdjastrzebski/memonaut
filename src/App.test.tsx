@@ -43,6 +43,7 @@ async function startNumbersSession(user: ReturnType<typeof userEvent.setup>) {
   render(<App />);
   await user.click(screen.getByRole('radio', { name: 'German' }));
   await user.click(screen.getByRole('radio', { name: 'Numbers 0–10' }));
+  await user.click(screen.getByRole('radio', { name: 'No limit' }));
   await user.click(screen.getByRole('button', { name: 'Start session' }));
 }
 
@@ -386,4 +387,24 @@ test('words practised in a session show their status, with details on hover', as
   const tooltip = await screen.findByRole('tooltip');
   expect(tooltip).toHaveTextContent(/Dictation: learned, back in \d+d/);
   expect(tooltip).toHaveTextContent('Translation: not practised yet');
+});
+
+test('a session practises 10 words by default, or as many as chosen', async () => {
+  const user = userEvent.setup();
+  render(<App />);
+
+  await user.click(screen.getByRole('radio', { name: 'German' }));
+  await user.click(screen.getByRole('radio', { name: 'Kapitel 0' }));
+  expect(screen.getByRole('radio', { name: '10' })).toBeChecked();
+  expect(screen.getByText(/10 words · 20 exercises/)).toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: 'Start session' }));
+  await user.click(screen.getByRole('button', { name: 'End session' }));
+  expect(screen.getByText('20 · Waiting for the next session.')).toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: 'Choose another set' }));
+  await user.click(screen.getByRole('radio', { name: '5' }));
+  await user.click(screen.getByRole('button', { name: 'Start session' }));
+  await user.click(screen.getByRole('button', { name: 'End session' }));
+  expect(screen.getByText('10 · Waiting for the next session.')).toBeInTheDocument();
 });

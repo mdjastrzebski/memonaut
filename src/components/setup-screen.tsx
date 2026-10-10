@@ -22,6 +22,12 @@ import { cn } from '@/lib/utils';
 import { EXERCISE_TYPES, getCardId } from '@/session/session';
 import { State, type FsrsCard } from '@/srs/scheduler';
 
+/** How many words a session practises at most; null means every word in the set. */
+export type SessionSize = number | null;
+
+const SESSION_SIZES: SessionSize[] = [5, 10, 20, null];
+export const DEFAULT_SESSION_SIZE: SessionSize = 10;
+
 interface SetupScreenProps {
   content: Content;
   /** Cards practised so far, keyed by id, to show how well each word is known. */
@@ -29,11 +35,21 @@ interface SetupScreenProps {
   /** The selected Deck; its Subject is the selected Subject. */
   deck: Deck;
   onSelectDeck: (deck: Deck) => void;
+  sessionSize: SessionSize;
+  onSessionSizeChange: (size: SessionSize) => void;
   onStart: () => void;
 }
 
 /** Choose a Subject, then its core set or one of its units, and start a session. */
-export function SetupScreen({ content, cards, deck, onSelectDeck, onStart }: SetupScreenProps) {
+export function SetupScreen({
+  content,
+  cards,
+  deck,
+  onSelectDeck,
+  sessionSize,
+  onSessionSizeChange,
+  onStart,
+}: SetupScreenProps) {
   const subject = content.subjects.find((subject) => subject.id === deck.subjectId)!;
   const subjects = content.subjects.filter((option) =>
     content.decks.some((deck) => deck.subjectId === option.id),
@@ -98,6 +114,12 @@ export function SetupScreen({ content, cards, deck, onSelectDeck, onStart }: Set
             )}
           </div>
         </ChoiceGroup>
+
+        <SessionSizePicker
+          value={sessionSize}
+          onChange={onSessionSizeChange}
+          wordCount={deck.conceptIds.length}
+        />
       </div>
 
       <DeckOverview
@@ -404,6 +426,43 @@ function describeCard(srs: FsrsCard | undefined, now: Date): string {
   if (!srs || srs.state === State.New) return 'not practised yet';
   const progress = WORD_STATUS[getProgress(srs.state)].label.toLowerCase();
   return `${progress}, back ${formatRelative(srs.due, now)}`;
+}
+
+interface SessionSizePickerProps {
+  value: SessionSize;
+  onChange: (size: SessionSize) => void;
+  /** Words in the selected set. */
+  wordCount: number;
+}
+
+/** Segmented buttons for the most words to practise in one session. */
+function SessionSizePicker({ value, onChange, wordCount }: SessionSizePickerProps) {
+  const words = Math.min(value ?? Infinity, wordCount);
+  return (
+    <ChoiceGroup legend="Words per session">
+      <div className="grid max-w-md grid-cols-4 gap-1 rounded-2xl border-2 border-foreground bg-card p-1 shadow-sticker-sm">
+        {SESSION_SIZES.map((size) => (
+          <label
+            key={size ?? 'all'}
+            className="cursor-pointer rounded-xl py-2.5 text-center font-display font-bold transition-colors hover:bg-muted has-checked:bg-almost has-checked:hover:bg-almost has-focus-visible:ring-3 has-focus-visible:ring-ring/50"
+          >
+            <input
+              type="radio"
+              name="session-size"
+              checked={value === size}
+              onChange={() => onChange(size)}
+              className="sr-only"
+            />
+            {size ?? 'No limit'}
+          </label>
+        ))}
+      </div>
+      <p className="text-sm text-muted-foreground">
+        {plural(words, 'word')} · {words * EXERCISE_TYPES.length} exercises. Words due for practice
+        come first, then new ones.
+      </p>
+    </ChoiceGroup>
+  );
 }
 
 function StatTile({ label, value, note }: { label: string; value: number; note?: ReactNode }) {
