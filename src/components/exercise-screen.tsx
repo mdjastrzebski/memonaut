@@ -49,7 +49,7 @@ interface ExerciseScreenProps {
 }
 
 const INPUT_CLASS =
-  'h-16 rounded-2xl border-2 border-foreground bg-background px-5 font-display text-3xl font-semibold shadow-[inset_0_3px_0_0_var(--color-border)] placeholder:font-normal placeholder:text-muted-foreground/60 focus-visible:border-foreground focus-visible:ring-rocket/40 md:text-3xl';
+  'h-16 rounded-2xl border-2 border-line bg-background px-5 font-display text-3xl font-semibold shadow-[inset_0_3px_0_0_var(--border)] placeholder:font-normal placeholder:text-muted-foreground/60 focus-visible:border-line focus-visible:ring-rocket/40 md:text-3xl';
 
 interface Checked {
   result: AnswerResult;
@@ -165,7 +165,7 @@ export function ExerciseScreen({
 
       <section
         aria-label="Exercise"
-        className="relative animate-card-in overflow-hidden rounded-[2rem] border-2 border-foreground bg-card px-6 pt-7 pb-6 shadow-sticker-lg sm:px-10 sm:pt-9 sm:pb-8"
+        className="relative animate-card-in overflow-hidden rounded-[2rem] border-2 border-line bg-card px-6 pt-7 pb-6 shadow-sticker-lg sm:px-10 sm:pt-9 sm:pb-8"
       >
         {/* A hint like "3" would give away the word's meaning in dictation. */}
         {concept.hint && !dictation && (
@@ -174,7 +174,7 @@ export function ExerciseScreen({
           </span>
         )}
 
-        <p className="relative inline-block -rotate-2 rounded-full border-2 border-foreground bg-almost px-3 py-0.5 text-xs font-bold tracking-wider uppercase">
+        <p className="relative inline-block -rotate-2 rounded-full border-2 border-line bg-highlight px-3 py-0.5 text-xs font-bold tracking-wider uppercase">
           {dictation ? 'Write what you hear' : `Type in ${subject.name}`}
         </p>
         {dictation ? (
@@ -191,7 +191,7 @@ export function ExerciseScreen({
             </Button>
           </div>
         ) : (
-          <h2 className="relative mt-4 mb-8 font-display text-6xl font-extrabold tracking-tight break-words sm:text-7xl">
+          <h2 className="relative mt-4 mb-6 font-display text-4xl font-extrabold tracking-tight break-words sm:text-5xl">
             {concept.local}
           </h2>
         )}
@@ -378,14 +378,14 @@ function Feedback({ grade, input, answer, meaning }: FeedbackProps) {
     <div
       role="status"
       className={cn(
-        'flex animate-rise items-center gap-4 rounded-2xl border-2 border-foreground p-4',
+        'flex animate-rise items-center gap-4 rounded-2xl border-2 border-line p-4',
         style.tint,
       )}
     >
       <span className="relative shrink-0 self-start">
         <span
           className={cn(
-            'grid size-11 animate-pop place-items-center rounded-full border-2 border-foreground',
+            'grid size-11 animate-pop place-items-center rounded-full border-2 border-line',
             style.fill,
           )}
         >

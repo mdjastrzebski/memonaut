@@ -59,7 +59,7 @@ export function SetupScreen({
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start">
       <div className="flex flex-col gap-8">
         <div className="flex animate-rise flex-col gap-3">
-          <p className="inline-block -rotate-2 self-start rounded-full border-2 border-foreground bg-almost px-3 py-0.5 text-xs font-bold tracking-wider uppercase">
+          <p className="inline-block -rotate-2 self-start rounded-full border-2 border-line bg-highlight px-3 py-0.5 text-xs font-bold tracking-wider uppercase">
             Mission control
           </p>
           <h2 className="font-display text-4xl font-extrabold tracking-tight sm:text-5xl">
@@ -177,7 +177,7 @@ function ChoiceTile({
     <label
       style={style}
       className={cn(
-        'group relative flex animate-rise cursor-pointer items-center gap-4 rounded-2xl border-2 border-foreground bg-card p-4 shadow-sticker-sm transition-all hover:-translate-y-px hover:shadow-sticker has-checked:bg-almost/45 has-checked:shadow-sticker has-focus-visible:ring-3 has-focus-visible:ring-ring/50',
+        'group relative flex animate-rise cursor-pointer items-center gap-4 rounded-2xl border-2 border-line bg-card p-4 shadow-sticker-sm transition-all hover:-translate-y-px hover:shadow-sticker has-checked:bg-highlight/45 has-checked:shadow-sticker has-focus-visible:ring-3 has-focus-visible:ring-ring/50',
         className,
       )}
     >
@@ -195,7 +195,7 @@ function ChoiceTile({
       </div>
       <span
         aria-hidden
-        className="absolute -top-2.5 -right-2.5 grid size-7 scale-50 place-items-center rounded-full border-2 border-foreground bg-correct opacity-0 transition-all group-has-checked:scale-100 group-has-checked:opacity-100"
+        className="absolute -top-2.5 -right-2.5 grid size-7 scale-50 place-items-center rounded-full border-2 border-line bg-correct opacity-0 transition-all group-has-checked:scale-100 group-has-checked:opacity-100"
       >
         <Check className="size-4" strokeWidth={3} />
       </span>
@@ -263,7 +263,7 @@ function DeckTile({ deck, cards, now, checked, onSelect }: DeckTileProps) {
       className={cn(core && 'has-checked:bg-rocket/35')}
     >
       {core && (
-        <span className="grid size-12 shrink-0 place-items-center rounded-full border-2 border-foreground bg-rocket">
+        <span className="grid size-12 shrink-0 place-items-center rounded-full border-2 border-line bg-rocket">
           <Star className="size-6 fill-almost" />
         </span>
       )}
@@ -301,7 +301,7 @@ function DeckOverview({ content, cards, subject, deck, now, onStart }: DeckOverv
   return (
     <section
       aria-label="Selected set"
-      className="flex animate-card-in flex-col gap-6 rounded-[2rem] border-2 border-foreground bg-card p-6 shadow-sticker-lg lg:sticky lg:top-6"
+      className="flex animate-card-in flex-col gap-6 rounded-[2rem] border-2 border-line bg-card p-6 shadow-sticker-lg lg:sticky lg:top-6"
     >
       <div className="flex flex-col gap-1">
         <p className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
@@ -458,11 +458,11 @@ function SessionSizePicker({ value, onChange, wordCount }: SessionSizePickerProp
   const words = Math.min(value ?? Infinity, wordCount);
   return (
     <ChoiceGroup legend="Words per session">
-      <div className="grid max-w-md grid-cols-4 gap-1 rounded-2xl border-2 border-foreground bg-card p-1 shadow-sticker-sm">
+      <div className="grid max-w-md grid-cols-4 gap-1 rounded-2xl border-2 border-line bg-card p-1 shadow-sticker-sm">
         {SESSION_SIZES.map((size) => (
           <label
             key={size ?? 'all'}
-            className="cursor-pointer rounded-xl py-2.5 text-center font-display font-bold transition-colors hover:bg-muted has-checked:bg-almost has-checked:hover:bg-almost has-focus-visible:ring-3 has-focus-visible:ring-ring/50"
+            className="cursor-pointer rounded-xl py-2.5 text-center font-display font-bold transition-colors hover:bg-muted has-checked:bg-highlight has-checked:hover:bg-highlight has-focus-visible:ring-3 has-focus-visible:ring-ring/50"
           >
             <input
               type="radio"
@@ -494,7 +494,7 @@ function StatTile({ label, value, note, className }: StatTileProps) {
   return (
     <div
       className={cn(
-        'flex flex-col gap-0.5 rounded-2xl border-2 border-foreground bg-background p-3 shadow-sticker-sm',
+        'flex flex-col gap-0.5 rounded-2xl border-2 border-line bg-background p-3 shadow-sticker-sm',
         className,
       )}
     >

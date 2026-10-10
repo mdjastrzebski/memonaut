@@ -5,6 +5,15 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Memonaut</title>
+    <script>
+      // Applies the saved theme before the first paint; ThemeToggle keeps it in sync after that.
+      try {
+        const theme = localStorage.getItem('memonaut:theme');
+        if (theme === 'dark' || (!theme && matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark');
+        }
+      } catch {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

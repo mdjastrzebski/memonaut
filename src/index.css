@@ -84,56 +84,85 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  --rocket: oklch(0.7 0.18 45);
+  --correct: oklch(0.74 0.15 158);
+  --correct-ink: oklch(0.46 0.11 158);
+  --almost: oklch(0.85 0.15 85);
+  --almost-ink: oklch(0.52 0.11 70);
+  --wrong: oklch(0.68 0.19 28);
+  --wrong-ink: oklch(0.52 0.19 28);
+  --sticker: var(--foreground);
+  --line: var(--foreground);
+  --highlight: var(--almost);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  /* Night sky: navy paper, cream ink, and deeper accents so cream text stays readable on them. */
+  --background: oklch(0.2 0.035 268);
+  --foreground: oklch(0.95 0.015 85);
+  --card: oklch(0.255 0.04 268);
+  --card-foreground: oklch(0.95 0.015 85);
+  --popover: oklch(0.95 0.015 85);
+  --popover-foreground: oklch(0.25 0.06 268);
+  --primary: oklch(0.95 0.015 85);
+  --primary-foreground: oklch(0.22 0.05 268);
+  --secondary: oklch(0.31 0.045 268);
+  --secondary-foreground: oklch(0.95 0.015 85);
+  --muted: oklch(0.29 0.04 268);
+  --muted-foreground: oklch(0.76 0.03 268);
+  --accent: oklch(0.31 0.045 268);
+  --accent-foreground: oklch(0.95 0.015 85);
+  --destructive: oklch(0.7 0.19 25);
+  --border: oklch(0.4 0.045 268);
+  --input: oklch(0.4 0.045 268);
+  --ring: oklch(0.72 0.17 48);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar: oklch(0.255 0.04 268);
+  --sidebar-foreground: oklch(0.95 0.015 85);
+  --sidebar-primary: oklch(0.72 0.17 48);
+  --sidebar-primary-foreground: oklch(0.95 0.015 85);
+  --sidebar-accent: oklch(0.31 0.045 268);
+  --sidebar-accent-foreground: oklch(0.95 0.015 85);
+  --sidebar-border: oklch(0.4 0.045 268);
+  --sidebar-ring: oklch(0.72 0.17 48);
+
+  --rocket: oklch(0.58 0.17 42);
+  --correct: oklch(0.52 0.12 158);
+  --correct-ink: oklch(0.82 0.13 158);
+  --almost: oklch(0.55 0.12 75);
+  --almost-ink: oklch(0.86 0.13 85);
+  --wrong: oklch(0.55 0.19 28);
+  --wrong-ink: oklch(0.8 0.13 28);
+  --sticker: oklch(0.11 0.03 268);
+  /* Cream outlines glare on navy, so stickers get a soft slate edge instead. */
+  --line: oklch(0.42 0.045 268);
+  /* Yellow turns muddy on navy, so picked items glow nebula violet instead. */
+  --highlight: oklch(0.45 0.15 295);
+}
+
+@theme inline {
+  --color-rocket: var(--rocket);
+  --color-correct: var(--correct);
+  --color-correct-ink: var(--correct-ink);
+  --color-almost: var(--almost);
+  --color-almost-ink: var(--almost-ink);
+  --color-wrong: var(--wrong);
+  --color-wrong-ink: var(--wrong-ink);
+  --color-line: var(--line);
+  --color-highlight: var(--highlight);
+
+  /* Hard offset shadows give cards and buttons a cut-out sticker look. */
+  --shadow-sticker-sm: 2px 2px 0 0 var(--sticker);
+  --shadow-sticker: 4px 4px 0 0 var(--sticker);
+  --shadow-sticker-lg: 7px 7px 0 0 var(--sticker);
 }
 
 @theme {
-  --color-rocket: oklch(0.7 0.18 45);
-  --color-correct: oklch(0.74 0.15 158);
-  --color-correct-ink: oklch(0.46 0.11 158);
-  --color-almost: oklch(0.85 0.15 85);
-  --color-almost-ink: oklch(0.52 0.11 70);
-  --color-wrong: oklch(0.68 0.19 28);
-  --color-wrong-ink: oklch(0.52 0.19 28);
-
-  /* Hard offset shadows give cards and buttons a cut-out sticker look. */
-  --shadow-sticker-sm: 2px 2px 0 0 var(--foreground);
-  --shadow-sticker: 4px 4px 0 0 var(--foreground);
-  --shadow-sticker-lg: 7px 7px 0 0 var(--foreground);
-
   --animate-card-in: card-in 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
   --animate-rise: rise 0.45s cubic-bezier(0.2, 0.9, 0.3, 1) both;
   --animate-pop: pop 0.4s cubic-bezier(0.3, 1.6, 0.5, 1) both;
