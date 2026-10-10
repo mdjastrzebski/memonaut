@@ -1,0 +1,18 @@
+# Memonaut
+
+Memonaut is a spaced-repetition learning web app for school kids. See [README.md](README.md) for the domain model (Subject, Deck, Concept, Card, Review) and scheduling.
+
+## Essentials
+
+- Package manager: `pnpm`
+- Stack: Vite, React 19, TypeScript, Tailwind CSS v4, shadcn/ui (Radix)
+- Dev server: `pnpm dev`
+- Build: `pnpm build`
+- Validate before finishing code changes: `pnpm validate` (typecheck, lint, test, format check)
+- Auto-fix formatting and lint: `pnpm validate:fix`
+
+## Conventions
+
+- Import from `src` with the `@/` alias, e.g. `@/lib/utils`.
+- Add shadcn/ui components with `pnpm dlx shadcn@latest add <component>`; they land in `src/components/ui/`.
+- Put tests next to the code as `*.test.ts(x)`, using Vitest and Testing Library.

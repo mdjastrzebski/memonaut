@@ -2,7 +2,7 @@
 
 Memonaut is a learning web app for school kids, built on spaced repetition. It helps a learner keep what they learn in school subjects, such as English, German, Polish or Przyroda, by scheduling each piece of knowledge for review just before it would be forgotten.
 
-> **Status:** early design. The concepts below are settled. The code is not written yet.
+> **Status:** early design. The concepts below are settled. The project is scaffolded, but no features are built yet.
 
 ## Goals
 
@@ -16,14 +16,14 @@ Memonaut is a learning web app for school kids, built on spaced repetition. It h
 
 A **Deck** includes a number of **Concepts**. Each Concept splits into a number of **Cards**, one per **Exercise Type**, which the user sees as separate exercises. Each Card keeps its own review schedule. A Concept can be in any number of Decks: several unit decks, the core deck, or only the core deck. A review in one Deck counts everywhere.
 
-| Term              | Meaning                                                                                                 |
-| ----------------- | ------------------------------------------------------------------------------------------------------- |
-| **Subject**       | A separate area of study, e.g. English, German or Przyroda. All Decks and Concepts belong to one Subject. |
-| **Deck**          | A group of Concepts within a Subject. Its kind is either `unit` (a school unit) or `core` (long-term essentials). |
+| Term              | Meaning                                                                                                                   |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| **Subject**       | A separate area of study, e.g. English, German or Przyroda. All Decks and Concepts belong to one Subject.                 |
+| **Deck**          | A group of Concepts within a Subject. Its kind is either `unit` (a school unit) or `core` (long-term essentials).         |
 | **Concept**       | One piece of knowledge, e.g. a word, a verb's conjugation or a fact. It can be in any number of Decks within its Subject. |
-| **Exercise Type** | A way to practise a Concept, e.g. flashcard, type the answer, multiple choice or conjugate.              |
-| **Card**          | One Concept practised with one Exercise Type. It's the unit that gets scheduled, and it holds its own review state. |
-| **Review**        | One attempt at a Card, with a rating: `Again`, `Hard`, `Good` or `Easy`.                                |
+| **Exercise Type** | A way to practise a Concept, e.g. flashcard, type the answer, multiple choice or conjugate.                               |
+| **Card**          | One Concept practised with one Exercise Type. It's the unit that gets scheduled, and it holds its own review state.       |
+| **Review**        | One attempt at a Card, with a rating: `Again`, `Hard`, `Good` or `Easy`.                                                  |
 
 ```
 Subject
@@ -47,6 +47,16 @@ Cards of the same Concept are siblings. A study session should avoid showing two
 - Is there exactly one core Deck per Subject, or can there be several?
 - Which Exercise Types come first?
 - Where is data stored: only in the browser, or synced through a backend?
+
+## Development
+
+Requires Node.js and [pnpm](https://pnpm.io).
+
+```sh
+pnpm install
+pnpm dev        # start the dev server
+pnpm validate   # typecheck, lint, test and format check
+```
 
 ## Related
 
