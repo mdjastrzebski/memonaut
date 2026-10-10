@@ -108,6 +108,7 @@ concepts:
 test('the bundled Polish words are practised with dictation only, with hints for homophones', () => {
   const polish = content.subjects.find((subject) => subject.id === 'polish');
   expect(polish?.exerciseTypes).toEqual(['dictation']);
+  expect(polish?.trickySpellings).toEqual(['ó', 'u', 'rz', 'ż', 'ch', 'h']);
   const concept = (id: string) => content.concepts.find((concept) => concept.id === id);
   expect(concept('polish/morze')).toMatchObject({
     foreign: 'morze',

@@ -12,6 +12,7 @@ const subjectSchema = z.strictObject({
   emoji: z.string().optional(),
   foreignLanguage: z.string(),
   specialCharacters: z.array(z.string()).optional(),
+  trickySpellings: z.array(z.string().min(1)).optional(),
   /** Every Exercise Type if left out; kept in order from easiest whatever the order listed. */
   exerciseTypes: z
     .array(z.enum(EXERCISE_TYPES))

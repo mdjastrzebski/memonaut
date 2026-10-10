@@ -14,6 +14,8 @@ export interface Subject {
   specialCharacters?: string[];
   /** How its Concepts are practised, easiest first, e.g. only dictation for Polish spelling. */
   exerciseTypes: ExerciseType[];
+  /** Spellings marked in a right answer, to remind which ones it got right, e.g. Polish "rz". */
+  trickySpellings?: string[];
 }
 
 export type DeckKind = 'unit' | 'core';

@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
@@ -83,10 +83,28 @@ test('strict spelling rates a homophone as wrong, not almost right', async () =>
   expect(screen.getByRole('status')).toHaveTextContent('Again');
 });
 
-test('a word without a local word or hint shows only the result after checking', async () => {
+test('a right answer shows the word with its tricky spellings marked', async () => {
   const user = userEvent.setup();
   renderExercise('polish/zolw');
 
   await user.type(screen.getByRole('textbox', { name: 'Answer' }), 'żółw{Enter}');
-  expect(screen.getByRole('status')).not.toHaveTextContent('means');
+  const status = screen.getByRole('status');
+  expect(status).toHaveTextContent('żółw');
+  expect(status).not.toHaveTextContent('means');
+  expect(
+    within(status)
+      .queryAllByText(/./, { selector: 'mark' })
+      .map((mark) => mark.textContent),
+  ).toEqual(['żó']);
+});
+
+test('a wrong answer compares it with the answer instead', async () => {
+  const user = userEvent.setup();
+  renderExercise('polish/zolw');
+
+  await user.type(screen.getByRole('textbox', { name: 'Answer' }), 'żułw{Enter}');
+  const status = screen.getByRole('status');
+  expect(status).toHaveTextContent('Again');
+  expect(within(status).getByText('ó', { selector: 'mark' })).toBeInTheDocument();
+  expect(within(status).queryByText('żó', { selector: 'mark' })).not.toBeInTheDocument();
 });

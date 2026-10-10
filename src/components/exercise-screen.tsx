@@ -15,6 +15,7 @@ import { CardStats, RatingPreview, SrsDetails, StateBadge } from '@/components/s
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { Subject } from '@/domain/types';
+import { splitTrickySpellings } from '@/exercises/tricky-spellings';
 import { getFastLimitMs, gradeAnswer, type AnswerResult } from '@/exercises/type-answer';
 import { formatDuration, formatSeconds } from '@/lib/format';
 import { playCorrect } from '@/lib/sounds';
@@ -205,6 +206,7 @@ export function ExerciseScreen({
                 input={input}
                 answer={concept.foreign}
                 meaning={concept.local ?? concept.spokenHint}
+                trickySpellings={subject.trickySpellings}
               />
               <p className="-mb-2 font-semibold">Now type the answer to continue:</p>
               <div className="relative">
@@ -293,6 +295,7 @@ export function ExerciseScreen({
                 input={input}
                 answer={concept.foreign}
                 meaning={concept.local ?? concept.spokenHint}
+                trickySpellings={subject.trickySpellings}
               />
               <Button type="submit" variant="cta" className="h-13 rounded-2xl text-lg">
                 Continue <ArrowRight className="size-5" />
@@ -370,13 +373,19 @@ interface FeedbackProps {
   answer: string;
   /** The local word, or else the spoken hint, shown with the result. */
   meaning?: string;
+  /** Marked in a right answer. */
+  trickySpellings?: string[];
 }
 
-/** The result as an icon, the answer to compare after a mistake, and the word's meaning. */
-function Feedback({ grade, input, answer, meaning }: FeedbackProps) {
+/**
+ * The result as an icon, the answer to compare after a mistake or else with its tricky spellings
+ * marked, and the word's meaning.
+ */
+function Feedback({ grade, input, answer, meaning, trickySpellings }: FeedbackProps) {
   const style = GRADE_STYLES[grade];
   const Icon = GRADE_ICONS[grade];
   const wrong = grade === Rating.Hard || grade === Rating.Again;
+  const spelled = !wrong && trickySpellings !== undefined;
 
   return (
     <div
@@ -401,11 +410,12 @@ function Feedback({ grade, input, answer, meaning }: FeedbackProps) {
 
       <div className="flex min-w-0 flex-col gap-1">
         {wrong && <AnswerComparison input={input} answer={answer} shake={grade === Rating.Again} />}
+        {spelled && <SpelledAnswer answer={answer} trickySpellings={trickySpellings} />}
         {meaning && (
           <p
             className={cn(
               'flex items-center gap-2 font-display font-bold break-words',
-              wrong ? 'text-lg text-muted-foreground' : 'text-2xl',
+              wrong || spelled ? 'text-lg text-muted-foreground' : 'text-2xl',
             )}
           >
             <span aria-hidden className="shrink-0 leading-none">
@@ -417,6 +427,23 @@ function Feedback({ grade, input, answer, meaning }: FeedbackProps) {
         )}
       </div>
     </div>
+  );
+}
+
+/** The answer with its tricky spellings marked, e.g. "bo[h]ater". */
+function SpelledAnswer({ answer, trickySpellings }: { answer: string; trickySpellings: string[] }) {
+  return (
+    <p className="font-display text-2xl font-bold break-words whitespace-pre-wrap">
+      {splitTrickySpellings(answer, trickySpellings).map(({ text, tricky }, index) =>
+        tricky ? (
+          <mark key={index} className="rounded-md bg-highlight px-0.5 text-foreground">
+            {text}
+          </mark>
+        ) : (
+          <span key={index}>{text}</span>
+        ),
+      )}
+    </p>
   );
 }
 
