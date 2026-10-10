@@ -87,12 +87,12 @@ export function ExerciseScreen({
   const concept = session.concepts[card.conceptId];
   const now = checked?.at ?? shownAt;
   const grade = checked?.result.grade;
-  const fastLimitMs = getFastLimitMs(concept.answer);
+  const fastLimitMs = getFastLimitMs(concept.foreign);
   const preview = previewReview(card.srs, now);
   const earlierReviews = session.reviews.filter((review) => review.cardId === card.id);
   // After a wrong or almost-right answer, the learner types the right one before moving on.
   const retyping = checked !== null && (grade === Rating.Hard || grade === Rating.Again);
-  const retypedCorrectly = retyping && retyped === concept.answer;
+  const retypedCorrectly = retyping && retyped === concept.foreign;
   const [value, setValue] = retyping ? [retyped, setRetyped] : [input, setInput];
 
   const handleSubmit = (event: FormEvent) => {
@@ -101,7 +101,7 @@ export function ExerciseScreen({
       if (input.trim() === '') return;
       const at = new Date();
       const elapsedMs = at.getTime() - shownAt.getTime();
-      setChecked({ result: gradeAnswer(concept.answer, input, elapsedMs), at });
+      setChecked({ result: gradeAnswer(concept.foreign, input, elapsedMs), at });
     } else if (!retyping || retypedCorrectly) {
       const { grade, issues, elapsedMs } = checked.result;
       onReview({ input, elapsedMs, rating: grade, issues, now: checked.at });
@@ -135,7 +135,7 @@ export function ExerciseScreen({
           Type in German
         </p>
         <h2 className="relative mt-4 mb-8 font-display text-6xl font-extrabold tracking-tight break-words sm:text-7xl">
-          {concept.prompt}
+          {concept.local}
         </h2>
 
         <form onSubmit={handleSubmit} className="relative flex flex-col gap-4">
@@ -144,7 +144,7 @@ export function ExerciseScreen({
               <Feedback
                 result={checked.result}
                 input={input}
-                answer={concept.answer}
+                answer={concept.foreign}
                 nextInMs={preview[checked.result.grade].card.due.getTime() - now.getTime()}
               />
               <p className="-mb-2 font-semibold">Now type the answer to continue:</p>
@@ -165,7 +165,7 @@ export function ExerciseScreen({
                     retypedCorrectly && GRADE_STYLES[Rating.Good].tint,
                   )}
                 />
-                <RetypeGuide answer={concept.answer} typed={retyped} />
+                <RetypeGuide answer={concept.foreign} typed={retyped} />
               </div>
             </>
           ) : (
@@ -232,7 +232,7 @@ export function ExerciseScreen({
               <Feedback
                 result={checked.result}
                 input={input}
-                answer={concept.answer}
+                answer={concept.foreign}
                 nextInMs={preview[checked.result.grade].card.due.getTime() - now.getTime()}
               />
               <Button type="submit" variant="cta" className="h-13 rounded-2xl text-lg">

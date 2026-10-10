@@ -1,0 +1,15 @@
+id: numbers-0-10
+kind: unit
+name: Numbers 0–10
+concepts:
+  - { id: number-0, local: zero, foreign: null, hint: 0 }
+  - { id: number-1, local: jeden, foreign: eins, hint: 1 }
+  - { id: number-2, local: dwa, foreign: zwei, hint: 2 }
+  - { id: number-3, local: trzy, foreign: drei, hint: 3 }
+  - { id: number-4, local: cztery, foreign: vier, hint: 4 }
+  - { id: number-5, local: pięć, foreign: fünf, hint: 5 }
+  - { id: number-6, local: sześć, foreign: sechs, hint: 6 }
+  - { id: number-7, local: siedem, foreign: sieben, hint: 7 }
+  - { id: number-8, local: osiem, foreign: acht, hint: 8 }
+  - { id: number-9, local: dziewięć, foreign: neun, hint: 9 }
+  - { id: number-10, local: dziesięć, foreign: zehn, hint: 10 }

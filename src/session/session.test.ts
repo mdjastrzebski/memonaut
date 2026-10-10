@@ -6,8 +6,8 @@ import { Rating, State } from '@/srs/scheduler';
 import { createSession, getCurrentCard, submitReview } from './session';
 
 const concepts: Concept[] = [
-  { id: 'one', subjectId: 'german', prompt: 'one', answer: 'eins' },
-  { id: 'two', subjectId: 'german', prompt: 'two', answer: 'zwei' },
+  { id: 'one', subjectId: 'german', local: 'jeden', foreign: 'eins' },
+  { id: 'two', subjectId: 'german', local: 'dwa', foreign: 'zwei' },
 ];
 const deck: Deck = {
   id: 'numbers',

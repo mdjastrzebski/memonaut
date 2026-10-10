@@ -23,13 +23,14 @@ export interface Deck {
 
 /** One piece of knowledge, e.g. a word. It can be in any number of Decks within its Subject. */
 export interface Concept {
+  /** Unique across Subjects, e.g. "german/number-3". Learning state is keyed by it, so it must not change. */
   id: string;
   subjectId: string;
-  /** What the learner sees, e.g. "three". */
-  prompt: string;
-  /** What the learner should produce, e.g. "drei". */
-  answer: string;
-  /** Optional extra context shown with the prompt, e.g. "3". */
+  /** The word in the learner's own language, e.g. "trzy". */
+  local: string;
+  /** The word in the language being learned, e.g. "drei". */
+  foreign: string;
+  /** Optional extra context shown with the word, e.g. "3". */
   hint?: string;
 }
 

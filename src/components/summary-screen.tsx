@@ -250,7 +250,7 @@ function WordTile({ session, card, now, style }: WordTileProps) {
         style={style}
         className="flex animate-rise items-baseline justify-between gap-2 rounded-2xl border-2 border-dashed border-foreground/40 px-3 py-2.5"
       >
-        <span className="font-display text-lg font-semibold">{concept.prompt}</span>
+        <span className="font-display text-lg font-semibold">{concept.local}</span>
         {hint}
       </li>
     );
@@ -262,11 +262,11 @@ function WordTile({ session, card, now, style }: WordTileProps) {
       className="flex animate-rise flex-col gap-2 rounded-2xl border-2 border-foreground bg-card p-3 shadow-sticker-sm"
     >
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-sm text-muted-foreground">{concept.prompt}</span>
+        <span className="text-sm text-muted-foreground">{concept.local}</span>
         {hint}
       </div>
       <span className="font-display text-2xl leading-tight font-bold break-words">
-        {concept.answer}
+        {concept.foreign}
       </span>
       <div className="mt-auto flex items-center justify-between gap-2">
         <span className="flex flex-wrap gap-1">
@@ -330,7 +330,7 @@ function SessionSrsTables({ session, now }: { session: Session; now: Date }) {
               return (
                 <TableRow key={card.id} className="tabular-nums">
                   <TableCell>
-                    {concept.prompt} → <span className="font-medium">{concept.answer}</span>
+                    {concept.local} → <span className="font-medium">{concept.foreign}</span>
                   </TableCell>
                   <TableCell>
                     <StateBadge state={card.srs.state} />
@@ -383,7 +383,7 @@ function SessionSrsTables({ session, now }: { session: Session; now: Date }) {
                   <TableCell>
                     +{formatDuration(log.review.getTime() - session.startedAt.getTime())}
                   </TableCell>
-                  <TableCell>{concept.prompt}</TableCell>
+                  <TableCell>{concept.local}</TableCell>
                   <TableCell className={GRADE_STYLES[review.rating].text}>
                     {GRADE_STYLES[review.rating].mark} {review.input}
                   </TableCell>

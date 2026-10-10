@@ -17,7 +17,7 @@ Memonaut is a spaced-repetition learning web app for school kids. See [README.md
 - `src/srs/`: wrapper around `ts-fsrs` (scheduling, previews, retrievability)
 - `src/exercises/`: answer checking per Exercise Type
 - `src/session/`: pure study-session logic (queue, reviews)
-- `src/data/`: preset data sets
+- `src/data/`: learning content as YAML (`<subject>/subject.yaml`, `<subject>/decks/*.yaml`), loaded and validated by `content.ts`
 - `src/components/`: React screens; `ui/` holds shadcn/ui components
 
 ## Conventions

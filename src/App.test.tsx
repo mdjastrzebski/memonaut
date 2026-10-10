@@ -3,15 +3,15 @@ import userEvent from '@testing-library/user-event';
 import { expect, test } from 'vitest';
 
 import App from './App';
-import { germanNumberConcepts } from './data/german-numbers';
+import { content } from './data/content';
 
 function currentConcept() {
-  const prompt = screen.getByRole('heading', { level: 2 }).textContent;
-  return germanNumberConcepts.find((concept) => concept.prompt === prompt)!;
+  const local = screen.getByRole('heading', { level: 2 }).textContent;
+  return content.concepts.find((concept) => concept.local === local)!;
 }
 
 async function retypeAnswer(user: ReturnType<typeof userEvent.setup>) {
-  const { answer } = currentConcept();
+  const { foreign: answer } = currentConcept();
   await user.type(screen.getByRole('textbox', { name: 'Retype answer' }), `${answer}{Enter}`);
 }
 
@@ -22,7 +22,7 @@ test('rates a fast exact answer as Easy and continues on Enter', async () => {
   expect(screen.getByText(/0 answers/)).toBeInTheDocument();
 
   const input = screen.getByRole('textbox', { name: 'Answer' });
-  await user.type(input, `${currentConcept().answer}{Enter}`);
+  await user.type(input, `${currentConcept().foreign}{Enter}`);
   expect(screen.getByRole('status')).toHaveTextContent('Correct and fast!');
   expect(screen.getByRole('status')).toHaveTextContent('Rated Easy');
 
@@ -34,7 +34,7 @@ test('rates an answer with wrong capitalization as Hard and asks to retype it', 
   const user = userEvent.setup();
   render(<App />);
 
-  const { answer } = currentConcept();
+  const { foreign: answer } = currentConcept();
   const capitalized = answer[0].toUpperCase() + answer.slice(1);
   await user.type(screen.getByRole('textbox', { name: 'Answer' }), `${capitalized}{Enter}`);
 
@@ -64,7 +64,7 @@ test('rates a wrong answer as Again and shows it next to the answer', async () =
   const user = userEvent.setup();
   render(<App />);
 
-  const { answer } = currentConcept();
+  const { foreign: answer } = currentConcept();
   await user.type(screen.getByRole('textbox', { name: 'Answer' }), 'falsch{Enter}');
 
   const status = screen.getByRole('status');

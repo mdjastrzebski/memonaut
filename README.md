@@ -41,6 +41,21 @@ Because review state lives on Cards rather than on Decks, studying a unit deck a
 
 Cards of the same Concept are siblings. A study session should avoid showing two siblings close together, so that one exercise doesn't give away the answer to another.
 
+## Content
+
+Learning content lives in YAML files under `src/data/`, one folder per Subject. Only what to learn is stored there; learning state (Cards and Reviews) will be kept separately, keyed by Concept id.
+
+```yaml
+# src/data/german/decks/numbers-0-10.yaml
+id: numbers-0-10
+kind: unit
+name: Numbers 0–10
+concepts:
+  - { id: number-3, local: trzy, foreign: drei, hint: 3 }
+```
+
+A Concept is defined once, in the Deck that introduces it. Other Decks of the same Subject, such as the core Deck, list it under `include: [number-3]`. Ids must stay the same once learners have progress, since learning state is keyed by them. Every value is read as a string, so `null` or `0` need no quotes.
+
 ## Open questions
 
 - Can a Concept exist in no Deck at all, e.g. after its unit is removed, while keeping its review history?

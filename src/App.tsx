@@ -3,11 +3,14 @@ import { useState } from 'react';
 import { ExerciseScreen } from '@/components/exercise-screen';
 import { SummaryScreen } from '@/components/summary-screen';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { german, germanNumberConcepts, germanNumbersDeck } from '@/data/german-numbers';
+import { content } from '@/data/content';
 import { createSession, getCurrentCard, submitReview } from '@/session/session';
 
+const deck = content.decks.find((deck) => deck.id === 'german/numbers-0-10')!;
+const subject = content.subjects.find((subject) => subject.id === deck.subjectId)!;
+
 function startSession() {
-  return createSession({ deck: germanNumbersDeck, concepts: germanNumberConcepts });
+  return createSession({ deck, concepts: content.concepts });
 }
 
 export default function App() {
@@ -47,7 +50,7 @@ export default function App() {
             session={session}
             onReview={(review) => setSession((current) => submitReview(current, review))}
             onEnd={() => setEnded(true)}
-            specialCharacters={german.specialCharacters}
+            specialCharacters={subject.specialCharacters}
             showSpecialCharacters={showSpecialCharacters}
             onToggleSpecialCharacters={() => setShowSpecialCharacters((show) => !show)}
             showSrsDetails={showSrsDetails}
