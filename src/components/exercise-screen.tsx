@@ -1,4 +1,5 @@
-import { useLayoutEffect, useRef, useState, type FormEvent } from 'react';
+import { ChevronDown } from 'lucide-react';
+import { useId, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 
 import { SpecialCharacters } from '@/components/special-characters';
 import { CardStats, RatingPreview, StateBadge } from '@/components/srs-stats';
@@ -34,6 +35,8 @@ interface ExerciseScreenProps {
   specialCharacters?: string[];
   showSpecialCharacters: boolean;
   onToggleSpecialCharacters: () => void;
+  showSrsDetails: boolean;
+  onToggleSrsDetails: () => void;
 }
 
 interface Checked {
@@ -48,7 +51,10 @@ export function ExerciseScreen({
   specialCharacters = [],
   showSpecialCharacters,
   onToggleSpecialCharacters,
+  showSrsDetails,
+  onToggleSrsDetails,
 }: ExerciseScreenProps) {
+  const srsDetailsId = useId();
   const [shownAt] = useState(() => new Date());
   const [input, setInput] = useState('');
   const [checked, setChecked] = useState<Checked | null>(null);
@@ -176,37 +182,58 @@ export function ExerciseScreen({
 
       <section
         aria-label="SRS details"
-        className="flex flex-col gap-4 rounded-xl border border-dashed p-4 text-xs text-muted-foreground"
+        className="rounded-xl border border-dashed text-xs text-muted-foreground"
       >
-        <div>
-          <h2 className="mb-2 font-medium text-foreground">Card memory state (before review)</h2>
-          <CardStats card={card.srs} now={now} />
-        </div>
+        <button
+          type="button"
+          aria-expanded={showSrsDetails}
+          aria-controls={srsDetailsId}
+          // Keep focus in the answer input so Enter still checks and continues.
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={onToggleSrsDetails}
+          className="flex w-full items-center gap-1 rounded-xl p-4 text-left font-medium hover:text-foreground"
+        >
+          <ChevronDown
+            className={cn('size-4 transition-transform', !showSrsDetails && '-rotate-90')}
+          />
+          SRS details
+        </button>
 
-        {earlierReviews.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2">
-            <span>Earlier this session:</span>
-            {earlierReviews.map((review, index) => (
-              <span key={index} className="flex items-center gap-1">
-                {ratingName(review.rating)} → <StateBadge state={review.srsAfter.state} />
-              </span>
-            ))}
+        {showSrsDetails && (
+          <div id={srsDetailsId} className="flex flex-col gap-4 px-4 pb-4">
+            <div>
+              <h2 className="mb-2 font-medium text-foreground">
+                Card memory state (before review)
+              </h2>
+              <CardStats card={card.srs} now={now} />
+            </div>
+
+            {earlierReviews.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2">
+                <span>Earlier this session:</span>
+                {earlierReviews.map((review, index) => (
+                  <span key={index} className="flex items-center gap-1">
+                    {ratingName(review.rating)} → <StateBadge state={review.srsAfter.state} />
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div>
+              <h2 className="font-medium text-foreground">Rating preview</h2>
+              <p>
+                Rated automatically: exact within {formatSeconds(fastLimitMs)} → Easy · exact → Good
+                · wrong case, missing umlaut or one letter off → Hard · otherwise → Again. Cards due
+                within {formatDuration(LEARN_AHEAD_MS)} come back in this session.
+              </p>
+              <RatingPreview
+                card={card.srs}
+                now={now}
+                highlight={grade !== undefined ? [grade] : undefined}
+              />
+            </div>
           </div>
         )}
-
-        <div>
-          <h2 className="font-medium text-foreground">Rating preview</h2>
-          <p>
-            Rated automatically: exact within {formatSeconds(fastLimitMs)} → Easy · exact → Good ·
-            wrong case, missing umlaut or one letter off → Hard · otherwise → Again. Cards due
-            within {formatDuration(LEARN_AHEAD_MS)} come back in this session.
-          </p>
-          <RatingPreview
-            card={card.srs}
-            now={now}
-            highlight={grade !== undefined ? [grade] : undefined}
-          />
-        </div>
       </section>
     </div>
   );

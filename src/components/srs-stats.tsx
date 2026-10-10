@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatDuration, formatNumber, formatPercent, formatRelative } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import {
@@ -73,11 +74,17 @@ export function CardStats({ card, now }: CardStatsProps) {
     <dl className="grid grid-cols-3 gap-x-4 gap-y-3 sm:grid-cols-5">
       {rows.map(([label, value, help]) => (
         <div key={label} className="flex flex-col gap-0.5">
-          <dt
-            title={help}
-            className="w-fit cursor-help underline decoration-dotted underline-offset-2"
-          >
-            {label}
+          <dt>
+            <Tooltip>
+              <TooltipTrigger
+                // Keep focus in the answer input.
+                onMouseDown={(event) => event.preventDefault()}
+                className="cursor-help underline decoration-dotted underline-offset-2"
+              >
+                {label}
+              </TooltipTrigger>
+              <TooltipContent>{help}</TooltipContent>
+            </Tooltip>
           </dt>
           <dd className="font-medium text-foreground tabular-nums">{value}</dd>
         </div>

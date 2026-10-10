@@ -14,7 +14,6 @@ test('rates a fast exact answer as Easy and continues on Enter', async () => {
   const user = userEvent.setup();
   render(<App />);
 
-  expect(screen.getByRole('region', { name: 'SRS details' })).toBeInTheDocument();
   expect(screen.getByText('Reviews: 0')).toBeInTheDocument();
 
   const input = screen.getByRole('textbox', { name: 'Answer' });
@@ -47,6 +46,33 @@ test('rates a wrong answer as Again without asking', async () => {
   expect(screen.getByRole('status')).toHaveTextContent('Not quite.');
   expect(screen.getByRole('status')).toHaveTextContent('Rated Again');
   expect(screen.queryByRole('button', { name: /^(Hard|Good|Easy)/ })).not.toBeInTheDocument();
+});
+
+test('SRS details start collapsed and stay expanded across exercises', async () => {
+  const user = userEvent.setup();
+  render(<App />);
+
+  const toggle = () => screen.getByRole('button', { name: 'SRS details' });
+  expect(toggle()).toHaveAttribute('aria-expanded', 'false');
+  expect(screen.queryByText('Rating preview')).not.toBeInTheDocument();
+
+  await user.click(toggle());
+  expect(toggle()).toHaveAttribute('aria-expanded', 'true');
+  expect(screen.getByText('Rating preview')).toBeInTheDocument();
+
+  await user.hover(screen.getByRole('button', { name: 'Stability' }));
+  expect(await screen.findByRole('tooltip')).toHaveTextContent(
+    'Days until recall probability drops to 90%.',
+  );
+
+  const input = screen.getByRole('textbox', { name: 'Answer' });
+  expect(input).toHaveFocus();
+  await user.type(input, 'falsch{Enter}');
+  await user.keyboard('{Enter}');
+
+  expect(screen.getByText('Reviews: 1')).toBeInTheDocument();
+  expect(toggle()).toHaveAttribute('aria-expanded', 'true');
+  expect(screen.getByText('Rating preview')).toBeInTheDocument();
 });
 
 test('ending the session shows results', async () => {
