@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react';
 
 import { ExerciseScreen } from '@/components/exercise-screen';
+import { SessionMenu } from '@/components/session-menu';
+import { SessionProgress } from '@/components/session-progress';
 import { loadSetupChoice, saveSetupChoice, type SessionSize } from '@/components/setup-choice';
 import { SetupScreen } from '@/components/setup-screen';
 import { SummaryScreen } from '@/components/summary-screen';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { content } from '@/data/content';
-import type { Card } from '@/domain/types';
+import type { Card, Deck } from '@/domain/types';
+import { useActiveTime } from '@/lib/use-active-time';
+import { cn } from '@/lib/utils';
 import { loadProgress, saveProgress } from '@/progress/progress-storage';
 import {
   createSession,
@@ -27,13 +31,16 @@ export default function App() {
     Object.assign({}, ...content.subjects.map((subject) => loadProgress(subject.id))),
   );
   const [sessionSize, setSessionSize] = useState<SessionSize>(initialChoice.sessionSize);
+  const [lastUnitIds, setLastUnitIds] = useState(initialChoice.lastUnitIds);
   const [ended, setEnded] = useState(false);
   const [showSpecialCharacters, setShowSpecialCharacters] = useState(false);
   const [showSrsDetails, setShowSrsDetails] = useState(false);
 
   const subject = content.subjects.find((subject) => subject.id === deck.subjectId)!;
   const finished = session !== null && (ended || !getCurrentCard(session));
+  const exercising = session !== null && !finished;
   const allCards = session ? { ...cards, ...session.cards } : cards;
+  const getActiveMs = useActiveTime(exercising);
 
   const start = () => {
     setCards(allCards);
@@ -59,15 +66,48 @@ export default function App() {
     setSession(next);
   };
 
-  useEffect(() => saveSetupChoice({ deck, sessionSize }), [deck, sessionSize]);
+  // Back to the setup screen; mid-session it asks first, since leaving ends the session.
+  const goHome = () => {
+    if (exercising && !window.confirm('Leave this session? Your answers so far are saved.')) return;
+    setCards(allCards);
+    setSession(null);
+  };
+
+  const selectDeck = (deck: Deck) => {
+    setDeck(deck);
+    if (deck.kind === 'unit') setLastUnitIds({ ...lastUnitIds, [deck.subjectId]: deck.id });
+  };
+
+  useEffect(
+    () => saveSetupChoice({ deck, sessionSize, lastUnitIds }),
+    [deck, sessionSize, lastUnitIds],
+  );
 
   return (
     <TooltipProvider>
       <main className="mx-auto flex min-h-svh max-w-6xl flex-col gap-6 p-4 sm:p-6">
-        <header className="flex items-center gap-3">
-          <Logo />
-          <h1 className="font-display text-2xl font-extrabold tracking-tight">Memonaut</h1>
-          <ThemeToggle />
+        {/* During a session the progress sits in the header, lined up with the exercise card. */}
+        <header
+          className={cn(
+            'flex items-center gap-3',
+            exercising && 'grid grid-cols-[1fr_minmax(0,42rem)_1fr]',
+          )}
+        >
+          <h1 className="font-display text-2xl font-extrabold tracking-tight">
+            <button
+              type="button"
+              onClick={goHome}
+              className="flex cursor-pointer items-center gap-3 rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              <Logo />
+              <span className={cn(exercising && 'max-sm:sr-only')}>Memonaut</span>
+            </button>
+          </h1>
+          {exercising && session && <SessionProgress session={session} />}
+          <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle />
+            {exercising && <SessionMenu onEnd={() => setEnded(true)} />}
+          </div>
         </header>
 
         {session === null ? (
@@ -75,7 +115,8 @@ export default function App() {
             content={content}
             cards={cards}
             deck={deck}
-            onSelectDeck={setDeck}
+            lastUnitIds={lastUnitIds}
+            onSelectDeck={selectDeck}
             sessionSize={sessionSize}
             onSessionSizeChange={setSessionSize}
             onStart={start}
@@ -83,11 +124,8 @@ export default function App() {
         ) : finished ? (
           <SummaryScreen
             session={session}
-            onRestart={start}
-            onChooseSet={() => {
-              setCards(allCards);
-              setSession(null);
-            }}
+            activeMs={getActiveMs()}
+            onNewSession={goHome}
             showSrsDetails={showSrsDetails}
             onToggleSrsDetails={() => setShowSrsDetails((show) => !show)}
           />
@@ -96,7 +134,6 @@ export default function App() {
             key={session.reviews.length}
             session={session}
             onReview={review}
-            onEnd={() => window.confirm('End this session?') && setEnded(true)}
             subject={subject}
             showSpecialCharacters={showSpecialCharacters}
             onToggleSpecialCharacters={() => setShowSpecialCharacters((show) => !show)}

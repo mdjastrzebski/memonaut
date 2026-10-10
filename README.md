@@ -48,14 +48,14 @@ Exercise Types are ordered from easiest: a session queues every `dictation` Card
 Learning content lives in YAML files under `src/data/`, one folder per Subject. Only what to learn is stored there; learning state is kept separately, in the browser's localStorage under one key per Subject (`memonaut:progress:<subject>`), keyed by Concept id and Exercise Type. Each Card's FSRS state is stored compactly. Saving only replaces the Cards that changed, so progress for words no longer in any Deck is kept, and data from a newer app version is never overwritten.
 
 ```yaml
-# src/data/german/decks/numbers-0-10.yaml
-id: numbers-0-10
-name: Numbers 0–10
+# src/data/german/decks/kapitel-0.yaml
+id: kapitel-0
+name: Kapitel 0
 concepts:
   - { id: number-3, local: trzy, foreign: drei, hint: 3, core: true }
 ```
 
-Each file under `decks/` is a unit Deck. A Concept can appear in several units of the same Subject, but must be defined the same way in each. The Subject's core Deck is built from every Concept marked `core: true` in at least one unit, listed once, in the order they first appear. Ids must stay the same once learners have progress, since learning state is keyed by them. Every value is read as a string, so `null` or `0` need no quotes.
+Each file under `decks/` is a unit Deck. A Concept can appear in several units of the same Subject, but must be defined the same way in each. The Subject's core Deck is built from the Concepts in an optional `core.yaml` next to `subject.yaml` (a `concepts:` list, without `core:` flags; it is not a unit, so it isn't offered on its own), followed by every Concept marked `core: true` in at least one unit, each listed once, in the order they first appear. Ids must stay the same once learners have progress, since learning state is keyed by them. Every value is read as a string, so `null` or `0` need no quotes.
 
 ## Open questions
 

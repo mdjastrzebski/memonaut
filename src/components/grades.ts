@@ -29,7 +29,7 @@ export const GRADE_STYLES: Record<
   [Rating.Easy]: {
     mark: '✓',
     text: 'text-correct-ink',
-    fill: 'bg-correct',
+    fill: 'bg-fast',
     tint: 'bg-correct/20',
     border: 'border-correct',
   },
@@ -49,3 +49,10 @@ export function getWordProgress(states: State[]): Progress {
   if (progress.every((value) => value === 'learned')) return 'learned';
   return progress.every((value) => value === 'new') ? 'new' : 'learning';
 }
+
+/** Learner-facing names for each Progress, shared by every screen. */
+export const PROGRESS_LABELS: Record<Progress, string> = {
+  learned: 'Learned',
+  learning: 'Learning',
+  new: 'New',
+};
