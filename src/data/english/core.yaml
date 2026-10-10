@@ -1,0 +1,58 @@
+concepts:
+  - { id: red, local: czerwony, foreign: red }
+  - { id: blue, local: niebieski, foreign: blue }
+  - { id: green, local: zielony, foreign: green }
+  - { id: yellow, local: żółty, foreign: yellow }
+  - { id: orange, local: pomarańczowy, foreign: orange }
+  - { id: purple, local: fioletowy, foreign: purple }
+  - { id: pink, local: różowy, foreign: pink }
+  - { id: brown, local: brązowy, foreign: brown }
+  - { id: black, local: czarny, foreign: black }
+  - { id: white, local: biały, foreign: white }
+  - { id: grey, local: szary, foreign: grey }
+  - { id: hello, local: cześć, foreign: hello }
+  - { id: goodbye, local: do widzenia, foreign: goodbye }
+  - { id: bye, local: pa, foreign: bye }
+  - { id: good-morning, local: dzień dobry (rano), foreign: good morning }
+  - { id: good-afternoon, local: dzień dobry (po południu), foreign: good afternoon }
+  - { id: good-evening, local: dobry wieczór, foreign: good evening }
+  - { id: good-night, local: dobranoc, foreign: good night }
+  - { id: please, local: proszę, foreign: please }
+  - { id: thank-you, local: dziękuję, foreign: thank you }
+  - { id: sorry, local: przepraszam, foreign: sorry }
+  - { id: yes, local: tak, foreign: yes }
+  - { id: no, local: nie, foreign: no }
+  - { id: how-are-you, local: jak się masz?, foreign: how are you? }
+  - { id: whats-your-name, local: jak masz na imię?, foreign: what's your name? }
+  - { id: number-0, local: zero, foreign: zero, hint: 0 }
+  - { id: number-1, local: jeden, foreign: one, hint: 1 }
+  - { id: number-2, local: dwa, foreign: two, hint: 2 }
+  - { id: number-3, local: trzy, foreign: three, hint: 3 }
+  - { id: number-4, local: cztery, foreign: four, hint: 4 }
+  - { id: number-5, local: pięć, foreign: five, hint: 5 }
+  - { id: number-6, local: sześć, foreign: six, hint: 6 }
+  - { id: number-7, local: siedem, foreign: seven, hint: 7 }
+  - { id: number-8, local: osiem, foreign: eight, hint: 8 }
+  - { id: number-9, local: dziewięć, foreign: nine, hint: 9 }
+  - { id: number-10, local: dziesięć, foreign: ten, hint: 10 }
+  - { id: number-11, local: jedenaście, foreign: eleven, hint: 11 }
+  - { id: number-12, local: dwanaście, foreign: twelve, hint: 12 }
+  - { id: number-13, local: trzynaście, foreign: thirteen, hint: 13 }
+  - { id: number-14, local: czternaście, foreign: fourteen, hint: 14 }
+  - { id: number-15, local: piętnaście, foreign: fifteen, hint: 15 }
+  - { id: number-16, local: szesnaście, foreign: sixteen, hint: 16 }
+  - { id: number-17, local: siedemnaście, foreign: seventeen, hint: 17 }
+  - { id: number-18, local: osiemnaście, foreign: eighteen, hint: 18 }
+  - { id: number-19, local: dziewiętnaście, foreign: nineteen, hint: 19 }
+  - { id: number-20, local: dwadzieścia, foreign: twenty, hint: 20 }
+  - { id: number-30, local: trzydzieści, foreign: thirty, hint: 30 }
+  - { id: number-40, local: czterdzieści, foreign: forty, hint: 40 }
+  - { id: number-50, local: pięćdziesiąt, foreign: fifty, hint: 50 }
+  - { id: number-60, local: sześćdziesiąt, foreign: sixty, hint: 60 }
+  - { id: number-70, local: siedemdziesiąt, foreign: seventy, hint: 70 }
+  - { id: number-80, local: osiemdziesiąt, foreign: eighty, hint: 80 }
+  - { id: number-90, local: dziewięćdziesiąt, foreign: ninety, hint: 90 }
+  - { id: number-100, local: sto, foreign: one hundred, hint: 100 }
+  - { id: number-1000, local: tysiąc, foreign: one thousand, hint: 1000 }
+  - { id: number-2000, local: dwa tysiące, foreign: two thousand, hint: 2000 }
+  - { id: number-1000000, local: milion, foreign: one million, hint: 1 000 000 }

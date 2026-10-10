@@ -442,7 +442,7 @@ test('switching subject selects its core set and English has no special characte
   expect(screen.queryByRole('menu')).not.toBeInTheDocument();
   await user.click(screen.getByRole('radio', { name: 'English' }));
 
-  await pickUnit(user, 'Colours');
+  await pickUnit(user, 'Days, months and seasons');
   await user.click(screen.getByRole('button', { name: 'Start session' }));
   expect(screen.queryByRole('button', { name: 'Show special characters' })).not.toBeInTheDocument();
 });
