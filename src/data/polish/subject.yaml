@@ -1,0 +1,9 @@
+id: polish
+name: Polish
+emoji: 🇵🇱
+foreignLanguage: pl-PL
+specialCharacters: [ą, ć, ę, ł, ń, ó, ś, ź, ż]
+# Marked in a right answer: the classic ortografia choices ó/u, rz/ż and ch/h.
+trickySpellings: [ó, u, rz, ż, ch, h]
+# Spelling practice (ortografia): words have no translation.
+exerciseTypes: [dictation]

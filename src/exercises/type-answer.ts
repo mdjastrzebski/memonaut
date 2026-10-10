@@ -34,18 +34,28 @@ export function getFastLimitMs(answer: string): number {
   return FAST_BASE_MS + FAST_PER_CHAR_MS * answer.length + FAST_PER_SPECIAL_CHAR_MS * specialChars;
 }
 
+interface GradeOptions {
+  /** Forgive only wrong capitalization, e.g. in spelling practice. */
+  strict?: boolean;
+}
+
 /**
  * Rates a typed answer automatically, after tidying up both answers with `normalizeAnswer`:
  * - Easy: exact and typed within the fast limit
  * - Good: exact
  * - Hard: exact after forgiving any combination of wrong capitalization, missing umlauts or ß
- *   ("Funf", "fuenf") and one letter off
+ *   ("Funf", "fuenf") and one letter off; only wrong capitalization when `strict`
  * - Again: anything else
  *
  * Forgiven mistakes accumulate: the answer is compared with all of them forgiven at once, and
  * each mistake is reported if it still makes a difference when the others are forgiven.
  */
-export function gradeAnswer(expected: string, input: string, elapsedMs: number): AnswerResult {
+export function gradeAnswer(
+  expected: string,
+  input: string,
+  elapsedMs: number,
+  { strict = false }: GradeOptions = {},
+): AnswerResult {
   const result = (grade: Grade, issues: AnswerIssue[] = []) => ({ grade, issues, elapsedMs });
 
   const target = normalizeAnswer(expected);
@@ -55,6 +65,10 @@ export function gradeAnswer(expected: string, input: string, elapsedMs: number):
   }
 
   const lower = (value: string) => value.toLowerCase();
+  if (strict) {
+    return lower(given) === lower(target) ? result(Rating.Hard, ['case']) : result(Rating.Again);
+  }
+
   const remaining = distanceIgnoringDiacritics(lower(given), lower(target));
   if (remaining > 1) {
     return result(Rating.Again);

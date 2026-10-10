@@ -50,6 +50,7 @@ export default function App() {
         concepts: content.concepts,
         cards: allCards,
         maxConcepts: sessionSize ?? undefined,
+        exerciseTypes: subject.exerciseTypes,
       }),
     );
     setEnded(false);

@@ -122,16 +122,20 @@ export function isConceptDue(cards: Card[], at: Date): boolean {
   );
 }
 
-/** How many of the Concepts need practice by the end of the day of `now`, in local time. */
+/**
+ * How many of the Concepts need practice by the end of the day of `now`, in local time, with their
+ * Subject's Exercise Types.
+ */
 export function countDueToday(
   conceptIds: string[],
   cards: Record<string, Card>,
   now: Date,
+  exerciseTypes = EXERCISE_TYPES,
 ): number {
   const endOfDay = new Date(now);
   endOfDay.setHours(24, 0, 0, 0);
   return conceptIds.filter((conceptId) =>
-    isConceptDue(getConceptCards(conceptId, cards, now), endOfDay),
+    isConceptDue(getConceptCards(conceptId, cards, now, exerciseTypes), endOfDay),
   ).length;
 }
 

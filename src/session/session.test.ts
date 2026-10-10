@@ -198,4 +198,6 @@ test('counts words due by the end of the day, or with an exercise not practised 
   );
 
   expect(countDueToday(['one', 'two', 'three', 'four'], cards, morning)).toBe(2);
+  // Without translation exercises, a word practised only in dictation isn't due.
+  expect(countDueToday(['one', 'two', 'three', 'four'], cards, morning, ['dictation'])).toBe(1);
 });

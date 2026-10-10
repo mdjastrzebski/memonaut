@@ -91,3 +91,28 @@ describe('wrong answers are Again', () => {
     expect(gradeAnswer(expected, input, 0).grade).toBe(Rating.Again);
   });
 });
+
+describe('strict spelling forgives only wrong capitalization', () => {
+  const strict = { strict: true };
+
+  test('exact answers are rated as usual', () => {
+    expect(gradeAnswer('żółw', 'żółw', 1000, strict).grade).toBe(Rating.Easy);
+    expect(gradeAnswer('żółw', 'żółw', SLOW, strict).grade).toBe(Rating.Good);
+  });
+
+  test('wrong capitalization is Hard', () => {
+    expect(gradeAnswer('Bałtyk', 'bałtyk', SLOW, strict)).toMatchObject({
+      grade: Rating.Hard,
+      issues: ['case'],
+    });
+  });
+
+  test.each([
+    ['żółw', 'zolw'],
+    ['góra', 'gura'],
+    ['morze', 'może'],
+    ['ja karzę', 'ja każę'],
+  ])('%s ← %s is Again', (expected, input) => {
+    expect(gradeAnswer(expected, input, SLOW, strict).grade).toBe(Rating.Again);
+  });
+});

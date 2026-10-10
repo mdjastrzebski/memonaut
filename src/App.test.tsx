@@ -65,12 +65,16 @@ async function startEssentialsSession(user: ReturnType<typeof userEvent.setup>) 
   await user.click(screen.getByRole('button', { name: 'Start session' }));
 }
 
-/** The word read aloud in a dictation exercise, or the one shown in a translation exercise. */
+/**
+ * The word read aloud in a dictation exercise, or the one shown in a translation exercise. German
+ * words all have a local word.
+ */
 function currentConcept() {
   const heading = screen.queryByRole('heading', { level: 2 });
-  return heading
+  const concept = heading
     ? essentialConcepts.find((concept) => concept.local === heading.textContent)!
     : essentialConcepts.find((concept) => concept.foreign === spoken.at(-1))!;
+  return { ...concept, local: concept.local! };
 }
 
 /** The session progress bar's value, in percent. */
@@ -381,7 +385,7 @@ test('setup offers each subject with its core set selected first', async () => {
     within(subjects)
       .getAllByRole('radio')
       .map((radio) => radio.getAttribute('aria-label')),
-  ).toEqual(['English', 'German']);
+  ).toEqual(['English', 'German', 'Polish']);
 
   await user.click(screen.getByRole('radio', { name: 'German' }));
   expect(screen.getByRole('radio', { name: 'Essentials' })).toBeChecked();
@@ -503,6 +507,30 @@ test('a session practises 10 words by default, or as many as chosen', async () =
   await user.click(screen.getByRole('button', { name: 'Start session' }));
   await finishSession(user);
   expect(sessionWords()).toHaveLength(10);
+});
+
+test('Polish practises spelling with dictation only', async () => {
+  const user = userEvent.setup();
+  render(<App />);
+
+  await user.click(screen.getByRole('radio', { name: 'Polish' }));
+  expect(unitTile('100 popularnych trudnych słów')).toBeChecked();
+  await user.click(screen.getByRole('radio', { name: '5' }));
+  expect(screen.getByText(/5 words · 5 exercises/)).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: 'Start session' }));
+  expect(screen.getByRole('group', { name: 'Special characters' })).toHaveTextContent('ż');
+
+  let dictations = 0;
+  while (screen.queryByRole('button', { name: 'Listen' })) {
+    await user.type(screen.getByRole('textbox', { name: 'Answer' }), `${spoken.at(-1)}{Enter}`);
+    expect(screen.getByRole('status')).toHaveTextContent('Easy');
+    await user.keyboard('{Enter}');
+    dictations++;
+  }
+
+  expect(dictations).toBe(5);
+  expect(screen.getByText(/Session results/)).toBeInTheDocument();
+  expect(sessionWords()).toHaveLength(5);
 });
 
 test('remembers the subject, set and words per session after a reload', async () => {

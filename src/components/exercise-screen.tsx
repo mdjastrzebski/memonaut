@@ -15,10 +15,11 @@ import { CardStats, RatingPreview, SrsDetails, StateBadge } from '@/components/s
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { Subject } from '@/domain/types';
+import { splitTrickySpellings } from '@/exercises/tricky-spellings';
 import { getFastLimitMs, gradeAnswer, type AnswerResult } from '@/exercises/type-answer';
 import { formatDuration, formatSeconds } from '@/lib/format';
 import { playCorrect } from '@/lib/sounds';
-import { speak } from '@/lib/speech';
+import { speak, stopHint } from '@/lib/speech';
 import { cn } from '@/lib/utils';
 import {
   getCurrentCard,
@@ -75,7 +76,10 @@ export function ExerciseScreen({
   const card = getCurrentCard(session);
   const concept = card && session.concepts[card.conceptId];
   const dictation = card?.exerciseType === 'dictation';
-  const playWord = () => concept && speak(concept.foreign, subject.foreignLanguage);
+  // In dictation, a spoken hint follows the word to tell it apart from words that sound the same.
+  const playWord = () =>
+    concept &&
+    speak(concept.foreign, subject.foreignLanguage, dictation ? concept.spokenHint : undefined);
 
   // Read the word aloud as soon as a dictation exercise appears. The ref keeps StrictMode's second
   // effect run from cancelling and queueing it again.
@@ -138,8 +142,12 @@ export function ExerciseScreen({
       if (input.trim() === '') return;
       const at = new Date();
       const elapsedMs = at.getTime() - shownAt.getTime();
-      const result = gradeAnswer(concept.foreign, input, elapsedMs);
+      const result = gradeAnswer(concept.foreign, input, elapsedMs, {
+        strict: session.deck.strictSpelling,
+      });
       setChecked({ result, at });
+      // Once answered, a hint still to come would only talk over the feedback or the next word.
+      stopHint();
       if (result.grade === Rating.Good || result.grade === Rating.Easy) playCorrect();
       // In translation, the learner hears the foreign word once they've typed it.
       if (!dictation) playWord();
@@ -197,7 +205,8 @@ export function ExerciseScreen({
                 grade={checked.result.grade}
                 input={input}
                 answer={concept.foreign}
-                meaning={concept.local}
+                meaning={concept.local ?? concept.spokenHint}
+                trickySpellings={subject.trickySpellings}
               />
               <p className="-mb-2 font-semibold">Now type the answer to continue:</p>
               <div className="relative">
@@ -285,7 +294,8 @@ export function ExerciseScreen({
                 grade={checked.result.grade}
                 input={input}
                 answer={concept.foreign}
-                meaning={concept.local}
+                meaning={concept.local ?? concept.spokenHint}
+                trickySpellings={subject.trickySpellings}
               />
               <Button type="submit" variant="cta" className="h-13 rounded-2xl text-lg">
                 Continue <ArrowRight className="size-5" />
@@ -327,9 +337,12 @@ export function ExerciseScreen({
         <div>
           <h3 className="font-medium text-foreground">Rating preview</h3>
           <p>
-            Rated automatically: exact within {formatSeconds(fastLimitMs)} → Easy · exact → Good ·
-            wrong case, missing umlaut or one letter off → Hard · otherwise → Again. Cards due
-            within {formatDuration(LEARN_AHEAD_MS)} come back in this session.
+            Rated automatically: exact within {formatSeconds(fastLimitMs)} → Easy · exact → Good ·{' '}
+            {session.deck.strictSpelling
+              ? 'wrong case'
+              : 'wrong case, missing umlaut or one letter off'}{' '}
+            → Hard · otherwise → Again. Cards due within {formatDuration(LEARN_AHEAD_MS)} come back
+            in this session.
           </p>
           <RatingPreview card={card.srs} now={now} highlight={grade} />
         </div>
@@ -358,15 +371,21 @@ interface FeedbackProps {
   grade: Grade;
   input: string;
   answer: string;
-  /** The local word, shown with the result. */
-  meaning: string;
+  /** The local word, or else the spoken hint, shown with the result. */
+  meaning?: string;
+  /** Marked in a right answer. */
+  trickySpellings?: string[];
 }
 
-/** The result as an icon, the answer to compare after a mistake, and the word's meaning. */
-function Feedback({ grade, input, answer, meaning }: FeedbackProps) {
+/**
+ * The result as an icon, the answer to compare after a mistake or else with its tricky spellings
+ * marked, and the word's meaning.
+ */
+function Feedback({ grade, input, answer, meaning, trickySpellings }: FeedbackProps) {
   const style = GRADE_STYLES[grade];
   const Icon = GRADE_ICONS[grade];
   const wrong = grade === Rating.Hard || grade === Rating.Again;
+  const spelled = !wrong && trickySpellings !== undefined;
 
   return (
     <div
@@ -391,20 +410,40 @@ function Feedback({ grade, input, answer, meaning }: FeedbackProps) {
 
       <div className="flex min-w-0 flex-col gap-1">
         {wrong && <AnswerComparison input={input} answer={answer} shake={grade === Rating.Again} />}
-        <p
-          className={cn(
-            'flex items-center gap-2 font-display font-bold break-words',
-            wrong ? 'text-lg text-muted-foreground' : 'text-2xl',
-          )}
-        >
-          <span aria-hidden className="shrink-0 leading-none">
-            🇵🇱
-          </span>
-          <span className="sr-only">means</span>
-          <span className="min-w-0">{meaning}</span>
-        </p>
+        {spelled && <SpelledAnswer answer={answer} trickySpellings={trickySpellings} />}
+        {meaning && (
+          <p
+            className={cn(
+              'flex items-center gap-2 font-display font-bold break-words',
+              wrong || spelled ? 'text-lg text-muted-foreground' : 'text-2xl',
+            )}
+          >
+            <span aria-hidden className="shrink-0 leading-none">
+              🇵🇱
+            </span>
+            <span className="sr-only">means</span>
+            <span className="min-w-0">{meaning}</span>
+          </p>
+        )}
       </div>
     </div>
+  );
+}
+
+/** The answer with its tricky spellings marked, e.g. "bo[h]ater". */
+function SpelledAnswer({ answer, trickySpellings }: { answer: string; trickySpellings: string[] }) {
+  return (
+    <p className="font-display text-2xl font-bold break-words whitespace-pre-wrap">
+      {splitTrickySpellings(answer, trickySpellings).map(({ text, tricky }, index) =>
+        tricky ? (
+          <mark key={index} className="rounded-md bg-highlight px-0.5 text-foreground">
+            {text}
+          </mark>
+        ) : (
+          <span key={index}>{text}</span>
+        ),
+      )}
+    </p>
   );
 }
 

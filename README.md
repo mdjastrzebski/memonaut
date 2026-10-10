@@ -2,7 +2,7 @@
 
 Memonaut is a learning web app for school kids, built on spaced repetition. It helps a learner keep what they learn in school subjects, such as English, German, Polish or Przyroda, by scheduling each piece of knowledge for review just before it would be forgotten.
 
-> **Status:** early prototype. The concepts below are settled. Pick a subject (German or English) and its core set or a unit, then study it: dictation then translation, FSRS scheduling. Each Card's review state is saved in the browser after every answer; the setup screen shows how many words are due today.
+> **Status:** early prototype. The concepts below are settled. Pick a subject (German, English or Polish spelling) and its core set or a unit, then study it: dictation then translation, FSRS scheduling. Each Card's review state is saved in the browser after every answer; the setup screen shows how many words are due today.
 
 ## Goals
 
@@ -43,6 +43,8 @@ Cards of the same Concept are siblings. A study session should avoid showing two
 
 Exercise Types are ordered from easiest: a session queues every `dictation` Card (hear the foreign word, type how it's spelled) before any `translation` Card (see the local word, type the foreign one). This also keeps siblings apart.
 
+A Subject can practise only some Exercise Types. Polish spelling (ortografia) uses only `dictation`: its words have nothing to translate. In dictation, words that sound the same, such as _morze_ and _może_, are told apart by a spoken hint read aloud after the word, e.g. "zbiornik słonej wody".
+
 ## Content
 
 Learning content lives in YAML files under `src/data/`, one folder per Subject. Only what to learn is stored there; learning state is kept separately, in the browser's localStorage under one key per Subject (`memonaut:progress:<subject>`), keyed by Concept id and Exercise Type. Each Card's FSRS state is stored compactly. Saving only replaces the Cards that changed, so progress for words no longer in any Deck is kept, and data from a newer app version is never overwritten.
@@ -54,6 +56,25 @@ name: Kapitel 0
 concepts:
   - { id: number-3, local: trzy, foreign: drei, hint: 3, core: true }
 ```
+
+```yaml
+# src/data/polish/subject.yaml
+id: polish
+name: Polish
+foreignLanguage: pl-PL
+exerciseTypes: [dictation] # every Exercise Type if left out
+
+# src/data/polish/decks/400-trudnych-slow.yaml
+id: 400-trudnych-slow
+name: 400 trudnych słów
+strictSpelling: true
+concepts:
+  - { id: morze, foreign: morze, spokenHint: zbiornik słonej wody }
+```
+
+`hint` is shown on screen in translation only, since it could give the meaning away in dictation; `spokenHint` is read aloud in dictation and must be in the language being learned. `local` may be left out only in a Subject without `translation`.
+
+Answers are rated automatically. By default an almost-correct answer (wrong capitalization, a missing umlaut or one letter off) is rated Hard. A Deck with `strictSpelling: true`, like the Polish spelling sets, forgives only wrong capitalization, so _zolw_ for _żółw_ or _może_ for _morze_ is wrong. For the core Deck, set it in `core.yaml`. A Subject's `trickySpellings`, e.g. `[ó, u, rz, ż, ch, h]` for Polish, are marked in a right answer, to remind which spellings it got right.
 
 Each file under `decks/` is a unit Deck. A Concept can appear in several units of the same Subject, but must be defined the same way in each. The Subject's core Deck is built from the Concepts in an optional `core.yaml` next to `subject.yaml` (a `concepts:` list, without `core:` flags; it is not a unit, so it isn't offered on its own), followed by every Concept marked `core: true` in at least one unit, each listed once, in the order they first appear. Ids must stay the same once learners have progress, since learning state is keyed by them. Every value is read as a string, so `null` or `0` need no quotes.
 
@@ -74,4 +95,4 @@ pnpm validate   # typecheck, lint, test and format check
 
 ## Related
 
-- [memo-bot](https://github.com/mdjastrzebski/memo-bot): an earlier spelling-practice app with a quiz flow and simple spaced repetition.
+- [memo-bot](https://github.com/mdjastrzebski/memo-bot): an earlier spelling-practice app with a quiz flow and simple spaced repetition. The Polish spelling word lists come from it.

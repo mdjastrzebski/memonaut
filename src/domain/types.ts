@@ -12,6 +12,10 @@ export interface Subject {
   foreignLanguage: string;
   /** Characters offered on the on-screen keyboard, e.g. German umlauts. */
   specialCharacters?: string[];
+  /** How its Concepts are practised, easiest first, e.g. only dictation for Polish spelling. */
+  exerciseTypes: ExerciseType[];
+  /** Spellings marked in a right answer, to remind which ones it got right, e.g. Polish "rz". */
+  trickySpellings?: string[];
 }
 
 export type DeckKind = 'unit' | 'core';
@@ -23,6 +27,11 @@ export interface Deck {
   kind: DeckKind;
   name: string;
   conceptIds: string[];
+  /**
+   * Rates answers strictly, as spelling practice should: only wrong capitalization is forgiven, not
+   * missing diacritics (e.g. "zolw" for "żółw") or a letter off ("gura" for "góra").
+   */
+  strictSpelling?: boolean;
 }
 
 /** One piece of knowledge, e.g. a word. It can be in any number of Decks within its Subject. */
@@ -30,12 +39,20 @@ export interface Concept {
   /** Unique across Subjects, e.g. "german/number-3". Learning state is keyed by it, so it must not change. */
   id: string;
   subjectId: string;
-  /** The word in the learner's own language, e.g. "trzy". */
-  local: string;
-  /** The word in the language being learned, e.g. "drei". */
+  /**
+   * The word in the learner's own language, e.g. "trzy". Left out where there's nothing to
+   * translate, e.g. in Polish spelling, whose Subject has no translation exercises.
+   */
+  local?: string;
+  /** The word in the language being learned, e.g. "drei" or, for Polish spelling, "może". */
   foreign: string;
-  /** Optional extra context shown with the word, e.g. "3". */
+  /** Optional extra context shown with the word in translation, e.g. "3". */
   hint?: string;
+  /**
+   * Optional words read aloud after the word in dictation, in the language being learned, to tell
+   * apart words that sound the same, e.g. "zbiornik słonej wody" for "morze" (not "może").
+   */
+  spokenHint?: string;
 }
 
 /**
