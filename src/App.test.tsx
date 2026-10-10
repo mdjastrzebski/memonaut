@@ -93,7 +93,7 @@ function sessionWords() {
 }
 
 async function finishSession(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: 'Session menu' }));
+  await user.click(screen.getByRole('button', { name: 'Menu' }));
   await user.click(screen.getByRole('menuitem', { name: 'Finish now' }));
 }
 
@@ -342,7 +342,7 @@ test('Enter on a focused menu item picks it instead of checking the answer', asy
   await startEssentialsSession(user);
 
   await user.type(screen.getByRole('textbox', { name: 'Answer' }), 'falsch');
-  await user.click(screen.getByRole('button', { name: 'Session menu' }));
+  await user.click(screen.getByRole('button', { name: 'Menu' }));
   screen.getByRole('menuitem', { name: 'Finish now' }).focus();
   await user.keyboard('{Enter}');
   expect(screen.getByText(/Session results/)).toBeInTheDocument();

@@ -1,48 +1,303 @@
+import { useSyncExternalStore } from 'react';
+
 /** Pause between a word and its spoken hint, as in memo-bot. */
 export const HINT_DELAY_MS = 700;
 
+/** A parent's ElevenLabs API key, kept on this device only. */
+const KEY_STORAGE_KEY = 'memonaut:elevenlabs-key';
+const ELEVENLABS_TTS_URL = 'https://api.elevenlabs.io/v1/text-to-speech';
+const ELEVENLABS_MODEL_ID = 'eleven_multilingual_v2';
+// Voices and context sentences picked in memo-bot by ear, per language.
+const DEFAULT_VOICE_ID = 'TX3LPaxmHKxFdv7VOQHJ';
+const VOICE_IDS: Record<string, string> = {
+  'de-DE': 'TX3LPaxmHKxFdv7VOQHJ',
+  'en-GB': 'JBFqnCBsd6RMkjVDRZzb',
+  'en-US': 'TX3LPaxmHKxFdv7VOQHJ',
+  'es-ES': 'JBFqnCBsd6RMkjVDRZzb',
+  'fr-FR': 'JBFqnCBsd6RMkjVDRZzb',
+  'it-IT': 'SAz9YHcvj6GT2YYXdXww',
+  'pl-PL': 'TX3LPaxmHKxFdv7VOQHJ',
+  'pt-PT': 'SAz9YHcvj6GT2YYXdXww',
+};
+/** Said "before" the word, so a short word is pronounced in the right language. */
+const PREVIOUS_TEXTS: Record<string, string> = {
+  'de-DE': 'Das nächste Wort ist auf Deutsch.',
+  'en-GB': 'The next word is in British English.',
+  'en-US': 'The next word is in American English.',
+  'es-ES': 'La siguiente palabra está en español.',
+  'fr-FR': 'Le mot suivant est en français.',
+  'it-IT': 'La prossima parola è in italiano.',
+  'pl-PL': 'Następne słowo jest po polsku.',
+  'pt-PT': 'A próxima palavra está em português.',
+};
+
+/**
+ * ElevenLabs audio is mastered much quieter than browser voices, so each clip is brought to this
+ * loudness (RMS of its spoken parts, about -14 dBFS), with a limiter catching the peaks.
+ */
+const TARGET_RMS = 0.2;
+/** Parts quieter than this (about -40 dBFS) are pauses, left out when measuring loudness. */
+const SILENCE_RMS = 0.01;
+/** Keeps an almost silent clip from being blown up into noise. */
+const MAX_GAIN = 8;
+
+/**
+ * Which voice reads words aloud: the browser's ("off"), ElevenLabs' ("on"), or the browser's again
+ * because ElevenLabs rejected the key or ran out of credits ("paused").
+ */
+export type VoiceStatus = 'off' | 'on' | 'paused';
+
+const listeners = new Set<() => void>();
+/** The key ElevenLabs rejected; a new key turns it back on. Not saved, so a reload retries. */
+let rejectedKey: string | null = null;
+interface Clip {
+  buffer: AudioBuffer;
+  /** Brings the clip to the target loudness. */
+  gain: number;
+}
+
+/** ElevenLabs audio per language and word, so replays don't use credits again. */
+const audioCache = new Map<string, Promise<Clip | null>>();
+/** The word last asked for while ElevenLabs is on; a newer one stops it. */
+let current: { id: string; source: AudioBufferSourceNode | null; busy: boolean } | null = null;
+/** Created on first use, with a limiter all clips play through. */
+let audio: { context: AudioContext; output: AudioNode } | null = null;
 /** The word last queued; kept referenced so Chrome doesn't garbage-collect it mid-speech. */
 let latest: SpeechSynthesisUtterance | null = null;
-/** The word whose hint is still to be read once it ends. */
-let hintPending: SpeechSynthesisUtterance | null = null;
+/** The word, an utterance or an ElevenLabs request, whose hint is still to be read once it ends. */
+let hintPending: object | null = null;
 let hintTimer: ReturnType<typeof setTimeout> | undefined;
+
+function loadKey() {
+  try {
+    return localStorage.getItem(KEY_STORAGE_KEY)?.trim() || null;
+  } catch {
+    // Storage can be blocked, e.g. in private mode; the browser's voice is then used.
+    return null;
+  }
+}
+
+function notify() {
+  listeners.forEach((listener) => listener());
+}
+
+export function getVoiceStatus(): VoiceStatus {
+  const key = loadKey();
+  if (!key) return 'off';
+  return key === rejectedKey ? 'paused' : 'on';
+}
+
+export function useVoiceStatus() {
+  return useSyncExternalStore((listener) => {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
+  }, getVoiceStatus);
+}
+
+/** Saves the key and turns ElevenLabs on. Returns false when it can't be saved. */
+export function saveElevenLabsKey(key: string) {
+  try {
+    localStorage.setItem(KEY_STORAGE_KEY, key.trim());
+  } catch {
+    return false;
+  }
+  // Saving the same key again retries it, e.g. after buying more credits.
+  rejectedKey = null;
+  notify();
+  return true;
+}
+
+/** Forgets the key and goes back to the browser's voice. */
+export function removeElevenLabsKey() {
+  try {
+    localStorage.removeItem(KEY_STORAGE_KEY);
+  } catch {
+    return false;
+  }
+  notify();
+  return true;
+}
 
 /**
  * Reads `text` aloud in the language given as a BCP 47 tag, e.g. "de-DE", then `hint` after a short
- * pause, e.g. "zbiornik słonej wody" after "morze". Does nothing where the browser has no speech
- * synthesis, or while the same word is still being read or waiting to be.
- *
- * Deliberately minimal, like memo-bot's fallback that works in Brave: no `cancel()` and no voice
- * picked from `getVoices()`, which Brave alters for fingerprinting protection.
+ * pause, e.g. "zbiornik słonej wody" after "morze". Uses ElevenLabs when a key is saved, else, or
+ * when that fails, the browser's voice.
  */
 export function speak(text: string, lang: string, hint?: string) {
-  if (!('speechSynthesis' in globalThis)) return;
-
-  const busy = speechSynthesis.speaking || speechSynthesis.pending;
-  if (busy && latest?.text === text && latest.lang === lang) return;
-
-  stopHint();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = lang;
-  utterance.rate = 0.9;
-  utterance.onerror = (event) => {
-    // "not-allowed" means the page hasn't been interacted with yet.
-    console.warn(`Could not read "${text}" aloud: ${event.error}`);
-  };
-  if (hint) {
-    hintPending = utterance;
-    utterance.onend = () => {
-      // Skipped once another word was queued or the hint was stopped.
-      if (hintPending !== utterance || latest !== utterance) return;
-      hintTimer = setTimeout(() => speak(hint, lang), HINT_DELAY_MS);
-    };
-  }
-  latest = utterance;
-  speechSynthesis.speak(utterance);
+  const key = loadKey();
+  const output = key && key !== rejectedKey ? getAudioOutput() : null;
+  if (key && output) void speakWithElevenLabs(text, lang, hint, key, output);
+  else speakWithBrowser(text, lang, hint);
 }
 
 /** Keeps a hint not read yet from being read, e.g. once its exercise is gone. */
 export function stopHint() {
   hintPending = null;
   clearTimeout(hintTimer);
+}
+
+/** Starts reading a new word: drops any earlier hint, and returns what to call once it ends. */
+function startWord(word: object, lang: string, hint: string | undefined) {
+  stopHint();
+  if (!hint) return () => {};
+  hintPending = word;
+  return () => {
+    // Skipped once another word was started or the hint was stopped.
+    if (hintPending !== word) return;
+    hintPending = null;
+    hintTimer = setTimeout(() => speak(hint, lang), HINT_DELAY_MS);
+  };
+}
+
+/** The shared audio context, resumed here since browsers only allow that after a tap or key. */
+function getAudioOutput() {
+  if (!audio) {
+    if (!('AudioContext' in globalThis)) return null;
+    const context = new AudioContext();
+    const limiter = context.createDynamicsCompressor();
+    limiter.threshold.value = -3;
+    limiter.knee.value = 0;
+    limiter.ratio.value = 20;
+    limiter.attack.value = 0.003;
+    limiter.release.value = 0.1;
+    limiter.connect(context.destination);
+    audio = { context, output: limiter };
+  }
+  if (audio.context.state === 'suspended') audio.context.resume().catch(() => {});
+  return audio;
+}
+
+async function speakWithElevenLabs(
+  text: string,
+  lang: string,
+  hint: string | undefined,
+  key: string,
+  { context, output }: { context: AudioContext; output: AudioNode },
+) {
+  const id = `${lang}::${text}`;
+  if (current?.id === id && current.busy) return;
+
+  current?.source?.stop();
+  const request = { id, source: null as AudioBufferSourceNode | null, busy: true };
+  current = request;
+  const ended = startWord(request, lang, hint);
+
+  let pending = audioCache.get(id);
+  if (!pending) {
+    pending = fetchClip(text, lang, key, context);
+    audioCache.set(id, pending);
+  }
+  const clip = await pending;
+  if (!clip) audioCache.delete(id);
+  // A newer word was asked for meanwhile.
+  if (current !== request) return;
+
+  if (!clip) {
+    request.busy = false;
+    speakWithBrowser(text, lang, hintPending === request ? hint : undefined);
+    return;
+  }
+
+  const source = context.createBufferSource();
+  source.buffer = clip.buffer;
+  const gain = context.createGain();
+  gain.gain.value = clip.gain;
+  source.connect(gain).connect(output);
+  source.onended = () => {
+    request.busy = false;
+    ended();
+  };
+  request.source = source;
+  source.start();
+}
+
+/** Fetches and decodes the word's audio, or null when ElevenLabs couldn't make it. */
+async function fetchClip(text: string, lang: string, key: string, context: AudioContext) {
+  try {
+    const response = await fetch(`${ELEVENLABS_TTS_URL}/${VOICE_IDS[lang] ?? DEFAULT_VOICE_ID}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'audio/mpeg', 'xi-api-key': key },
+      body: JSON.stringify({
+        text,
+        model_id: ELEVENLABS_MODEL_ID,
+        language_code: lang.split('-')[0].toLowerCase(),
+        previous_text: PREVIOUS_TEXTS[lang] ?? '',
+        next_text: '.',
+      }),
+    });
+    if (!response.ok) {
+      if (await isKeyProblem(response)) pause(key);
+      return null;
+    }
+    const buffer = await context.decodeAudioData(await response.arrayBuffer());
+    return { buffer, gain: getNormalizingGain(buffer) };
+  } catch {
+    // Offline, blocked, or audio the browser can't decode; the browser's voice reads it instead.
+    return null;
+  }
+}
+
+/** The gain that brings the clip's spoken parts, measured in 20 ms windows, to TARGET_RMS. */
+export function getNormalizingGain(buffer: AudioBuffer) {
+  const windowSize = Math.max(1, Math.round(buffer.sampleRate * 0.02));
+  const channels = Array.from({ length: buffer.numberOfChannels }, (_, channel) =>
+    buffer.getChannelData(channel),
+  );
+  let loudSum = 0;
+  let loudCount = 0;
+  for (let start = 0; start < buffer.length; start += windowSize) {
+    const end = Math.min(start + windowSize, buffer.length);
+    let sum = 0;
+    for (const samples of channels) {
+      for (let i = start; i < end; i++) sum += samples[i] * samples[i];
+    }
+    const count = (end - start) * channels.length;
+    if (Math.sqrt(sum / count) >= SILENCE_RMS) {
+      loudSum += sum;
+      loudCount += count;
+    }
+  }
+  if (loudCount === 0) return 1;
+  return Math.min(MAX_GAIN, TARGET_RMS / Math.sqrt(loudSum / loudCount));
+}
+
+/** Whether the key was rejected or ran out of credits, as opposed to a passing failure. */
+async function isKeyProblem(response: Response) {
+  if (response.status === 401 || response.status === 402 || response.status === 403) return true;
+  const body = await response.text().catch(() => '');
+  // E.g. {"detail":{"status":"quota_exceeded"}}.
+  return /quota|credits?|billing|payment required|insufficient/i.test(body);
+}
+
+function pause(key: string) {
+  if (rejectedKey === key) return;
+  rejectedKey = key;
+  console.warn('ElevenLabs rejected the key or ran out of credits; using the browser voice.');
+  notify();
+}
+
+/**
+ * Reads `text` with the browser's voice. Does nothing where the browser has no speech synthesis,
+ * or while the same word is still being read or waiting to be.
+ *
+ * Deliberately minimal, like memo-bot's fallback that works in Brave: no `cancel()` and no voice
+ * picked from `getVoices()`, which Brave alters for fingerprinting protection.
+ */
+function speakWithBrowser(text: string, lang: string, hint?: string) {
+  if (!('speechSynthesis' in globalThis)) return;
+
+  const busy = speechSynthesis.speaking || speechSynthesis.pending;
+  if (busy && latest?.text === text && latest.lang === lang) return;
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = lang;
+  // Slow, as in memo-bot, so a child can follow each sound.
+  utterance.rate = 0.6;
+  utterance.onerror = (event) => {
+    // "not-allowed" means the page hasn't been interacted with yet.
+    console.warn(`Could not read "${text}" aloud: ${event.error}`);
+  };
+  utterance.onend = startWord(utterance, lang, hint);
+  latest = utterance;
+  speechSynthesis.speak(utterance);
 }
