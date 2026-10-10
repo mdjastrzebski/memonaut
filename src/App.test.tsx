@@ -157,6 +157,29 @@ test('ending the session shows results with SRS details collapsed', async () => 
   expect(screen.getByText('Review log')).toBeInTheDocument();
 });
 
+test('typing after the answer box loses focus types into it, and Enter checks the answer', async () => {
+  const user = userEvent.setup();
+  render(<App />);
+
+  const input = screen.getByRole('textbox', { name: 'Answer' });
+  await user.click(document.body);
+  expect(input).not.toHaveFocus();
+
+  // Enter with nothing typed does nothing.
+  await user.keyboard('{Enter}');
+  expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  expect(input).toHaveFocus();
+
+  await user.click(document.body);
+  await user.keyboard('falsch');
+  expect(input).toHaveValue('falsch');
+  expect(input).toHaveFocus();
+
+  await user.click(document.body);
+  await user.keyboard('{Enter}');
+  expect(screen.getByRole('status')).toHaveTextContent('Again');
+});
+
 test('special characters keyboard starts open for German and can be hidden', async () => {
   const user = userEvent.setup();
   render(<App />);

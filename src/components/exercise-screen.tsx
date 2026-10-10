@@ -71,6 +71,7 @@ export function ExerciseScreen({
   const [input, setInput] = useState('');
   const [checked, setChecked] = useState<Checked | null>(null);
   const [retyped, setRetyped] = useState('');
+  const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const pendingCaret = useRef<number | null>(null);
 
@@ -88,6 +89,28 @@ export function ExerciseScreen({
       playWord();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only once per exercise
+  }, []);
+
+  // Kids don't notice when the answer box loses focus, so typing anywhere goes back to it and Enter
+  // submits. Enter on a focused button still presses that button.
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const element = inputRef.current;
+      const target = event.target as HTMLElement;
+      if (!element || target === element || event.defaultPrevented || event.isComposing) return;
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
+
+      if (event.key === 'Enter') {
+        if (target.closest('button, a')) return;
+        event.preventDefault();
+        element.focus();
+        formRef.current?.requestSubmit();
+      } else if (event.key.length === 1 || event.key === 'Backspace') {
+        element.focus();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   // Restore the caret after inserting a special character.
@@ -173,7 +196,7 @@ export function ExerciseScreen({
           </h2>
         )}
 
-        <form onSubmit={handleSubmit} className="relative flex flex-col gap-4">
+        <form ref={formRef} onSubmit={handleSubmit} className="relative flex flex-col gap-4">
           {retyping ? (
             <>
               <Feedback
