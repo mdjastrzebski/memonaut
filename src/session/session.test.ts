@@ -40,6 +40,21 @@ test('creates one new card per concept and exercise type', () => {
   expect(Object.values(session.cards).every((card) => card.srs.state === State.New)).toBe(true);
 });
 
+test('keeps the review state of cards practised in an earlier session', () => {
+  const earlier = submitReview(create(), {
+    input: 'x',
+    elapsedMs: 1000,
+    issues: [],
+    rating: Rating.Again,
+    now: start,
+  });
+  const [practised] = earlier.queue.slice(-1);
+
+  const session = createSession({ deck, concepts, cards: earlier.cards, now: minutes(30) });
+  expect(session.cards[practised]).toBe(earlier.cards[practised]);
+  expect(session.cards['one:dictation'].srs.state).toBe(State.New);
+});
+
 test('queues every dictation card before the translation cards', () => {
   for (const value of [0, 0.5, 0.99]) {
     const session = createSession({ deck, concepts, now: start, random: () => value });

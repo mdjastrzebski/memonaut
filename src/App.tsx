@@ -6,16 +6,14 @@ import { SummaryScreen } from '@/components/summary-screen';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { content } from '@/data/content';
 import { getSubjectDecks } from '@/data/decks';
-import type { Deck } from '@/domain/types';
+import type { Card } from '@/domain/types';
 import { createSession, getCurrentCard, submitReview, type Session } from '@/session/session';
-
-function startSession(deck: Deck) {
-  return createSession({ deck, concepts: content.concepts });
-}
 
 export default function App() {
   const [deck, setDeck] = useState(() => getSubjectDecks(content.decks, content.subjects[0].id)[0]);
   const [session, setSession] = useState<Session | null>(null);
+  // Cards practised in earlier sessions, so progress carries over until the page is reloaded.
+  const [cards, setCards] = useState<Record<string, Card>>({});
   const [ended, setEnded] = useState(false);
   const [showSpecialCharacters, setShowSpecialCharacters] = useState(false);
   const [showSrsDetails, setShowSrsDetails] = useState(false);
@@ -23,9 +21,11 @@ export default function App() {
   const subject = content.subjects.find((subject) => subject.id === deck.subjectId)!;
   const finished = session !== null && (ended || !getCurrentCard(session));
   const studying = session !== null && !finished;
+  const allCards = session ? { ...cards, ...session.cards } : cards;
 
   const start = () => {
-    setSession(startSession(deck));
+    setCards(allCards);
+    setSession(createSession({ deck, concepts: content.concepts, cards: allCards }));
     setEnded(false);
     // Open by default for languages that need special characters, e.g. German umlauts.
     setShowSpecialCharacters((subject.specialCharacters?.length ?? 0) > 0);
@@ -49,12 +49,21 @@ export default function App() {
         </header>
 
         {session === null ? (
-          <SetupScreen content={content} deck={deck} onSelectDeck={setDeck} onStart={start} />
+          <SetupScreen
+            content={content}
+            cards={cards}
+            deck={deck}
+            onSelectDeck={setDeck}
+            onStart={start}
+          />
         ) : finished ? (
           <SummaryScreen
             session={session}
             onRestart={start}
-            onChooseSet={() => setSession(null)}
+            onChooseSet={() => {
+              setCards(allCards);
+              setSession(null);
+            }}
             showSrsDetails={showSrsDetails}
             onToggleSrsDetails={() => setShowSrsDetails((show) => !show)}
           />

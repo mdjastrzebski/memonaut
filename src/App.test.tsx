@@ -307,9 +307,10 @@ test('setup offers each subject with its core set selected first', async () => {
 
   const selected = screen.getByRole('region', { name: 'Selected set' });
   expect(within(selected).getByRole('heading', { name: 'Essentials' })).toBeInTheDocument();
-  expect(within(selected).getByText('Words').nextSibling).toHaveTextContent('30');
+  expect(within(selected).getByText('Words', { selector: 'dt' }).nextSibling).toHaveTextContent(
+    '30',
+  );
   expect(within(selected).getByText('Exercises').nextSibling).toHaveTextContent('60');
-  expect(within(selected).getByText('Only in this set')).toBeInTheDocument();
 });
 
 test('picking a unit shows its stats and words, and starts a session of it', async () => {
@@ -320,15 +321,14 @@ test('picking a unit shows its stats and words, and starts a session of it', asy
   await user.click(screen.getByRole('radio', { name: 'Numbers 0–10' }));
 
   const selected = screen.getByRole('region', { name: 'Selected set' });
-  expect(within(selected).getByText('Words').nextSibling).toHaveTextContent('11');
-  // Numbers 0–10 are also in the core set and in Kapitel 1.
-  expect(within(selected).getByText('Essentials').parentElement).toHaveTextContent('11');
-  expect(within(selected).getByText('Kapitel 1').parentElement).toHaveTextContent('11');
+  expect(within(selected).getByText('Words', { selector: 'dt' }).nextSibling).toHaveTextContent(
+    '11',
+  );
 
-  await user.click(within(selected).getByRole('button', { name: 'Show 11 words' }));
   const words = within(selected).getByRole('list', { name: 'Words in set' });
   expect(within(words).getAllByRole('listitem')).toHaveLength(11);
   expect(words).toHaveTextContent('zwei');
+  expect(within(words).getAllByRole('button', { name: 'New' })).toHaveLength(11);
 
   await user.click(within(selected).getByRole('button', { name: 'Start session' }));
   expect(screen.getByText('Numbers 0–10')).toBeInTheDocument();
@@ -357,4 +357,33 @@ test('the summary leads back to the setup screen with the same set selected', as
   await user.click(screen.getByRole('button', { name: 'Choose another set' }));
 
   expect(screen.getByRole('radio', { name: 'Numbers 0–10' })).toBeChecked();
+});
+
+test('words practised in a session show their status, with details on hover', async () => {
+  const user = userEvent.setup();
+  await startNumbersSession(user);
+
+  // A fast exact dictation is rated Easy and learned; the word's translation is still new.
+  const { foreign } = currentConcept();
+  await user.type(screen.getByRole('textbox', { name: 'Answer' }), `${foreign}{Enter}`);
+  await user.keyboard('{Enter}');
+  await user.click(screen.getByRole('button', { name: 'End session' }));
+  await user.click(screen.getByRole('button', { name: 'Choose another set' }));
+
+  const words = screen.getByRole('list', { name: 'Words in set' });
+  const row = within(words).getByText(foreign).closest('li')!;
+  const status = within(row).getByRole('button', { name: 'Learning' });
+  expect(within(words).getAllByRole('button', { name: 'New' })).toHaveLength(10);
+  // The set's tile and its overview count the word as learning.
+  expect(screen.getByRole('radio', { name: 'Numbers 0–10' }).closest('label')).toHaveTextContent(
+    'Learned0Learning1New10',
+  );
+  expect(screen.getByRole('region', { name: 'Selected set' })).toHaveTextContent(
+    'Learned0Learning1New10',
+  );
+
+  await user.hover(status);
+  const tooltip = await screen.findByRole('tooltip');
+  expect(tooltip).toHaveTextContent(/Dictation: learned, back in \d+d/);
+  expect(tooltip).toHaveTextContent('Translation: not practised yet');
 });

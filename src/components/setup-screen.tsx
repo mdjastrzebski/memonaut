@@ -1,17 +1,31 @@
-import { Check, ChevronDown, Rocket, Star } from 'lucide-react';
+import {
+  Check,
+  Circle,
+  CircleCheck,
+  CircleDotDashed,
+  Rocket,
+  Star,
+  type LucideIcon,
+} from 'lucide-react';
 import { useId, useState, type CSSProperties, type ReactNode } from 'react';
 
 import { EXERCISES } from '@/components/exercise-types';
+import { getProgress, getWordProgress, type Progress } from '@/components/grades';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Content } from '@/data/content';
-import { getDeckStats, getSubjectDecks } from '@/data/decks';
-import type { Deck, Subject } from '@/domain/types';
+import { getSubjectDecks } from '@/data/decks';
+import type { Card, Concept, Deck, ExerciseType, Subject } from '@/domain/types';
+import { formatRelative } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { EXERCISE_TYPES } from '@/session/session';
+import { EXERCISE_TYPES, getCardId } from '@/session/session';
+import { State, type FsrsCard } from '@/srs/scheduler';
 
 interface SetupScreenProps {
   content: Content;
+  /** Cards practised so far, keyed by id, to show how well each word is known. */
+  cards: Record<string, Card>;
   /** The selected Deck; its Subject is the selected Subject. */
   deck: Deck;
   onSelectDeck: (deck: Deck) => void;
@@ -19,7 +33,7 @@ interface SetupScreenProps {
 }
 
 /** Choose a Subject, then its core set or one of its units, and start a session. */
-export function SetupScreen({ content, deck, onSelectDeck, onStart }: SetupScreenProps) {
+export function SetupScreen({ content, cards, deck, onSelectDeck, onStart }: SetupScreenProps) {
   const subject = content.subjects.find((subject) => subject.id === deck.subjectId)!;
   const subjects = content.subjects.filter((option) =>
     content.decks.some((deck) => deck.subjectId === option.id),
@@ -61,6 +75,7 @@ export function SetupScreen({ content, deck, onSelectDeck, onStart }: SetupScree
               <DeckTile
                 key={option.id}
                 deck={option}
+                cards={cards}
                 checked={option.id === deck.id}
                 onSelect={() => onSelectDeck(option)}
               />
@@ -73,6 +88,7 @@ export function SetupScreen({ content, deck, onSelectDeck, onStart }: SetupScree
                     <DeckTile
                       key={option.id}
                       deck={option}
+                      cards={cards}
                       checked={option.id === deck.id}
                       onSelect={() => onSelectDeck(option)}
                     />
@@ -84,7 +100,13 @@ export function SetupScreen({ content, deck, onSelectDeck, onStart }: SetupScree
         </ChoiceGroup>
       </div>
 
-      <DeckOverview content={content} subject={subject} deck={deck} onStart={onStart} />
+      <DeckOverview
+        content={content}
+        cards={cards}
+        subject={subject}
+        deck={deck}
+        onStart={onStart}
+      />
     </div>
   );
 }
@@ -189,13 +211,15 @@ function SubjectTile({ subject, content, checked, onSelect, style }: SubjectTile
 
 interface DeckTileProps {
   deck: Deck;
+  cards: Record<string, Card>;
   checked: boolean;
   onSelect: () => void;
 }
 
-function DeckTile({ deck, checked, onSelect }: DeckTileProps) {
+function DeckTile({ deck, cards, checked, onSelect }: DeckTileProps) {
   const core = deck.kind === 'core';
   const words = plural(deck.conceptIds.length, 'word');
+  const progress = deck.conceptIds.map((conceptId) => getConceptStatus(conceptId, cards).progress);
 
   return (
     <ChoiceTile
@@ -210,15 +234,16 @@ function DeckTile({ deck, checked, onSelect }: DeckTileProps) {
           <Star className="size-6 fill-almost" />
         </span>
       )}
-      <span className="flex min-w-0 flex-col gap-0.5">
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="flex flex-wrap items-center gap-2">
           <span aria-hidden className="font-display text-lg font-bold">
             {deck.name}
           </span>
           {core && <Badge>Core set</Badge>}
         </span>
-        <span className="text-sm text-muted-foreground">
+        <span className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm text-muted-foreground">
           {core ? `Key words to keep fresh all year · ${words}` : words}
+          <ProgressCounts progress={progress} />
         </span>
       </span>
     </ChoiceTile>
@@ -227,25 +252,17 @@ function DeckTile({ deck, checked, onSelect }: DeckTileProps) {
 
 interface DeckOverviewProps {
   content: Content;
+  cards: Record<string, Card>;
   subject: Subject;
   deck: Deck;
   onStart: () => void;
 }
 
-/** What's in the selected Deck, how it overlaps with the others, and the start button. */
-function DeckOverview({ content, subject, deck, onStart }: DeckOverviewProps) {
-  const [showWords, setShowWords] = useState(false);
-  const wordsId = useId();
-  const stats = getDeckStats(deck, content.decks);
+/** What's in the selected Deck, how well each word is known, and the start button. */
+function DeckOverview({ content, cards, subject, deck, onStart }: DeckOverviewProps) {
+  const [now] = useState(() => new Date());
   const concepts = content.concepts.filter((concept) => deck.conceptIds.includes(concept.id));
-  const overlaps = [
-    ...stats.overlaps.map(({ deck, count }) => ({
-      label: deck.name,
-      core: deck.kind === 'core',
-      count,
-    })),
-    { label: 'Only in this set', core: false, count: stats.exclusiveCount },
-  ].filter((overlap) => overlap.count > 0);
+  const words = concepts.map((concept) => ({ concept, ...getConceptStatus(concept.id, cards) }));
 
   return (
     <section
@@ -260,10 +277,10 @@ function DeckOverview({ content, subject, deck, onStart }: DeckOverviewProps) {
       </div>
 
       <dl className="grid grid-cols-2 gap-3">
-        <StatTile label="Words" value={stats.conceptCount} />
+        <StatTile label="Words" value={concepts.length} />
         <StatTile
           label="Exercises"
-          value={stats.conceptCount * EXERCISE_TYPES.length}
+          value={concepts.length * EXERCISE_TYPES.length}
           note={
             <span className="flex flex-wrap gap-x-2">
               {EXERCISE_TYPES.map((type) => {
@@ -280,68 +297,19 @@ function DeckOverview({ content, subject, deck, onStart }: DeckOverviewProps) {
         />
       </dl>
 
-      {stats.overlaps.length > 0 && (
-        <div className="flex flex-col gap-2.5">
-          <h3 className="font-display font-bold">Shared with other sets</h3>
-          <ul className="flex flex-col gap-2.5 text-sm">
-            {overlaps.map(({ label, core, count }) => (
-              <li key={label} className="flex flex-col gap-1">
-                <span className="flex items-baseline justify-between gap-3">
-                  <span className="flex items-center gap-1.5">
-                    {core && <Star aria-hidden className="size-3.5 fill-almost" />}
-                    {label}
-                  </span>
-                  <span className="font-semibold tabular-nums">{count}</span>
-                </span>
-                <span
-                  aria-hidden
-                  className="h-2.5 overflow-hidden rounded-full border-2 border-foreground bg-muted"
-                >
-                  <span
-                    className={cn(
-                      'block h-full origin-left animate-grow',
-                      core ? 'bg-rocket' : 'bg-correct',
-                    )}
-                    style={{ width: `${(count / stats.conceptCount) * 100}%` }}
-                  />
-                </span>
-              </li>
-            ))}
-          </ul>
-          <p className="text-xs text-muted-foreground">
-            Practising a word here counts in every set it's in.
-          </p>
-        </div>
-      )}
-
       <div className="flex flex-col gap-2">
-        <button
-          type="button"
-          aria-expanded={showWords}
-          aria-controls={wordsId}
-          onClick={() => setShowWords((show) => !show)}
-          className="flex items-center gap-1.5 self-start rounded-full px-2 py-1 -ml-2 text-sm font-semibold hover:bg-muted"
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+          <h3 className="font-display font-bold">Words</h3>
+          <ProgressCounts progress={words.map((word) => word.progress)} />
+        </div>
+        <ul
+          aria-label="Words in set"
+          className="flex max-h-80 flex-col overflow-y-auto rounded-2xl border-2 border-foreground/15 bg-background px-3 py-1 text-sm"
         >
-          <ChevronDown className={cn('size-4 transition-transform', !showWords && '-rotate-90')} />
-          {showWords ? 'Hide words' : `Show ${plural(concepts.length, 'word')}`}
-        </button>
-        {showWords && (
-          <ul
-            id={wordsId}
-            aria-label="Words in set"
-            className="flex max-h-72 animate-rise flex-col overflow-y-auto rounded-2xl border-2 border-foreground/15 bg-background px-4 py-2 text-sm"
-          >
-            {concepts.map((concept) => (
-              <li
-                key={concept.id}
-                className="flex items-baseline justify-between gap-3 border-b border-foreground/10 py-1.5 last:border-b-0"
-              >
-                <span className="font-semibold">{concept.foreign}</span>
-                <span className="text-right text-muted-foreground">{concept.local}</span>
-              </li>
-            ))}
-          </ul>
-        )}
+          {words.map((word) => (
+            <WordRow key={word.concept.id} word={word} now={now} />
+          ))}
+        </ul>
       </div>
 
       <Button variant="cta" className="h-14 rounded-2xl text-lg" onClick={onStart}>
@@ -349,6 +317,93 @@ function DeckOverview({ content, subject, deck, onStart }: DeckOverviewProps) {
       </Button>
     </section>
   );
+}
+
+const WORD_STATUS: Record<Progress, { label: string; Icon: LucideIcon; className: string }> = {
+  learned: { label: 'Learned', Icon: CircleCheck, className: 'text-correct-ink' },
+  learning: { label: 'Learning', Icon: CircleDotDashed, className: 'text-almost-ink' },
+  new: { label: 'New', Icon: Circle, className: 'text-muted-foreground' },
+};
+
+const PROGRESS_ORDER: Progress[] = ['learned', 'learning', 'new'];
+
+interface ConceptStatus {
+  /** The Concept's Card for each Exercise Type; no review state yet if it's never been practised. */
+  exercises: { type: ExerciseType; srs?: FsrsCard }[];
+  progress: Progress;
+}
+
+interface Word extends ConceptStatus {
+  concept: Concept;
+}
+
+function getConceptStatus(conceptId: string, cards: Record<string, Card>): ConceptStatus {
+  const exercises = EXERCISE_TYPES.map((type) => ({
+    type,
+    srs: cards[getCardId(conceptId, type)]?.srs,
+  }));
+  const states = exercises.map(({ srs }) => srs?.state ?? State.New);
+  return { exercises, progress: getWordProgress(states) };
+}
+
+/** How many words are learned, learning and new, as symbols; hovering one names it. */
+function ProgressCounts({ progress }: { progress: Progress[] }) {
+  return (
+    <span className="flex gap-3 text-xs text-muted-foreground">
+      {PROGRESS_ORDER.map((status) => {
+        const { label, Icon, className } = WORD_STATUS[status];
+        const count = progress.filter((value) => value === status).length;
+        return (
+          <Tooltip key={status}>
+            <TooltipTrigger asChild>
+              <span className="flex cursor-help items-center gap-1">
+                <Icon aria-hidden className={cn('size-3.5', className)} />
+                <span className="sr-only">{label}</span>
+                <span className="font-semibold text-foreground tabular-nums">{count}</span>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>{label}</TooltipContent>
+          </Tooltip>
+        );
+      })}
+    </span>
+  );
+}
+
+/** A word with its status as a symbol; hovering it tells how each exercise is going. */
+function WordRow({ word, now }: { word: Word; now: Date }) {
+  const { concept, exercises, progress } = word;
+  const { label, Icon, className } = WORD_STATUS[progress];
+
+  return (
+    <li className="flex items-center gap-2.5 border-b border-foreground/10 py-1.5 last:border-b-0">
+      <Tooltip>
+        <TooltipTrigger
+          aria-label={label}
+          className="grid size-6 shrink-0 cursor-help place-items-center rounded-full"
+        >
+          <Icon className={cn('size-4', className)} />
+        </TooltipTrigger>
+        <TooltipContent side="left" className="flex flex-col gap-1">
+          <p className="font-semibold">{label}</p>
+          {exercises.map(({ type, srs }) => (
+            <p key={type}>
+              {EXERCISES[type].label}: {describeCard(srs, now)}
+            </p>
+          ))}
+        </TooltipContent>
+      </Tooltip>
+      <span className="min-w-0 flex-1 font-semibold break-words">{concept.foreign}</span>
+      <span className="text-right text-muted-foreground">{concept.local}</span>
+    </li>
+  );
+}
+
+/** One exercise's status in words, e.g. "learned, back in 3d". */
+function describeCard(srs: FsrsCard | undefined, now: Date): string {
+  if (!srs || srs.state === State.New) return 'not practised yet';
+  const progress = WORD_STATUS[getProgress(srs.state)].label.toLowerCase();
+  return `${progress}, back ${formatRelative(srs.due, now)}`;
 }
 
 function StatTile({ label, value, note }: { label: string; value: number; note?: ReactNode }) {

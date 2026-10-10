@@ -25,6 +25,8 @@ export interface Session {
 interface CreateSessionOptions {
   deck: Deck;
   concepts: Concept[];
+  /** Cards practised before, keyed by id. They keep their review state; the rest start new. */
+  cards?: Record<string, Card>;
   /** Easiest first: all Cards of one type are queued before any Card of the next. */
   exerciseTypes?: ExerciseType[];
   now?: Date;
@@ -34,18 +36,17 @@ interface CreateSessionOptions {
 export function createSession({
   deck,
   concepts,
+  cards: previous = {},
   exerciseTypes = EXERCISE_TYPES,
   now = new Date(),
   random = Math.random,
 }: CreateSessionOptions): Session {
   const deckConcepts = concepts.filter((concept) => deck.conceptIds.includes(concept.id));
   const cards = exerciseTypes.flatMap((exerciseType) =>
-    deckConcepts.map((concept): Card => ({
-      id: `${concept.id}:${exerciseType}`,
-      conceptId: concept.id,
-      exerciseType,
-      srs: createSrsCard(now),
-    })),
+    deckConcepts.map((concept): Card => {
+      const id = getCardId(concept.id, exerciseType);
+      return previous[id] ?? { id, conceptId: concept.id, exerciseType, srs: createSrsCard(now) };
+    }),
   );
 
   return {
@@ -61,6 +62,11 @@ export function createSession({
     ),
     reviews: [],
   };
+}
+
+/** The id of the Card that practises a Concept with an Exercise Type. */
+export function getCardId(conceptId: string, exerciseType: ExerciseType): string {
+  return `${conceptId}:${exerciseType}`;
 }
 
 export function getCurrentCard(session: Session): Card | undefined {
