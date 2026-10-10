@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { ExerciseScreen } from '@/components/exercise-screen';
 import { SummaryScreen } from '@/components/summary-screen';
@@ -24,17 +24,21 @@ export default function App() {
 
   const finished = ended || !getCurrentCard(session);
 
+  // Nothing is saved, so ask before a reload or closed tab throws the session away. Browsers show
+  // their own message here.
+  useEffect(() => {
+    if (finished) return;
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [finished]);
+
   return (
     <TooltipProvider>
       <main className="mx-auto flex min-h-svh max-w-6xl flex-col gap-6 p-4 sm:p-6">
         <header className="flex items-center gap-3">
           <Logo />
-          <div>
-            <h1 className="font-display text-2xl font-extrabold tracking-tight">Memonaut</h1>
-            <p className="text-xs text-muted-foreground">
-              Demo session · nothing is saved, reloading starts over.
-            </p>
-          </div>
+          <h1 className="font-display text-2xl font-extrabold tracking-tight">Memonaut</h1>
         </header>
 
         {finished ? (
@@ -52,7 +56,7 @@ export default function App() {
             key={session.reviews.length}
             session={session}
             onReview={(review) => setSession((current) => submitReview(current, review))}
-            onEnd={() => setEnded(true)}
+            onEnd={() => window.confirm('End this session?') && setEnded(true)}
             foreignLanguage={subject.foreignLanguage}
             specialCharacters={subject.specialCharacters}
             showSpecialCharacters={showSpecialCharacters}

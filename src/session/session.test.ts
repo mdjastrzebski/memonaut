@@ -1,9 +1,9 @@
 import { expect, test } from 'vitest';
 
 import type { Concept, Deck } from '@/domain/types';
-import { Rating, State } from '@/srs/scheduler';
+import { Rating, State, type Grade } from '@/srs/scheduler';
 
-import { createSession, getCurrentCard, submitReview } from './session';
+import { createSession, getCurrentCard, getSessionProgress, submitReview } from './session';
 
 const concepts: Concept[] = [
   { id: 'one', subjectId: 'german', local: 'jeden', foreign: 'eins' },
@@ -100,4 +100,26 @@ test('card leaves the session once it graduates to review', () => {
   expect(session.cards[first.id].srs.state).toBe(State.Review);
   expect(session.queue).not.toContain(first.id);
   expect(session.queue).toHaveLength(0);
+});
+
+test('progress counts answered cards half and finished cards fully', () => {
+  let session = create();
+  expect(getSessionProgress(session)).toBe(0);
+
+  const review = (rating: Grade) =>
+    (session = submitReview(session, {
+      input: 'x',
+      elapsedMs: 1000,
+      issues: [],
+      rating,
+      now: start,
+    }));
+
+  // Answered but still queued.
+  review(Rating.Again);
+  expect(getSessionProgress(session)).toBe(0.25);
+
+  // Easy on a new card graduates it straight to review.
+  review(Rating.Easy);
+  expect(getSessionProgress(session)).toBe(0.75);
 });

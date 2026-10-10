@@ -7,9 +7,12 @@ import { content } from './data/content';
 
 // jsdom has no speech synthesis; record what would be read aloud instead.
 const spoken: string[] = [];
+const confirm = vi.fn(() => true);
 
 beforeEach(() => {
   spoken.length = 0;
+  confirm.mockClear();
+  vi.stubGlobal('confirm', confirm);
   vi.stubGlobal(
     'SpeechSynthesisUtterance',
     class {
@@ -38,6 +41,11 @@ function currentConcept() {
     : content.concepts.find((concept) => concept.foreign === spoken.at(-1))!;
 }
 
+/** The session progress bar's value, in percent. */
+function progress() {
+  return Number(screen.getByRole('progressbar').getAttribute('aria-valuenow'));
+}
+
 async function retypeAnswer(user: ReturnType<typeof userEvent.setup>) {
   const { foreign: answer } = currentConcept();
   await user.type(screen.getByRole('textbox', { name: 'Retype answer' }), `${answer}{Enter}`);
@@ -47,14 +55,14 @@ test('rates a fast exact answer as Easy and continues on Enter', async () => {
   const user = userEvent.setup();
   render(<App />);
 
-  expect(screen.getByText(/0 answers/)).toBeInTheDocument();
+  expect(progress()).toBe(0);
 
   const input = screen.getByRole('textbox', { name: 'Answer' });
   await user.type(input, `${currentConcept().foreign}{Enter}`);
   expect(screen.getByRole('status')).toHaveTextContent('Easy');
 
   await user.keyboard('{Enter}');
-  expect(screen.getByText(/1 answer$/)).toBeInTheDocument();
+  expect(progress()).toBeGreaterThan(0);
 });
 
 test('rates an answer with wrong capitalization as Hard and asks to retype it', async () => {
@@ -79,11 +87,11 @@ test('rates an answer with wrong capitalization as Hard and asks to retype it', 
   // The same mistake again doesn't count.
   await user.type(retype, `${capitalized}{Enter}`);
   expect(continueButton).toBeDisabled();
-  expect(screen.getByText(/0 answers/)).toBeInTheDocument();
+  expect(progress()).toBe(0);
 
   await user.clear(retype);
   await user.type(retype, `${answer}{Enter}`);
-  expect(screen.getByText(/1 answer$/)).toBeInTheDocument();
+  expect(progress()).toBeGreaterThan(0);
 });
 
 test('rates a wrong answer as Again and shows it next to the answer', async () => {
@@ -102,7 +110,7 @@ test('rates a wrong answer as Again and shows it next to the answer', async () =
   expect(screen.queryByRole('button', { name: /^(Hard|Good|Easy)/ })).not.toBeInTheDocument();
 
   await user.type(screen.getByRole('textbox', { name: 'Retype answer' }), `${answer}{Enter}`);
-  expect(screen.getByText(/1 answer$/)).toBeInTheDocument();
+  expect(progress()).toBeGreaterThan(0);
 });
 
 test('SRS details start collapsed and stay expanded across exercises', async () => {
@@ -127,7 +135,7 @@ test('SRS details start collapsed and stay expanded across exercises', async () 
   await user.type(input, 'falsch{Enter}');
   await retypeAnswer(user);
 
-  expect(screen.getByText(/1 answer$/)).toBeInTheDocument();
+  expect(progress()).toBeGreaterThan(0);
   expect(toggle()).toHaveAttribute('aria-expanded', 'true');
   expect(screen.getByText('Rating preview')).toBeInTheDocument();
 });
@@ -139,6 +147,7 @@ test('ending the session shows results with SRS details collapsed', async () => 
   await user.type(screen.getByRole('textbox', { name: 'Answer' }), 'falsch{Enter}');
   await retypeAnswer(user);
   await user.click(screen.getByRole('button', { name: 'End session' }));
+  expect(confirm).toHaveBeenCalledOnce();
 
   expect(screen.getByText(/Session results/)).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'Keep practising' })).toBeInTheDocument();
@@ -220,4 +229,22 @@ test('translation exercises come after every dictation exercise', async () => {
   expect(spoken).toHaveLength(spokenBefore);
   await user.keyboard('{Enter}');
   expect(spoken.slice(spokenBefore)).toEqual([foreign]);
+});
+
+test('ending the session asks first and stays on cancel', async () => {
+  const user = userEvent.setup();
+  render(<App />);
+
+  confirm.mockReturnValueOnce(false);
+  await user.click(screen.getByRole('button', { name: 'End session' }));
+  expect(confirm).toHaveBeenCalledOnce();
+  expect(screen.getByRole('textbox', { name: 'Answer' })).toBeInTheDocument();
+});
+
+test('asks before leaving the page during a session', () => {
+  render(<App />);
+
+  const event = new Event('beforeunload', { cancelable: true });
+  window.dispatchEvent(event);
+  expect(event.defaultPrevented).toBe(true);
 });

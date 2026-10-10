@@ -1,56 +1,39 @@
-import { getProgress, type Progress } from '@/components/grades';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import type { Session } from '@/session/session';
+import { X } from 'lucide-react';
 
-const PLANET_STYLES: Record<Progress, string> = {
-  new: 'bg-card',
-  learning: 'bg-[linear-gradient(90deg,var(--color-rocket)_50%,var(--color-card)_50%)]',
-  learned: 'bg-correct',
-};
+import { Button } from '@/components/ui/button';
+import { getSessionProgress, type Session } from '@/session/session';
 
 interface SessionProgressProps {
   session: Session;
-  currentCardId: string;
   onEnd: () => void;
 }
 
-/** One planet per card: empty when new, half-lit while learning, green once learned. */
-export function SessionProgress({ session, currentCardId, onEnd }: SessionProgressProps) {
-  const cards = Object.values(session.cards);
-  const learned = cards.filter((card) => getProgress(card.srs.state) === 'learned').length;
-  const answers = session.reviews.length;
+/** The deck name and one bar that fills up over the whole session. */
+export function SessionProgress({ session, onEnd }: SessionProgressProps) {
+  const percent = Math.round(getSessionProgress(session) * 100);
 
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-      <span className="rounded-full border-2 border-foreground bg-card px-3 py-1 font-display text-sm font-bold shadow-sticker-sm">
-        {session.deck.name}
-      </span>
-
-      <div aria-hidden className="flex items-center gap-1.5">
-        {cards.map((card) => (
-          <span
-            key={card.id}
-            className={cn(
-              'size-4 rounded-full border-2 border-foreground transition-all duration-500',
-              PLANET_STYLES[getProgress(card.srs.state)],
-              card.id === currentCardId &&
-                'size-5 ring-2 ring-rocket ring-offset-2 ring-offset-background',
-            )}
-          />
-        ))}
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-4">
+        <p className="font-display text-lg font-bold">{session.deck.name}</p>
+        <Button variant="ghost" size="icon" aria-label="End session" onClick={onEnd}>
+          <X className="size-5" />
+        </Button>
       </div>
 
-      <p className="text-sm text-muted-foreground">
-        <span className="font-semibold text-foreground">
-          {learned}/{cards.length}
-        </span>{' '}
-        learned · {answers} {answers === 1 ? 'answer' : 'answers'}
-      </p>
-
-      <Button variant="ghost" size="sm" className="ml-auto" onClick={onEnd}>
-        End session
-      </Button>
+      <div
+        role="progressbar"
+        aria-label="Session progress"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={percent}
+        className="h-4 overflow-hidden rounded-full border-2 border-foreground bg-card shadow-sticker-sm"
+      >
+        <div
+          className="h-full rounded-full bg-correct transition-[width] duration-500 ease-out"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
     </div>
   );
 }

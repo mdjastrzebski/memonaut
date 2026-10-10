@@ -49,9 +49,6 @@ export function SrsDetails({ open, onToggle, children }: SrsDetailsProps) {
       >
         <Telescope className="size-4" />
         <span className="font-display text-sm">SRS details</span>
-        <span aria-hidden className="hidden sm:inline">
-          · how the scheduler sees your cards
-        </span>
         <ChevronDown className={cn('ml-auto size-4 transition-transform', !open && '-rotate-90')} />
       </button>
 

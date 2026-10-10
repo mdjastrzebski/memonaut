@@ -135,7 +135,7 @@ export function ExerciseScreen({
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
-      <SessionProgress session={session} currentCardId={card.id} onEnd={onEnd} />
+      <SessionProgress session={session} onEnd={onEnd} />
 
       <section
         aria-label="Exercise"
@@ -156,11 +156,12 @@ export function ExerciseScreen({
             <Button
               type="button"
               variant="sticker"
-              className="h-20 gap-3 rounded-2xl px-6 font-display text-2xl"
+              aria-label="Listen"
+              className="size-20 rounded-2xl"
               onMouseDown={(event) => event.preventDefault()}
               onClick={playWord}
             >
-              <Volume2 className="size-8" /> Listen
+              <Volume2 className="size-9" />
             </Button>
           </div>
         ) : (
@@ -372,11 +373,15 @@ function Feedback({ grade, input, answer, meaning }: FeedbackProps) {
         {wrong && <AnswerComparison input={input} answer={answer} shake={grade === Rating.Again} />}
         <p
           className={cn(
-            'font-display font-bold break-words',
+            'flex items-center gap-2 font-display font-bold break-words',
             wrong ? 'text-lg text-muted-foreground' : 'text-2xl',
           )}
         >
-          = {meaning}
+          <span aria-hidden className="shrink-0 leading-none">
+            🇵🇱
+          </span>
+          <span className="sr-only">means</span>
+          <span className="min-w-0">{meaning}</span>
         </p>
       </div>
     </div>

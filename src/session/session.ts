@@ -65,6 +65,19 @@ export function getCurrentCard(session: Session): Card | undefined {
   return cardId ? session.cards[cardId] : undefined;
 }
 
+/**
+ * How far the session is, from 0 to 1: a Card counts fully once it leaves the session and half
+ * while it's still queued after being answered. Never goes back down.
+ */
+export function getSessionProgress(session: Session): number {
+  const total = Object.keys(session.cards).length;
+  if (total === 0) return 1;
+  const answered = new Set(session.reviews.map((review) => review.cardId));
+  const answeredInQueue = session.queue.filter((cardId) => answered.has(cardId)).length;
+  const done = total - session.queue.length;
+  return (done + answeredInQueue / 2) / total;
+}
+
 export interface SubmitReviewInput {
   input: string;
   elapsedMs: number;
