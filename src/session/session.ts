@@ -44,15 +44,13 @@ export function createSession({
   now = new Date(),
   random = Math.random,
 }: CreateSessionOptions): Session {
-  const conceptCards = (concept: Concept) =>
-    exerciseTypes.map((exerciseType): Card => {
-      const id = getCardId(concept.id, exerciseType);
-      return previous[id] ?? { id, conceptId: concept.id, exerciseType, srs: createSrsCard(now) };
-    });
   const deckConcepts = pickConcepts(
     concepts
       .filter((concept) => deck.conceptIds.includes(concept.id))
-      .map((concept) => ({ concept, cards: conceptCards(concept) })),
+      .map((concept) => ({
+        concept,
+        cards: getConceptCards(concept.id, previous, now, exerciseTypes),
+      })),
     maxConcepts,
     now,
   );
@@ -91,12 +89,50 @@ function pickConcepts(items: ConceptCards[], max: number, now: Date): ConceptCar
     const started = cards.filter((card) => card.srs.state !== State.New);
     if (started.length === 0) return [1, 0];
     const due = Math.min(...started.map((card) => card.srs.due.getTime()));
-    return started.length < cards.length || due <= now.getTime() ? [0, due] : [2, due];
+    return isConceptDue(cards, now) ? [0, due] : [2, due];
   };
   const ranked = items.map((item) => ({ item, rank: rank(item) }));
   // Array sort is stable, so new Concepts keep their Deck order.
   ranked.sort((a, b) => a.rank[0] - b.rank[0] || a.rank[1] - b.rank[1]);
   return ranked.slice(0, max).map(({ item }) => item);
+}
+
+/** A Concept's Card for each Exercise Type: the one practised before, or a new one. */
+export function getConceptCards(
+  conceptId: string,
+  cards: Record<string, Card>,
+  now: Date,
+  exerciseTypes = EXERCISE_TYPES,
+): Card[] {
+  return exerciseTypes.map((exerciseType) => {
+    const id = getCardId(conceptId, exerciseType);
+    return cards[id] ?? { id, conceptId, exerciseType, srs: createSrsCard(now) };
+  });
+}
+
+/**
+ * Whether a started Concept needs practice by `at`: one of its Cards is due, or one hasn't been
+ * practised yet. A session picks these first. New Concepts are never due.
+ */
+export function isConceptDue(cards: Card[], at: Date): boolean {
+  const started = cards.filter((card) => card.srs.state !== State.New);
+  if (started.length === 0) return false;
+  return (
+    started.length < cards.length || started.some((card) => card.srs.due.getTime() <= at.getTime())
+  );
+}
+
+/** How many of the Concepts need practice by the end of the day of `now`, in local time. */
+export function countDueToday(
+  conceptIds: string[],
+  cards: Record<string, Card>,
+  now: Date,
+): number {
+  const endOfDay = new Date(now);
+  endOfDay.setHours(24, 0, 0, 0);
+  return conceptIds.filter((conceptId) =>
+    isConceptDue(getConceptCards(conceptId, cards, now), endOfDay),
+  ).length;
 }
 
 /** The id of the Card that practises a Concept with an Exercise Type. */

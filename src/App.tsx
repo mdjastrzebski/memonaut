@@ -7,15 +7,24 @@ import { SummaryScreen } from '@/components/summary-screen';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { content } from '@/data/content';
 import type { Card } from '@/domain/types';
-import { createSession, getCurrentCard, submitReview, type Session } from '@/session/session';
+import { loadProgress, saveProgress } from '@/progress/progress-storage';
+import {
+  createSession,
+  getCurrentCard,
+  submitReview,
+  type Session,
+  type SubmitReviewInput,
+} from '@/session/session';
 
 export default function App() {
   // Remembered across reloads, so the next visit starts where the last one left off.
   const [initialChoice] = useState(() => loadSetupChoice(content));
   const [deck, setDeck] = useState(initialChoice.deck);
   const [session, setSession] = useState<Session | null>(null);
-  // Cards practised in earlier sessions, so progress carries over until the page is reloaded.
-  const [cards, setCards] = useState<Record<string, Card>>({});
+  // Cards practised in earlier sessions, of every Subject.
+  const [cards, setCards] = useState<Record<string, Card>>(() =>
+    Object.assign({}, ...content.subjects.map((subject) => loadProgress(subject.id))),
+  );
   const [sessionSize, setSessionSize] = useState<SessionSize>(initialChoice.sessionSize);
   const [ended, setEnded] = useState(false);
   const [showSpecialCharacters, setShowSpecialCharacters] = useState(false);
@@ -23,7 +32,6 @@ export default function App() {
 
   const subject = content.subjects.find((subject) => subject.id === deck.subjectId)!;
   const finished = session !== null && (ended || !getCurrentCard(session));
-  const studying = session !== null && !finished;
   const allCards = session ? { ...cards, ...session.cards } : cards;
 
   const start = () => {
@@ -41,16 +49,16 @@ export default function App() {
     setShowSpecialCharacters((subject.specialCharacters?.length ?? 0) > 0);
   };
 
-  useEffect(() => saveSetupChoice({ deck, sessionSize }), [deck, sessionSize]);
+  // Saved after every answer, so closing the page mid-session keeps what was practised.
+  const review = (input: SubmitReviewInput) => {
+    if (!session) return;
+    const next = submitReview(session, input);
+    const cardId = next.reviews.at(-1)?.cardId;
+    if (cardId) saveProgress(session.deck.subjectId, [next.cards[cardId]]);
+    setSession(next);
+  };
 
-  // Progress isn't saved, so ask before a reload or closed tab throws the session away. Browsers show
-  // their own message here.
-  useEffect(() => {
-    if (!studying) return;
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
-    window.addEventListener('beforeunload', warn);
-    return () => window.removeEventListener('beforeunload', warn);
-  }, [studying]);
+  useEffect(() => saveSetupChoice({ deck, sessionSize }), [deck, sessionSize]);
 
   return (
     <TooltipProvider>
@@ -85,7 +93,7 @@ export default function App() {
           <ExerciseScreen
             key={session.reviews.length}
             session={session}
-            onReview={(review) => setSession((current) => current && submitReview(current, review))}
+            onReview={review}
             onEnd={() => window.confirm('End this session?') && setEnded(true)}
             subject={subject}
             showSpecialCharacters={showSpecialCharacters}
@@ -104,20 +112,20 @@ function Logo() {
   return (
     <svg viewBox="0 0 48 48" className="size-11 shrink-0" aria-hidden>
       <g className="origin-center animate-orbit">
-        <circle cx="24" cy="4" r="3.5" className="fill-almost stroke-foreground" strokeWidth="2" />
+        <circle cx="24" cy="5" r="3.5" className="fill-almost stroke-foreground" strokeWidth="2" />
       </g>
-      <circle cx="24" cy="24" r="12" className="fill-rocket stroke-foreground" strokeWidth="2.5" />
-      <ellipse
-        cx="24"
-        cy="24"
-        rx="20"
-        ry="6"
+      <g
         transform="rotate(-20 24 24)"
         fill="none"
         className="stroke-foreground"
         strokeWidth="2.5"
-        strokeDasharray="40 8"
-      />
+        strokeLinecap="round"
+      >
+        {/* Back half of the ring, hidden behind the planet. */}
+        <path d="M4 24 A20 6 0 0 1 44 24" />
+        <circle cx="24" cy="24" r="12" className="fill-rocket" />
+        <path d="M44 24 A20 6 0 0 1 4 24" />
+      </g>
     </svg>
   );
 }

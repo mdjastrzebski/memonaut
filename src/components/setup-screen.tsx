@@ -4,6 +4,7 @@ import {
   CircleCheck,
   CircleDotDashed,
   Rocket,
+  Sunrise,
   Star,
   type LucideIcon,
 } from 'lucide-react';
@@ -20,7 +21,7 @@ import { getSubjectDecks } from '@/data/decks';
 import type { Card, Concept, Deck, ExerciseType, Subject } from '@/domain/types';
 import { formatRelative } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { EXERCISE_TYPES, getCardId } from '@/session/session';
+import { countDueToday, EXERCISE_TYPES, getCardId } from '@/session/session';
 import { State, type FsrsCard } from '@/srs/scheduler';
 
 interface SetupScreenProps {
@@ -45,6 +46,7 @@ export function SetupScreen({
   onSessionSizeChange,
   onStart,
 }: SetupScreenProps) {
+  const [now] = useState(() => new Date());
   const subject = content.subjects.find((subject) => subject.id === deck.subjectId)!;
   const subjects = content.subjects.filter((option) =>
     content.decks.some((deck) => deck.subjectId === option.id),
@@ -72,6 +74,13 @@ export function SetupScreen({
                 key={option.id}
                 subject={option}
                 content={content}
+                dueToday={countDueToday(
+                  content.concepts
+                    .filter((concept) => concept.subjectId === option.id)
+                    .map((concept) => concept.id),
+                  cards,
+                  now,
+                )}
                 checked={option.id === subject.id}
                 onSelect={() => onSelectDeck(getSubjectDecks(content.decks, option.id)[0])}
                 style={{ animationDelay: `${index * 60}ms` }}
@@ -87,6 +96,7 @@ export function SetupScreen({
                 key={option.id}
                 deck={option}
                 cards={cards}
+                now={now}
                 checked={option.id === deck.id}
                 onSelect={() => onSelectDeck(option)}
               />
@@ -100,6 +110,7 @@ export function SetupScreen({
                       key={option.id}
                       deck={option}
                       cards={cards}
+                      now={now}
                       checked={option.id === deck.id}
                       onSelect={() => onSelectDeck(option)}
                     />
@@ -122,6 +133,7 @@ export function SetupScreen({
         cards={cards}
         subject={subject}
         deck={deck}
+        now={now}
         onStart={onStart}
       />
     </div>
@@ -194,12 +206,14 @@ function ChoiceTile({
 interface SubjectTileProps {
   subject: Subject;
   content: Content;
+  /** Words of the Subject that need practice today. */
+  dueToday: number;
   checked: boolean;
   onSelect: () => void;
   style: CSSProperties;
 }
 
-function SubjectTile({ subject, content, checked, onSelect, style }: SubjectTileProps) {
+function SubjectTile({ subject, content, dueToday, checked, onSelect, style }: SubjectTileProps) {
   const setCount = content.decks.filter((deck) => deck.subjectId === subject.id).length;
   const wordCount = content.concepts.filter((concept) => concept.subjectId === subject.id).length;
 
@@ -221,6 +235,7 @@ function SubjectTile({ subject, content, checked, onSelect, style }: SubjectTile
         <span className="text-sm text-muted-foreground">
           {plural(setCount, 'set')} · {plural(wordCount, 'word')}
         </span>
+        <DueToday count={dueToday} />
       </span>
     </ChoiceTile>
   );
@@ -229,11 +244,12 @@ function SubjectTile({ subject, content, checked, onSelect, style }: SubjectTile
 interface DeckTileProps {
   deck: Deck;
   cards: Record<string, Card>;
+  now: Date;
   checked: boolean;
   onSelect: () => void;
 }
 
-function DeckTile({ deck, cards, checked, onSelect }: DeckTileProps) {
+function DeckTile({ deck, cards, now, checked, onSelect }: DeckTileProps) {
   const core = deck.kind === 'core';
   const words = plural(deck.conceptIds.length, 'word');
   const progress = deck.conceptIds.map((conceptId) => getConceptStatus(conceptId, cards).progress);
@@ -258,6 +274,7 @@ function DeckTile({ deck, cards, checked, onSelect }: DeckTileProps) {
           </span>
           {core && <Badge>Core set</Badge>}
         </span>
+        <DueToday count={countDueToday(deck.conceptIds, cards, now)} />
         <span className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm text-muted-foreground">
           {core ? `Key words to keep fresh all year · ${words}` : words}
           <ProgressCounts progress={progress} />
@@ -272,12 +289,12 @@ interface DeckOverviewProps {
   cards: Record<string, Card>;
   subject: Subject;
   deck: Deck;
+  now: Date;
   onStart: () => void;
 }
 
 /** What's in the selected Deck, how well each word is known, and the start button. */
-function DeckOverview({ content, cards, subject, deck, onStart }: DeckOverviewProps) {
-  const [now] = useState(() => new Date());
+function DeckOverview({ content, cards, subject, deck, now, onStart }: DeckOverviewProps) {
   const concepts = content.concepts.filter((concept) => deck.conceptIds.includes(concept.id));
   const words = concepts.map((concept) => ({ concept, ...getConceptStatus(concept.id, cards) }));
 
@@ -296,6 +313,12 @@ function DeckOverview({ content, cards, subject, deck, onStart }: DeckOverviewPr
       <dl className="grid grid-cols-2 gap-3">
         <StatTile label="Words" value={concepts.length} />
         <StatTile
+          label="Due today"
+          value={countDueToday(deck.conceptIds, cards, now)}
+          note="Words to practise again"
+        />
+        <StatTile
+          className="col-span-2"
           label="Exercises"
           value={concepts.length * EXERCISE_TYPES.length}
           note={
@@ -460,13 +483,40 @@ function SessionSizePicker({ value, onChange, wordCount }: SessionSizePickerProp
   );
 }
 
-function StatTile({ label, value, note }: { label: string; value: number; note?: ReactNode }) {
+interface StatTileProps {
+  label: string;
+  value: number;
+  note?: ReactNode;
+  className?: string;
+}
+
+function StatTile({ label, value, note, className }: StatTileProps) {
   return (
-    <div className="flex flex-col gap-0.5 rounded-2xl border-2 border-foreground bg-background p-3 shadow-sticker-sm">
+    <div
+      className={cn(
+        'flex flex-col gap-0.5 rounded-2xl border-2 border-foreground bg-background p-3 shadow-sticker-sm',
+        className,
+      )}
+    >
       <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
       <dd className="font-display text-3xl font-bold tabular-nums">{value}</dd>
       {note && <dd className="text-xs text-muted-foreground">{note}</dd>}
     </div>
+  );
+}
+
+/** How many words need practice today, or that none do. */
+function DueToday({ count }: { count: number }) {
+  return (
+    <span
+      className={cn(
+        'flex items-center gap-1 text-sm',
+        count > 0 ? 'font-semibold text-foreground' : 'text-muted-foreground',
+      )}
+    >
+      <Sunrise aria-hidden className="size-3.5" />
+      {count > 0 ? `${plural(count, 'word')} due today` : 'Nothing due today'}
+    </span>
   );
 }
 

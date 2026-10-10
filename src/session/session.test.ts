@@ -3,7 +3,14 @@ import { expect, test } from 'vitest';
 import type { Card, Concept, Deck } from '@/domain/types';
 import { Rating, reviewSrsCard, State, type Grade } from '@/srs/scheduler';
 
-import { createSession, getCurrentCard, getSessionProgress, submitReview } from './session';
+import {
+  countDueToday,
+  createSession,
+  getConceptCards,
+  getCurrentCard,
+  getSessionProgress,
+  submitReview,
+} from './session';
 
 const concepts: Concept[] = [
   { id: 'one', subjectId: 'german', local: 'jeden', foreign: 'eins' },
@@ -166,4 +173,29 @@ test('progress counts answered cards half and finished cards fully', () => {
   // Easy on a new card graduates it straight to review.
   review(Rating.Easy);
   expect(getSessionProgress(session)).toBe(0.75);
+});
+
+test('counts words due by the end of the day, or with an exercise not practised yet', () => {
+  const morning = new Date(2026, 0, 1, 8);
+  const reviewed = (conceptId: string, exerciseType: Card['exerciseType'], due: Date): Card => ({
+    ...getConceptCards(conceptId, {}, morning).find((card) => card.exerciseType === exerciseType)!,
+    srs: {
+      ...reviewSrsCard(getConceptCards(conceptId, {}, morning)[0].srs, Rating.Good, morning).card,
+      due,
+    },
+  });
+  const cards = Object.fromEntries(
+    [
+      // Due tonight, local time.
+      reviewed('one', 'dictation', new Date(2026, 0, 1, 23)),
+      reviewed('one', 'translation', new Date(2026, 0, 5)),
+      // Translation not practised yet.
+      reviewed('two', 'dictation', new Date(2026, 0, 5)),
+      // Not due until tomorrow.
+      reviewed('three', 'dictation', new Date(2026, 0, 2, 0, 30)),
+      reviewed('three', 'translation', new Date(2026, 0, 5)),
+    ].map((card) => [card.id, card]),
+  );
+
+  expect(countDueToday(['one', 'two', 'three', 'four'], cards, morning)).toBe(2);
 });

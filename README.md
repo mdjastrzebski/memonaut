@@ -2,7 +2,7 @@
 
 Memonaut is a learning web app for school kids, built on spaced repetition. It helps a learner keep what they learn in school subjects, such as English, German, Polish or Przyroda, by scheduling each piece of knowledge for review just before it would be forgotten.
 
-> **Status:** early prototype. The concepts below are settled. Pick a subject (German or English) and its core set or a unit, then study it: dictation then translation, FSRS scheduling. Sessions run in memory; nothing is saved yet.
+> **Status:** early prototype. The concepts below are settled. Pick a subject (German or English) and its core set or a unit, then study it: dictation then translation, FSRS scheduling. Each Card's review state is saved in the browser after every answer; the setup screen shows how many words are due today.
 
 ## Goals
 
@@ -45,7 +45,7 @@ Exercise Types are ordered from easiest: a session queues every `dictation` Card
 
 ## Content
 
-Learning content lives in YAML files under `src/data/`, one folder per Subject. Only what to learn is stored there; learning state (Cards and Reviews) will be kept separately, keyed by Concept id.
+Learning content lives in YAML files under `src/data/`, one folder per Subject. Only what to learn is stored there; learning state is kept separately, in the browser's localStorage under one key per Subject (`memonaut:progress:<subject>`), keyed by Concept id and Exercise Type. Each Card's FSRS state is stored compactly. Saving only replaces the Cards that changed, so progress for words no longer in any Deck is kept, and data from a newer app version is never overwritten.
 
 ```yaml
 # src/data/german/decks/numbers-0-10.yaml
@@ -60,7 +60,7 @@ Each file under `decks/` is a unit Deck. A Concept can appear in several units o
 ## Open questions
 
 - Can a Concept exist in no Deck at all, e.g. after its unit is removed, while keeping its review history?
-- Where is data stored: only in the browser, or synced through a backend?
+- Should progress also sync through a backend, so it survives clearing the browser and moves between devices?
 
 ## Development
 

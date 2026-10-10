@@ -278,17 +278,38 @@ test('ending the session asks first and stays on cancel', async () => {
   expect(screen.getByRole('textbox', { name: 'Answer' })).toBeInTheDocument();
 });
 
-test('asks before leaving the page during a session, not on the setup screen', async () => {
+test('keeps progress after a reload, even mid-session, without asking before leaving', async () => {
   const user = userEvent.setup();
-  render(<App />);
-  const beforeSession = new Event('beforeunload', { cancelable: true });
-  window.dispatchEvent(beforeSession);
-  expect(beforeSession.defaultPrevented).toBe(false);
-
+  const { unmount } = render(<App />);
+  await user.click(screen.getByRole('radio', { name: 'German' }));
+  await user.click(screen.getByRole('radio', { name: 'Numbers 0–10' }));
   await user.click(screen.getByRole('button', { name: 'Start session' }));
-  const event = new Event('beforeunload', { cancelable: true });
-  window.dispatchEvent(event);
-  expect(event.defaultPrevented).toBe(true);
+
+  // A fast exact dictation is rated Easy, so the word is due again in a few days.
+  await user.type(
+    screen.getByRole('textbox', { name: 'Answer' }),
+    `${currentConcept().foreign}{Enter}`,
+  );
+  await user.keyboard('{Enter}');
+  const leave = new Event('beforeunload', { cancelable: true });
+  window.dispatchEvent(leave);
+  expect(leave.defaultPrevented).toBe(false);
+  unmount();
+  render(<App />);
+
+  expect(screen.getByRole('radio', { name: 'Numbers 0–10' }).closest('label')).toHaveTextContent(
+    'Learned0Learning1New10',
+  );
+  // Its translation hasn't been practised yet, so the word is due today.
+  expect(screen.getByRole('radio', { name: 'Numbers 0–10' }).closest('label')).toHaveTextContent(
+    '1 word due today',
+  );
+  expect(screen.getByRole('radio', { name: 'German' }).closest('label')).toHaveTextContent(
+    '1 word due today',
+  );
+  expect(screen.getByRole('radio', { name: 'English' }).closest('label')).toHaveTextContent(
+    'Nothing due today',
+  );
 });
 
 test('setup offers each subject with its core set selected first', async () => {
