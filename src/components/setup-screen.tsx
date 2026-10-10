@@ -66,7 +66,7 @@ export function SetupScreen({
   const coreDecks = decks.filter((deck) => deck.kind === 'core');
   const unitDecks = decks.filter((deck) => deck.kind === 'unit');
   const selectedUnit = unitDecks.find((option) => option.id === deck.id);
-  const shownUnit =
+  const tileUnit =
     selectedUnit ??
     unitDecks.find((option) => option.id === lastUnitIds[subject.id]) ??
     unitDecks[0];
@@ -101,13 +101,13 @@ export function SetupScreen({
                 onSelect={() => onSelectDeck(option)}
               />
             ))}
-            {shownUnit && (
+            {tileUnit && (
               <UnitTile
                 units={unitDecks}
                 cards={cards}
                 now={now}
-                shown={shownUnit}
-                checked={shownUnit === selectedUnit}
+                unit={tileUnit}
+                checked={tileUnit === selectedUnit}
                 onSelect={onSelectDeck}
               />
             )}
@@ -278,16 +278,16 @@ interface UnitTileProps {
   units: Deck[];
   cards: Record<string, Card>;
   now: Date;
-  /** The selected unit, or else the one last picked. */
-  shown: Deck;
+  /** The unit on the tile: the selected one, or else the one last picked. */
+  unit: Deck;
   checked: boolean;
   onSelect: (deck: Deck) => void;
 }
 
-/** The shown unit as a tile to select, with a select box to switch to another unit. */
-function UnitTile({ units, cards, now, shown, checked, onSelect }: UnitTileProps) {
+/** A unit as a tile to select, with a select box to switch to another unit. */
+function UnitTile({ units, cards, now, unit, checked, onSelect }: UnitTileProps) {
   return (
-    <ChoiceTile name={shown.name} group="deck" checked={checked} onSelect={() => onSelect(shown)}>
+    <ChoiceTile name={unit.name} group="deck" checked={checked} onSelect={() => onSelect(unit)}>
       <span className="flex min-w-0 flex-1 flex-col gap-1">
         <DropdownMenu>
           {/* Clicking the select box opens the menu; clicking elsewhere on the tile selects it. */}
@@ -296,7 +296,7 @@ function UnitTile({ units, cards, now, shown, checked, onSelect }: UnitTileProps
             className="flex h-11 items-center gap-2 rounded-xl border-2 border-line bg-background px-3 text-left shadow-sticker-sm transition-colors outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 data-[state=open]:bg-muted"
           >
             <span aria-hidden className="min-w-0 flex-1 truncate font-display text-lg font-bold">
-              {shown.name}
+              {unit.name}
             </span>
             <ChevronsUpDown aria-hidden className="size-5 shrink-0" />
           </DropdownMenuTrigger>
@@ -305,20 +305,20 @@ function UnitTile({ units, cards, now, shown, checked, onSelect }: UnitTileProps
             className="rounded-2xl border-2 border-line bg-card p-1.5 text-foreground shadow-sticker ring-0"
           >
             <DropdownMenuRadioGroup
-              value={checked ? shown.id : ''}
-              onValueChange={(id) => onSelect(units.find((unit) => unit.id === id)!)}
+              value={checked ? unit.id : ''}
+              onValueChange={(id) => onSelect(units.find((option) => option.id === id)!)}
             >
-              {units.map((unit) => {
-                const due = countDueToday(unit.conceptIds, cards, now);
+              {units.map((option) => {
+                const due = countDueToday(option.conceptIds, cards, now);
                 return (
                   <DropdownMenuRadioItem
-                    key={unit.id}
-                    value={unit.id}
+                    key={option.id}
+                    value={option.id}
                     className="flex-col items-start gap-0 rounded-xl px-3 py-2"
                   >
-                    <span className="font-display font-bold">{unit.name}</span>
+                    <span className="font-display font-bold">{option.name}</span>
                     <span className="text-xs text-muted-foreground">
-                      {plural(unit.conceptIds.length, 'word')}
+                      {plural(option.conceptIds.length, 'word')}
                       {due > 0 && ` · ${due} due today`}
                     </span>
                   </DropdownMenuRadioItem>
@@ -327,7 +327,7 @@ function UnitTile({ units, cards, now, shown, checked, onSelect }: UnitTileProps
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>
-        <DeckStats deck={shown} cards={cards} now={now} />
+        <DeckStats deck={unit} cards={cards} now={now} />
       </span>
     </ChoiceTile>
   );

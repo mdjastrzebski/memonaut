@@ -73,7 +73,7 @@ export function SummaryScreen({
   const { reviews } = session;
   const correctCount = reviews.filter((review) => review.rating !== Rating.Again).length;
   const accuracy = reviews.length ? correctCount / reviews.length : 0;
-  const { newWords, repeatedWords } = countWords(session);
+  const { newWords, repeatedWords } = countNewAndRepeatedWords(session);
 
   const stats: [label: string, value: string][] = [
     ['Time', formatDuration(activeMs)],
@@ -116,7 +116,7 @@ export function SummaryScreen({
           <span className="text-sm text-muted-foreground">Coming back soonest first</span>
         </div>
         <ol aria-label="Session words" className="flex flex-col gap-2">
-          {sortByResult(cards).map((card, index) => (
+          {sortByDueThenDifficulty(cards).map((card, index) => (
             <WordRow
               key={card.id}
               session={session}
@@ -145,7 +145,7 @@ export function SummaryScreen({
  * Words practised in this session: new if none of their cards had been practised before,
  * repeated otherwise.
  */
-function countWords(session: Session): { newWords: number; repeatedWords: number } {
+function countNewAndRepeatedWords(session: Session): { newWords: number; repeatedWords: number } {
   const seenCards = new Set<string>();
   const isNewWord = new Map<string, boolean>();
   for (const review of session.reviews) {
@@ -250,7 +250,7 @@ function RatingBar({ reviews }: { reviews: Review[] }) {
  * Practised words by when they come back, so the ones needing more practice lead;
  * ties go to the harder word. Words not seen yet come last.
  */
-function sortByResult(cards: Card[]): Card[] {
+function sortByDueThenDifficulty(cards: Card[]): Card[] {
   const seen = cards.filter((card) => card.srs.state !== State.New);
   const unseen = cards.filter((card) => card.srs.state === State.New);
   seen.sort(
