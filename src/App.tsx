@@ -1,20 +1,22 @@
 import { useEffect, useState } from 'react';
 
 import { ExerciseScreen } from '@/components/exercise-screen';
-import { DEFAULT_SESSION_SIZE, SetupScreen, type SessionSize } from '@/components/setup-screen';
+import { loadSetupChoice, saveSetupChoice, type SessionSize } from '@/components/setup-choice';
+import { SetupScreen } from '@/components/setup-screen';
 import { SummaryScreen } from '@/components/summary-screen';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { content } from '@/data/content';
-import { getSubjectDecks } from '@/data/decks';
 import type { Card } from '@/domain/types';
 import { createSession, getCurrentCard, submitReview, type Session } from '@/session/session';
 
 export default function App() {
-  const [deck, setDeck] = useState(() => getSubjectDecks(content.decks, content.subjects[0].id)[0]);
+  // Remembered across reloads, so the next visit starts where the last one left off.
+  const [initialChoice] = useState(() => loadSetupChoice(content));
+  const [deck, setDeck] = useState(initialChoice.deck);
   const [session, setSession] = useState<Session | null>(null);
   // Cards practised in earlier sessions, so progress carries over until the page is reloaded.
   const [cards, setCards] = useState<Record<string, Card>>({});
-  const [sessionSize, setSessionSize] = useState<SessionSize>(DEFAULT_SESSION_SIZE);
+  const [sessionSize, setSessionSize] = useState<SessionSize>(initialChoice.sessionSize);
   const [ended, setEnded] = useState(false);
   const [showSpecialCharacters, setShowSpecialCharacters] = useState(false);
   const [showSrsDetails, setShowSrsDetails] = useState(false);
@@ -39,7 +41,9 @@ export default function App() {
     setShowSpecialCharacters((subject.specialCharacters?.length ?? 0) > 0);
   };
 
-  // Nothing is saved, so ask before a reload or closed tab throws the session away. Browsers show
+  useEffect(() => saveSetupChoice({ deck, sessionSize }), [deck, sessionSize]);
+
+  // Progress isn't saved, so ask before a reload or closed tab throws the session away. Browsers show
   // their own message here.
   useEffect(() => {
     if (!studying) return;

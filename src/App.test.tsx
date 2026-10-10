@@ -408,3 +408,18 @@ test('a session practises 10 words by default, or as many as chosen', async () =
   await user.click(screen.getByRole('button', { name: 'End session' }));
   expect(screen.getByText('10 · Waiting for the next session.')).toBeInTheDocument();
 });
+
+test('remembers the subject, set and words per session after a reload', async () => {
+  const user = userEvent.setup();
+  const { unmount } = render(<App />);
+
+  await user.click(screen.getByRole('radio', { name: 'German' }));
+  await user.click(screen.getByRole('radio', { name: 'Kapitel 0' }));
+  await user.click(screen.getByRole('radio', { name: '20' }));
+  unmount();
+  render(<App />);
+
+  expect(screen.getByRole('radio', { name: 'German' })).toBeChecked();
+  expect(screen.getByRole('radio', { name: 'Kapitel 0' })).toBeChecked();
+  expect(screen.getByRole('radio', { name: '20' })).toBeChecked();
+});

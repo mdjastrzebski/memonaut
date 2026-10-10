@@ -11,6 +11,7 @@ import { useId, useState, type CSSProperties, type ReactNode } from 'react';
 
 import { EXERCISES } from '@/components/exercise-types';
 import { getProgress, getWordProgress, type Progress } from '@/components/grades';
+import { SESSION_SIZES, type SessionSize } from '@/components/setup-choice';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -21,12 +22,6 @@ import { formatRelative } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { EXERCISE_TYPES, getCardId } from '@/session/session';
 import { State, type FsrsCard } from '@/srs/scheduler';
-
-/** How many words a session practises at most; null means every word in the set. */
-export type SessionSize = number | null;
-
-const SESSION_SIZES: SessionSize[] = [5, 10, 20, null];
-export const DEFAULT_SESSION_SIZE: SessionSize = 10;
 
 interface SetupScreenProps {
   content: Content;
