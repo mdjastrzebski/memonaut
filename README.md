@@ -48,9 +48,9 @@ Exercise Types are ordered from easiest: a session queues every `dictation` Card
 Learning content lives in YAML files under `src/data/`, one folder per Subject. Only what to learn is stored there; learning state is kept separately, in the browser's localStorage under one key per Subject (`memonaut:progress:<subject>`), keyed by Concept id and Exercise Type. Each Card's FSRS state is stored compactly. Saving only replaces the Cards that changed, so progress for words no longer in any Deck is kept, and data from a newer app version is never overwritten.
 
 ```yaml
-# src/data/german/decks/numbers-0-10.yaml
-id: numbers-0-10
-name: Numbers 0–10
+# src/data/german/decks/kapitel-0.yaml
+id: kapitel-0
+name: Kapitel 0
 concepts:
   - { id: number-3, local: trzy, foreign: drei, hint: 3, core: true }
 ```

@@ -81,13 +81,6 @@ export function SetupScreen({
                 key={option.id}
                 subject={option}
                 content={content}
-                dueToday={countDueToday(
-                  content.concepts
-                    .filter((concept) => concept.subjectId === option.id)
-                    .map((concept) => concept.id),
-                  cards,
-                  now,
-                )}
                 checked={option.id === subject.id}
                 onSelect={() => onSelectDeck(getSubjectDecks(content.decks, option.id)[0])}
                 style={{ animationDelay: `${index * 60}ms` }}
@@ -218,14 +211,12 @@ function ChoiceTile({
 interface SubjectTileProps {
   subject: Subject;
   content: Content;
-  /** Words of the Subject that need practice today. */
-  dueToday: number;
   checked: boolean;
   onSelect: () => void;
   style: CSSProperties;
 }
 
-function SubjectTile({ subject, content, dueToday, checked, onSelect, style }: SubjectTileProps) {
+function SubjectTile({ subject, content, checked, onSelect, style }: SubjectTileProps) {
   const setCount = content.decks.filter((deck) => deck.subjectId === subject.id).length;
   const wordCount = content.concepts.filter((concept) => concept.subjectId === subject.id).length;
 
@@ -247,7 +238,6 @@ function SubjectTile({ subject, content, dueToday, checked, onSelect, style }: S
         <span className="text-sm text-muted-foreground">
           {plural(setCount, 'set')} · {plural(wordCount, 'word')}
         </span>
-        <DueToday count={dueToday} />
       </span>
     </ChoiceTile>
   );
@@ -279,8 +269,9 @@ function DeckTile({ deck, cards, now, checked, onSelect }: DeckTileProps) {
           <Star className="size-6 fill-almost" />
         </span>
       )}
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span aria-hidden className="font-display text-lg font-bold">
+      {/* Rows match the unit tile's, so the two tiles line up side by side. */}
+      <span className="flex min-w-0 flex-1 flex-col gap-1">
+        <span aria-hidden className="flex h-11 items-center font-display text-lg font-bold">
           {deck.name}
         </span>
         <DueToday count={countDueToday(deck.conceptIds, cards, now)} />
@@ -312,7 +303,7 @@ function UnitTile({ units, cards, now, shown, checked, onSelect }: UnitTileProps
           {/* Clicking the select box opens the menu; clicking elsewhere on the tile selects it. */}
           <DropdownMenuTrigger
             aria-label="Change unit"
-            className="flex items-center gap-2 rounded-xl border-2 border-line bg-background px-3 py-1.5 text-left shadow-sticker-sm transition-colors outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 data-[state=open]:bg-muted"
+            className="flex h-11 items-center gap-2 rounded-xl border-2 border-line bg-background px-3 text-left shadow-sticker-sm transition-colors outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 data-[state=open]:bg-muted"
           >
             <span aria-hidden className="min-w-0 flex-1 truncate font-display text-lg font-bold">
               {shown.name}
@@ -553,8 +544,7 @@ function SessionSizePicker({ value, onChange, wordCount }: SessionSizePickerProp
         ))}
       </div>
       <p className="text-sm text-muted-foreground">
-        {plural(words, 'word')} · {words * EXERCISE_TYPES.length} exercises. Words due for practice
-        come first, then new ones.
+        {plural(words, 'word')} · {words * EXERCISE_TYPES.length} exercises
       </p>
     </ChoiceGroup>
   );

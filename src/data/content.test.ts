@@ -6,8 +6,11 @@ const subject = 'id: german\nname: German\nforeignLanguage: de-DE\n';
 
 test('loads the bundled content', () => {
   expect(content.subjects.map((subject) => subject.id)).toContain('german');
-  const numbers = content.decks.find((deck) => deck.id === 'german/numbers-0-10');
-  expect(numbers?.conceptIds).toHaveLength(11);
+  const kapitel0 = content.decks.find((deck) => deck.id === 'german/kapitel-0');
+  const core = content.decks.find((deck) => deck.id === 'german/core');
+  expect(kapitel0?.conceptIds).toContain('german/number-10');
+  expect(core?.conceptIds).toContain('german/number-0');
+  expect(core?.conceptIds).toContain('german/number-10');
 });
 
 test('keeps every value a string', () => {
