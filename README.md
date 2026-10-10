@@ -64,9 +64,9 @@ name: Polish
 foreignLanguage: pl-PL
 exerciseTypes: [dictation] # every Exercise Type if left out
 
-# src/data/polish/decks/400-trudnych-slow.yaml
-id: 400-trudnych-slow
-name: 400 trudnych słów
+# src/data/polish/decks/trudne-slowka.yaml
+id: trudne-slowka
+name: Trudne słówka
 strictSpelling: true
 concepts:
   - { id: morze, foreign: morze, spokenHint: zbiornik słonej wody }

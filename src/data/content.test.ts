@@ -115,12 +115,9 @@ test('the bundled Polish words are practised with dictation only, with hints for
     spokenHint: 'zbiornik słonej wody',
   });
   expect(concept('polish/moze')).toMatchObject({ foreign: 'może', spokenHint: 'przypuszczenie' });
-  // The popular words are all among the 400, so practising them counts in both.
-  const deck = (id: string) => content.decks.find((deck) => deck.id === id)!;
-  const all = deck('polish/400-trudnych-slow').conceptIds;
   expect(
-    deck('polish/100-popularnych-trudnych-slow').conceptIds.filter((id) => !all.includes(id)),
-  ).toEqual([]);
+    content.decks.filter((deck) => deck.subjectId === 'polish').map((deck) => deck.name),
+  ).toEqual(['Trudne słówka']);
 });
 
 test('a deck can rate spelling strictly, and core.yaml sets it for the core deck', () => {
@@ -147,7 +144,7 @@ concepts:
   expect(strictSpelling('german/relaxed')).toBeUndefined();
   expect(
     content.decks.filter((deck) => deck.subjectId === 'polish').map((deck) => deck.strictSpelling),
-  ).toEqual([true, true]);
+  ).toEqual([true]);
 });
 
 test('a subject practises every exercise type unless it lists some, easiest first', () => {

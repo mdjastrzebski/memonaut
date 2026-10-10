@@ -514,7 +514,7 @@ test('Polish practises spelling with dictation only', async () => {
   render(<App />);
 
   await user.click(screen.getByRole('radio', { name: 'Polish' }));
-  expect(unitTile('100 popularnych trudnych słów')).toBeChecked();
+  expect(unitTile('Trudne słówka')).toBeChecked();
   await user.click(screen.getByRole('radio', { name: '5' }));
   expect(screen.getByText(/5 words · 5 exercises/)).toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: 'Start session' }));
