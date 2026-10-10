@@ -1,6 +1,7 @@
 import { ArrowRight, Check, RotateCcw, Target, Zap, type LucideIcon } from 'lucide-react';
 import { useLayoutEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 
+import { AnswerComparison } from '@/components/answer-comparison';
 import { GRADE_STYLES } from '@/components/grades';
 import { SessionProgress } from '@/components/session-progress';
 import { SpecialCharacters } from '@/components/special-characters';
@@ -47,6 +48,9 @@ interface ExerciseScreenProps {
   onToggleSrsDetails: () => void;
 }
 
+const INPUT_CLASS =
+  'h-16 rounded-2xl border-2 border-foreground bg-background px-5 font-display text-3xl font-semibold shadow-[inset_0_3px_0_0_var(--color-border)] placeholder:font-normal placeholder:text-muted-foreground/60 focus-visible:border-foreground focus-visible:ring-rocket/40 md:text-3xl';
+
 interface Checked {
   result: AnswerResult;
   at: Date;
@@ -65,6 +69,7 @@ export function ExerciseScreen({
   const [shownAt] = useState(() => new Date());
   const [input, setInput] = useState('');
   const [checked, setChecked] = useState<Checked | null>(null);
+  const [retyped, setRetyped] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const pendingCaret = useRef<number | null>(null);
 
@@ -74,7 +79,7 @@ export function ExerciseScreen({
       inputRef.current?.setSelectionRange(pendingCaret.current, pendingCaret.current);
       pendingCaret.current = null;
     }
-  }, [input]);
+  }, [input, retyped]);
 
   const card = getCurrentCard(session);
   if (!card) return null;
@@ -85,6 +90,10 @@ export function ExerciseScreen({
   const fastLimitMs = getFastLimitMs(concept.answer);
   const preview = previewReview(card.srs, now);
   const earlierReviews = session.reviews.filter((review) => review.cardId === card.id);
+  // After a wrong or almost-right answer, the learner types the right one before moving on.
+  const retyping = checked !== null && (grade === Rating.Hard || grade === Rating.Again);
+  const retypedCorrectly = retyping && retyped === concept.answer;
+  const [value, setValue] = retyping ? [retyped, setRetyped] : [input, setInput];
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -93,7 +102,7 @@ export function ExerciseScreen({
       const at = new Date();
       const elapsedMs = at.getTime() - shownAt.getTime();
       setChecked({ result: gradeAnswer(concept.answer, input, elapsedMs), at });
-    } else {
+    } else if (!retyping || retypedCorrectly) {
       const { grade, issues, elapsedMs } = checked.result;
       onReview({ input, elapsedMs, rating: grade, issues, now: checked.at });
     }
@@ -101,10 +110,10 @@ export function ExerciseScreen({
 
   const insertCharacter = (character: string) => {
     const element = inputRef.current;
-    const start = element?.selectionStart ?? input.length;
-    const end = element?.selectionEnd ?? input.length;
+    const start = element?.selectionStart ?? value.length;
+    const end = element?.selectionEnd ?? value.length;
     pendingCaret.current = start + character.length;
-    setInput(input.slice(0, start) + character + input.slice(end));
+    setValue(value.slice(0, start) + character + value.slice(end));
     element?.focus();
   };
 
@@ -130,34 +139,61 @@ export function ExerciseScreen({
         </h2>
 
         <form onSubmit={handleSubmit} className="relative flex flex-col gap-4">
-          <Input
-            ref={inputRef}
-            autoFocus
-            aria-label="Answer"
-            placeholder="Your answer…"
-            autoComplete="off"
-            autoCapitalize="off"
-            spellCheck={false}
-            value={input}
-            readOnly={checked !== null}
-            onChange={(event) => setInput(event.target.value)}
-            className={cn(
-              'h-16 rounded-2xl border-2 border-foreground bg-background px-5 font-display text-3xl font-semibold shadow-[inset_0_3px_0_0_var(--color-border)] placeholder:font-normal placeholder:text-muted-foreground/60 focus-visible:border-foreground focus-visible:ring-rocket/40 md:text-3xl',
-              grade !== undefined && GRADE_STYLES[grade].tint,
-              grade === Rating.Again && 'animate-shake',
-            )}
-          />
-
-          {!checked && (
+          {retyping ? (
             <>
-              <FastBonus durationMs={fastLimitMs} />
+              <Feedback
+                result={checked.result}
+                input={input}
+                answer={concept.answer}
+                nextInMs={preview[checked.result.grade].card.due.getTime() - now.getTime()}
+              />
+              <p className="-mb-2 font-semibold">Now type the answer to continue:</p>
+              <div className="relative">
+                <Input
+                  ref={inputRef}
+                  autoFocus
+                  aria-label="Retype answer"
+                  autoComplete="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
+                  value={retyped}
+                  readOnly={retypedCorrectly}
+                  onChange={(event) => setRetyped(event.target.value)}
+                  className={cn(
+                    INPUT_CLASS,
+                    'text-transparent caret-foreground',
+                    retypedCorrectly && GRADE_STYLES[Rating.Good].tint,
+                  )}
+                />
+                <RetypeGuide answer={concept.answer} typed={retyped} />
+              </div>
+            </>
+          ) : (
+            <Input
+              ref={inputRef}
+              autoFocus
+              aria-label="Answer"
+              placeholder="Your answer…"
+              autoComplete="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              value={input}
+              readOnly={checked !== null}
+              onChange={(event) => setInput(event.target.value)}
+              className={cn(INPUT_CLASS, grade !== undefined && GRADE_STYLES[grade].tint)}
+            />
+          )}
 
-              {showSpecialCharacters && specialCharacters.length > 0 && (
+          {(!checked || retyping) && (
+            <>
+              {!checked && <FastBonus durationMs={fastLimitMs} />}
+
+              {showSpecialCharacters && specialCharacters.length > 0 && !retypedCorrectly && (
                 <SpecialCharacters characters={specialCharacters} onInsert={insertCharacter} />
               )}
 
               <div className="flex gap-2">
-                {specialCharacters.length > 0 && (
+                {specialCharacters.length > 0 && !retypedCorrectly && (
                   <Button
                     type="button"
                     variant="sticker"
@@ -170,20 +206,34 @@ export function ExerciseScreen({
                     äöü
                   </Button>
                 )}
-                <Button type="submit" variant="cta" className="h-13 flex-1 rounded-2xl text-lg">
-                  Check
+                <Button
+                  type="submit"
+                  variant="cta"
+                  disabled={retyping && !retypedCorrectly}
+                  className="h-13 flex-1 rounded-2xl text-lg"
+                >
+                  {retyping ? (
+                    <>
+                      Continue <ArrowRight className="size-5" />
+                    </>
+                  ) : (
+                    'Check'
+                  )}
                 </Button>
               </div>
+              {retypedCorrectly && (
+                <p className="-mt-2 text-center text-xs text-muted-foreground">or press Enter</p>
+              )}
             </>
           )}
 
-          {checked && grade !== undefined && (
+          {checked && !retyping && (
             <>
               <Feedback
                 result={checked.result}
                 input={input}
                 answer={concept.answer}
-                nextInMs={preview[grade].card.due.getTime() - now.getTime()}
+                nextInMs={preview[checked.result.grade].card.due.getTime() - now.getTime()}
               />
               <Button type="submit" variant="cta" className="h-13 rounded-2xl text-lg">
                 Continue <ArrowRight className="size-5" />
@@ -277,17 +327,35 @@ function Feedback({ result, input, answer, nextInMs }: FeedbackProps) {
 
       <div className="flex min-w-0 flex-col gap-1">
         <p className={cn('font-display text-xl font-bold', style.text)}>{getHeadline(result)}</p>
-        {wrong && (
-          <p>
-            You typed <span className="font-medium line-through decoration-2">{input}</span>. The
-            answer is <span className="font-display text-lg font-bold">{answer}</span>.
-          </p>
-        )}
+        {wrong && <AnswerComparison input={input} answer={answer} shake={grade === Rating.Again} />}
         <p className="text-xs text-muted-foreground">
           Rated <span className="font-semibold text-foreground">{ratingName(grade)}</span> ·{' '}
           {formatSeconds(elapsedMs)} · comes back in {formatDuration(nextInMs)}
         </p>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Draws the retyped letters over the transparent input text: right ones as typed, wrong ones in
+ * red, then the rest of the answer as a faded guide to copy.
+ */
+function RetypeGuide({ answer, typed }: { answer: string; typed: string }) {
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-0 flex items-center overflow-hidden border-2 border-transparent px-5 font-display text-3xl font-semibold whitespace-pre"
+    >
+      {typed.split('').map((letter, index) => (
+        <span
+          key={index}
+          className={cn(letter !== answer[index] && 'rounded-sm bg-wrong/30 text-wrong-ink')}
+        >
+          {letter}
+        </span>
+      ))}
+      <span className="text-muted-foreground/50">{answer.slice(typed.length)}</span>
     </div>
   );
 }

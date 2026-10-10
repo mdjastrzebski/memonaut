@@ -10,6 +10,11 @@ function currentConcept() {
   return germanNumberConcepts.find((concept) => concept.prompt === prompt)!;
 }
 
+async function retypeAnswer(user: ReturnType<typeof userEvent.setup>) {
+  const { answer } = currentConcept();
+  await user.type(screen.getByRole('textbox', { name: 'Retype answer' }), `${answer}{Enter}`);
+}
+
 test('rates a fast exact answer as Easy and continues on Enter', async () => {
   const user = userEvent.setup();
   render(<App />);
@@ -25,7 +30,7 @@ test('rates a fast exact answer as Easy and continues on Enter', async () => {
   expect(screen.getByText(/1 answer$/)).toBeInTheDocument();
 });
 
-test('rates an answer with wrong capitalization as Hard', async () => {
+test('rates an answer with wrong capitalization as Hard and asks to retype it', async () => {
   const user = userEvent.setup();
   render(<App />);
 
@@ -33,19 +38,45 @@ test('rates an answer with wrong capitalization as Hard', async () => {
   const capitalized = answer[0].toUpperCase() + answer.slice(1);
   await user.type(screen.getByRole('textbox', { name: 'Answer' }), `${capitalized}{Enter}`);
 
-  expect(screen.getByRole('status')).toHaveTextContent('Almost! Check: capital letters.');
-  expect(screen.getByRole('status')).toHaveTextContent(`The answer is ${answer}.`);
-  expect(screen.getByRole('status')).toHaveTextContent('Rated Hard');
+  const status = screen.getByRole('status');
+  expect(status).toHaveTextContent('Almost! Check: capital letters.');
+  expect(status).toHaveTextContent('Rated Hard');
+  // Only the first letter is marked, in both what was typed and the answer.
+  expect(within(status).getAllByText(capitalized[0], { selector: 'mark' })).toHaveLength(1);
+  expect(within(status).getAllByText(answer[0], { selector: 'mark' })).toHaveLength(1);
+
+  const retype = screen.getByRole('textbox', { name: 'Retype answer' });
+  const continueButton = screen.getByRole('button', { name: 'Continue' });
+  expect(retype).toHaveFocus();
+  expect(continueButton).toBeDisabled();
+
+  // The same mistake again doesn't count.
+  await user.type(retype, `${capitalized}{Enter}`);
+  expect(continueButton).toBeDisabled();
+  expect(screen.getByText(/0 answers/)).toBeInTheDocument();
+
+  await user.clear(retype);
+  await user.type(retype, `${answer}{Enter}`);
+  expect(screen.getByText(/1 answer$/)).toBeInTheDocument();
 });
 
-test('rates a wrong answer as Again without asking', async () => {
+test('rates a wrong answer as Again and shows it next to the answer', async () => {
   const user = userEvent.setup();
   render(<App />);
 
+  const { answer } = currentConcept();
   await user.type(screen.getByRole('textbox', { name: 'Answer' }), 'falsch{Enter}');
-  expect(screen.getByRole('status')).toHaveTextContent('Not quite.');
-  expect(screen.getByRole('status')).toHaveTextContent('Rated Again');
+
+  const status = screen.getByRole('status');
+  expect(status).toHaveTextContent('Not quite.');
+  expect(status).toHaveTextContent('You typedfalsch');
+  expect(status).toHaveTextContent(`Answer${answer}`);
+  expect(status).toHaveTextContent('Rated Again');
+  expect(within(status).queryAllByText(/./, { selector: 'mark' })).toHaveLength(0);
   expect(screen.queryByRole('button', { name: /^(Hard|Good|Easy)/ })).not.toBeInTheDocument();
+
+  await user.type(screen.getByRole('textbox', { name: 'Retype answer' }), `${answer}{Enter}`);
+  expect(screen.getByText(/1 answer$/)).toBeInTheDocument();
 });
 
 test('SRS details start collapsed and stay expanded across exercises', async () => {
@@ -68,7 +99,7 @@ test('SRS details start collapsed and stay expanded across exercises', async () 
   const input = screen.getByRole('textbox', { name: 'Answer' });
   expect(input).toHaveFocus();
   await user.type(input, 'falsch{Enter}');
-  await user.keyboard('{Enter}');
+  await retypeAnswer(user);
 
   expect(screen.getByText(/1 answer$/)).toBeInTheDocument();
   expect(toggle()).toHaveAttribute('aria-expanded', 'true');
@@ -80,7 +111,7 @@ test('ending the session shows results with SRS details collapsed', async () => 
   render(<App />);
 
   await user.type(screen.getByRole('textbox', { name: 'Answer' }), 'falsch{Enter}');
-  await user.keyboard('{Enter}');
+  await retypeAnswer(user);
   await user.click(screen.getByRole('button', { name: 'End session' }));
 
   expect(screen.getByText(/Session results/)).toBeInTheDocument();

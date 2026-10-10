@@ -67,7 +67,7 @@ export function gradeAnswer(expected: string, input: string, elapsedMs: number):
   return result(Rating.Hard, issues);
 }
 
-function normalizeSpacing(value: string): string {
+export function normalizeSpacing(value: string): string {
   return value.trim().replace(/\s+/g, ' ');
 }
 
@@ -80,12 +80,12 @@ function distanceIgnoringDiacritics(a: string, b: string): number {
 }
 
 /** "Fünf" → "Funf", "Straße" → "Strasse". */
-function stripDiacritics(value: string): string {
+export function stripDiacritics(value: string): string {
   return value.replace(/ß/g, 'ss').replace(/ẞ/g, 'SS').normalize('NFD').replace(/\p{M}/gu, '');
 }
 
 /** "Fünf" → "Fuenf". */
-function transliterate(value: string): string {
+export function transliterate(value: string): string {
   return value.replace(/[äöüßÄÖÜẞ]/g, (char) => TRANSLITERATIONS[char]);
 }
 
