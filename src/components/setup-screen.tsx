@@ -92,7 +92,7 @@ export function SetupScreen({
         <ChoiceGroup legend="Unit">
           <div className="grid gap-3 sm:grid-cols-2">
             {coreDecks.map((option) => (
-              <DeckTile
+              <CoreTile
                 key={option.id}
                 deck={option}
                 cards={cards}
@@ -243,7 +243,7 @@ function SubjectTile({ subject, content, checked, onSelect, style }: SubjectTile
   );
 }
 
-interface DeckTileProps {
+interface CoreTileProps {
   deck: Deck;
   cards: Record<string, Card>;
   now: Date;
@@ -251,34 +251,24 @@ interface DeckTileProps {
   onSelect: () => void;
 }
 
-function DeckTile({ deck, cards, now, checked, onSelect }: DeckTileProps) {
-  const core = deck.kind === 'core';
-  const words = plural(deck.conceptIds.length, 'word');
-  const progress = deck.conceptIds.map((conceptId) => getConceptStatus(conceptId, cards).progress);
-
+function CoreTile({ deck, cards, now, checked, onSelect }: CoreTileProps) {
   return (
     <ChoiceTile
       name={deck.name}
       group="deck"
       checked={checked}
       onSelect={onSelect}
-      className={cn(core && 'has-checked:bg-rocket/35')}
+      className="has-checked:bg-rocket/35"
     >
-      {core && (
-        <span className="grid size-12 shrink-0 place-items-center rounded-full border-2 border-line bg-rocket">
-          <Star className="size-6 fill-almost" />
-        </span>
-      )}
+      <span className="grid size-12 shrink-0 place-items-center rounded-full border-2 border-line bg-rocket">
+        <Star className="size-6 fill-almost" />
+      </span>
       {/* Rows match the unit tile's, so the two tiles line up side by side. */}
       <span className="flex min-w-0 flex-1 flex-col gap-1">
         <span aria-hidden className="flex h-11 items-center font-display text-lg font-bold">
           {deck.name}
         </span>
-        <DueToday count={countDueToday(deck.conceptIds, cards, now)} />
-        <span className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm text-muted-foreground">
-          {words}
-          <ProgressCounts progress={progress} />
-        </span>
+        <DeckStats deck={deck} cards={cards} now={now} />
       </span>
     </ChoiceTile>
   );
@@ -337,17 +327,24 @@ function UnitTile({ units, cards, now, shown, checked, onSelect }: UnitTileProps
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>
-        <DueToday count={countDueToday(shown.conceptIds, cards, now)} />
-        <span className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm text-muted-foreground">
-          {plural(shown.conceptIds.length, 'word')}
-          <ProgressCounts
-            progress={shown.conceptIds.map(
-              (conceptId) => getConceptStatus(conceptId, cards).progress,
-            )}
-          />
-        </span>
+        <DeckStats deck={shown} cards={cards} now={now} />
       </span>
     </ChoiceTile>
+  );
+}
+
+/** A deck tile's rows below its name: words due today, word count and progress. */
+function DeckStats({ deck, cards, now }: { deck: Deck; cards: Record<string, Card>; now: Date }) {
+  return (
+    <>
+      <DueToday count={countDueToday(deck.conceptIds, cards, now)} />
+      <span className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm text-muted-foreground">
+        {plural(deck.conceptIds.length, 'word')}
+        <ProgressCounts
+          progress={deck.conceptIds.map((conceptId) => getConceptStatus(conceptId, cards).progress)}
+        />
+      </span>
+    </>
   );
 }
 
