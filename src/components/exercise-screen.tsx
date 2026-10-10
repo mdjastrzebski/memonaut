@@ -15,12 +15,7 @@ import { SpecialCharacters } from '@/components/special-characters';
 import { CardStats, RatingPreview, SrsDetails, StateBadge } from '@/components/srs-stats';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  getFastLimitMs,
-  gradeAnswer,
-  type AnswerIssue,
-  type AnswerResult,
-} from '@/exercises/type-answer';
+import { getFastLimitMs, gradeAnswer, type AnswerResult } from '@/exercises/type-answer';
 import { formatDuration, formatSeconds } from '@/lib/format';
 import { speak } from '@/lib/speech';
 import { cn } from '@/lib/utils';
@@ -31,12 +26,6 @@ import {
   type SubmitReviewInput,
 } from '@/session/session';
 import { previewReview, Rating, ratingName, type Grade } from '@/srs/scheduler';
-
-const ISSUE_MESSAGES: Record<AnswerIssue, string> = {
-  case: 'capital letters',
-  diacritics: 'umlauts or ß',
-  typo: 'one letter off',
-};
 
 const GRADE_ICONS: Record<Grade, LucideIcon> = {
   [Rating.Again]: RotateCcw,
@@ -184,11 +173,10 @@ export function ExerciseScreen({
           {retyping ? (
             <>
               <Feedback
-                result={checked.result}
+                grade={checked.result.grade}
                 input={input}
                 answer={concept.foreign}
-                meaning={dictation ? concept.local : undefined}
-                nextInMs={preview[checked.result.grade].card.due.getTime() - now.getTime()}
+                meaning={concept.local}
               />
               <p className="-mb-2 font-semibold">Now type the answer to continue:</p>
               <div className="relative">
@@ -273,11 +261,10 @@ export function ExerciseScreen({
           {checked && !retyping && (
             <>
               <Feedback
-                result={checked.result}
+                grade={checked.result.grade}
                 input={input}
                 answer={concept.foreign}
-                meaning={dictation ? concept.local : undefined}
-                nextInMs={preview[checked.result.grade].card.due.getTime() - now.getTime()}
+                meaning={concept.local}
               />
               <Button type="submit" variant="cta" className="h-13 rounded-2xl text-lg">
                 Continue <ArrowRight className="size-5" />
@@ -289,6 +276,17 @@ export function ExerciseScreen({
       </section>
 
       <SrsDetails open={showSrsDetails} onToggle={onToggleSrsDetails}>
+        {checked && (
+          <p>
+            Rated{' '}
+            <span className="font-semibold text-foreground">
+              {ratingName(checked.result.grade)}
+            </span>{' '}
+            · {formatSeconds(checked.result.elapsedMs)} · comes back in{' '}
+            {formatDuration(preview[checked.result.grade].card.due.getTime() - now.getTime())}
+          </p>
+        )}
+
         <div>
           <h3 className="mb-2 font-medium text-foreground">Card memory state (before review)</h3>
           <CardStats card={card.srs} now={now} />
@@ -337,16 +335,15 @@ function FastBonus({ durationMs }: { durationMs: number }) {
 }
 
 interface FeedbackProps {
-  result: AnswerResult;
+  grade: Grade;
   input: string;
   answer: string;
-  /** The local word, shown after a dictation exercise. */
-  meaning?: string;
-  nextInMs: number;
+  /** The local word, shown with the result. */
+  meaning: string;
 }
 
-function Feedback({ result, input, answer, meaning, nextInMs }: FeedbackProps) {
-  const { grade, elapsedMs } = result;
+/** The result as an icon, the answer to compare after a mistake, and the word's meaning. */
+function Feedback({ grade, input, answer, meaning }: FeedbackProps) {
   const style = GRADE_STYLES[grade];
   const Icon = GRADE_ICONS[grade];
   const wrong = grade === Rating.Hard || grade === Rating.Again;
@@ -355,11 +352,11 @@ function Feedback({ result, input, answer, meaning, nextInMs }: FeedbackProps) {
     <div
       role="status"
       className={cn(
-        'flex animate-rise items-start gap-4 rounded-2xl border-2 border-foreground p-4',
+        'flex animate-rise items-center gap-4 rounded-2xl border-2 border-foreground p-4',
         style.tint,
       )}
     >
-      <span className="relative shrink-0">
+      <span className="relative shrink-0 self-start">
         <span
           className={cn(
             'grid size-11 animate-pop place-items-center rounded-full border-2 border-foreground',
@@ -367,21 +364,20 @@ function Feedback({ result, input, answer, meaning, nextInMs }: FeedbackProps) {
           )}
         >
           <Icon className="size-5" strokeWidth={3} />
+          <span className="sr-only">{ratingName(grade)}</span>
         </span>
         {!wrong && <Burst />}
       </span>
 
       <div className="flex min-w-0 flex-col gap-1">
-        <p className={cn('font-display text-xl font-bold', style.text)}>{getHeadline(result)}</p>
         {wrong && <AnswerComparison input={input} answer={answer} shake={grade === Rating.Again} />}
-        {meaning && (
-          <p className="text-sm">
-            Means <span className="font-semibold">{meaning}</span>
-          </p>
-        )}
-        <p className="text-xs text-muted-foreground">
-          Rated <span className="font-semibold text-foreground">{ratingName(grade)}</span> ·{' '}
-          {formatSeconds(elapsedMs)} · comes back in {formatDuration(nextInMs)}
+        <p
+          className={cn(
+            'font-display font-bold break-words',
+            wrong ? 'text-lg text-muted-foreground' : 'text-2xl',
+          )}
+        >
+          = {meaning}
         </p>
       </div>
     </div>
@@ -427,17 +423,4 @@ function Burst() {
       ))}
     </span>
   );
-}
-
-function getHeadline({ grade, issues }: AnswerResult): string {
-  switch (grade) {
-    case Rating.Easy:
-      return 'Correct and fast!';
-    case Rating.Good:
-      return 'Correct!';
-    case Rating.Hard:
-      return `Almost! Check: ${issues.map((issue) => ISSUE_MESSAGES[issue]).join(', ')}.`;
-    case Rating.Again:
-      return 'Not quite.';
-  }
 }

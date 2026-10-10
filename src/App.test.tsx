@@ -51,8 +51,7 @@ test('rates a fast exact answer as Easy and continues on Enter', async () => {
 
   const input = screen.getByRole('textbox', { name: 'Answer' });
   await user.type(input, `${currentConcept().foreign}{Enter}`);
-  expect(screen.getByRole('status')).toHaveTextContent('Correct and fast!');
-  expect(screen.getByRole('status')).toHaveTextContent('Rated Easy');
+  expect(screen.getByRole('status')).toHaveTextContent('Easy');
 
   await user.keyboard('{Enter}');
   expect(screen.getByText(/1 answer$/)).toBeInTheDocument();
@@ -67,8 +66,7 @@ test('rates an answer with wrong capitalization as Hard and asks to retype it', 
   await user.type(screen.getByRole('textbox', { name: 'Answer' }), `${capitalized}{Enter}`);
 
   const status = screen.getByRole('status');
-  expect(status).toHaveTextContent('Almost! Check: capital letters.');
-  expect(status).toHaveTextContent('Rated Hard');
+  expect(status).toHaveTextContent('Hard');
   // Only the first letter is marked, in both what was typed and the answer.
   expect(within(status).getAllByText(capitalized[0], { selector: 'mark' })).toHaveLength(1);
   expect(within(status).getAllByText(answer[0], { selector: 'mark' })).toHaveLength(1);
@@ -92,14 +90,14 @@ test('rates a wrong answer as Again and shows it next to the answer', async () =
   const user = userEvent.setup();
   render(<App />);
 
-  const { foreign: answer } = currentConcept();
+  const { foreign: answer, local } = currentConcept();
   await user.type(screen.getByRole('textbox', { name: 'Answer' }), 'falsch{Enter}');
 
   const status = screen.getByRole('status');
-  expect(status).toHaveTextContent('Not quite.');
+  expect(status).toHaveTextContent('Again');
   expect(status).toHaveTextContent('You typedfalsch');
   expect(status).toHaveTextContent(`Answer${answer}`);
-  expect(status).toHaveTextContent('Rated Again');
+  expect(status).toHaveTextContent(local);
   expect(within(status).queryAllByText(/./, { selector: 'mark' })).toHaveLength(0);
   expect(screen.queryByRole('button', { name: /^(Hard|Good|Easy)/ })).not.toBeInTheDocument();
 
@@ -192,7 +190,7 @@ test('dictation reads the word aloud and shows its meaning only after checking',
   expect(spoken).toEqual([foreign, foreign]);
 
   await user.type(screen.getByRole('textbox', { name: 'Answer' }), `${foreign}{Enter}`);
-  expect(screen.getByRole('status')).toHaveTextContent(`Means ${local}`);
+  expect(screen.getByRole('status')).toHaveTextContent(local);
   expect(screen.queryByText(hint!)).not.toBeInTheDocument();
 });
 

@@ -19,8 +19,9 @@ export function AnswerComparison({ input, answer, shake }: AnswerComparisonProps
 
   return (
     <dl className="my-1 grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-1.5">
-      <dt className="flex items-center gap-1 text-xs font-bold tracking-wider text-wrong-ink uppercase">
-        <X className="size-3.5" strokeWidth={3} /> You typed
+      <dt className="text-wrong-ink">
+        <X className="size-5" strokeWidth={3} />
+        <span className="sr-only">You typed</span>
       </dt>
       <dd
         className={cn(
@@ -35,8 +36,9 @@ export function AnswerComparison({ input, answer, shake }: AnswerComparisonProps
         )}
       </dd>
 
-      <dt className="flex items-center gap-1 text-xs font-bold tracking-wider text-correct-ink uppercase">
-        <Check className="size-3.5" strokeWidth={3} /> Answer
+      <dt className="text-correct-ink">
+        <Check className="size-5" strokeWidth={3} />
+        <span className="sr-only">Answer</span>
       </dt>
       <dd className="font-display text-2xl font-bold break-all whitespace-pre-wrap">
         {parts ? (
