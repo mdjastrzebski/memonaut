@@ -390,7 +390,7 @@ test('setup offers each subject with its core set selected first', async () => {
   const selected = screen.getByRole('region', { name: 'Selected set' });
   expect(within(selected).getByRole('heading', { name: 'Essentials' })).toBeInTheDocument();
   expect(within(selected).getByText('Words', { selector: 'dt' }).nextSibling).toHaveTextContent(
-    '30',
+    '41',
   );
   expect(within(selected).queryByRole('list', { name: 'Words in set' })).not.toBeInTheDocument();
 });

@@ -10,3 +10,6 @@ concepts:
   - { id: number-8, local: osiem, foreign: acht, hint: 8 }
   - { id: number-9, local: dziewięć, foreign: neun, hint: 9 }
   - { id: number-10, local: dziesięć, foreign: zehn, hint: 10 }
+  - { id: woher-kommst-du, local: skąd jesteś?, foreign: woher kommst du? }
+  - { id: ich-komme-aus-polen, local: jestem z Polski, foreign: ich komme aus Polen }
+  - { id: bis-bald, local: do zobaczenia wkrótce, foreign: bis bald }
