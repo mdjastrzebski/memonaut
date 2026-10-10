@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import {
+  getNormalizingGain,
   getVoiceStatus,
   HINT_DELAY_MS,
   removeElevenLabsKey,
@@ -16,7 +17,52 @@ interface FakeUtterance {
 
 const queue: FakeUtterance[] = [];
 const spoken: string[] = [];
-const played: { src: string; onended: (() => void) | null }[] = [];
+const played: { gain: number; onended: (() => void) | null }[] = [];
+
+/** A decoded one-channel clip of `seconds`, at a steady `level`. */
+function fakeBuffer(level: number, seconds = 0.5) {
+  const sampleRate = 8000;
+  const samples = new Float32Array(sampleRate * seconds).fill(level);
+  return {
+    sampleRate,
+    length: samples.length,
+    numberOfChannels: 1,
+    getChannelData: () => samples,
+  } as unknown as AudioBuffer;
+}
+
+/** Plays nothing; records each clip started and the gain it was given. */
+class FakeAudioContext {
+  state = 'running';
+  destination = {};
+  resume = () => Promise.resolve();
+  decodeAudioData = () => Promise.resolve(fakeBuffer(0.05));
+  createDynamicsCompressor() {
+    const param = () => ({ value: 0 });
+    return {
+      threshold: param(),
+      knee: param(),
+      ratio: param(),
+      attack: param(),
+      release: param(),
+      connect: () => {},
+    };
+  }
+  createGain() {
+    return { gain: { value: 1 }, connect: (node: unknown) => node };
+  }
+  createBufferSource() {
+    let gainNode: { gain: { value: number } };
+    const source = {
+      buffer: null,
+      onended: null as (() => void) | null,
+      connect: (node: { gain: { value: number } }) => (gainNode = node),
+      start: () => played.push({ gain: gainNode.gain.value, onended: source.onended }),
+      stop: () => {},
+    };
+    return source;
+  }
+}
 const fetchMock = vi.fn<typeof fetch>();
 
 /** Finishes reading the first word in the queue. */
@@ -49,24 +95,8 @@ beforeEach(() => {
       spoken.push(utterance.text);
     },
   });
-  vi.stubGlobal(
-    'Audio',
-    class {
-      onended: (() => void) | null = null;
-      onerror: (() => void) | null = null;
-      src: string;
-      constructor(src: string) {
-        this.src = src;
-      }
-      play() {
-        played.push(this);
-        return Promise.resolve();
-      }
-      pause() {}
-    },
-  );
+  vi.stubGlobal('AudioContext', FakeAudioContext);
   vi.stubGlobal('fetch', fetchMock);
-  URL.createObjectURL = () => `blob:audio-${fetchMock.mock.calls.length}`;
   vi.spyOn(console, 'warn').mockImplementation(() => {});
 });
 
@@ -163,6 +193,25 @@ test('reads words with ElevenLabs in the German voice and reuses the audio', asy
   await vi.waitFor(() => expect(played).toHaveLength(2));
   expect(fetchMock).toHaveBeenCalledTimes(1);
   expect(spoken).toEqual([]);
+});
+
+test('turns quiet ElevenLabs audio up to the loudness of browser voices', async () => {
+  saveElevenLabsKey('key-6');
+  fetchMock.mockResolvedValue(audioResponse());
+
+  speak('Baum', 'de-DE');
+  await vi.waitFor(() => expect(played).toHaveLength(1));
+  expect(played[0].gain).toBeCloseTo(4);
+});
+
+test('measures loudness only where the voice speaks, up to a limit', () => {
+  const quietSpeech = fakeBuffer(0.1, 1);
+  // The second half is silence, which must not make the word seem quieter.
+  quietSpeech.getChannelData(0).fill(0, 4000);
+  expect(getNormalizingGain(quietSpeech)).toBeCloseTo(2);
+  expect(getNormalizingGain(fakeBuffer(0.4))).toBeCloseTo(0.5);
+  expect(getNormalizingGain(fakeBuffer(0.011))).toBe(8);
+  expect(getNormalizingGain(fakeBuffer(0))).toBe(1);
 });
 
 test('falls back to the browser voice when ElevenLabs is unreachable', async () => {

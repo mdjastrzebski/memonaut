@@ -32,6 +32,16 @@ const PREVIOUS_TEXTS: Record<string, string> = {
 };
 
 /**
+ * ElevenLabs audio is mastered much quieter than browser voices, so each clip is brought to this
+ * loudness (RMS of its spoken parts, about -14 dBFS), with a limiter catching the peaks.
+ */
+const TARGET_RMS = 0.2;
+/** Parts quieter than this (about -40 dBFS) are pauses, left out when measuring loudness. */
+const SILENCE_RMS = 0.01;
+/** Keeps an almost silent clip from being blown up into noise. */
+const MAX_GAIN = 8;
+
+/**
  * Which voice reads words aloud: the browser's ("off"), ElevenLabs' ("on"), or the browser's again
  * because ElevenLabs rejected the key or ran out of credits ("paused").
  */
@@ -40,10 +50,18 @@ export type VoiceStatus = 'off' | 'on' | 'paused';
 const listeners = new Set<() => void>();
 /** The key ElevenLabs rejected; a new key turns it back on. Not saved, so a reload retries. */
 let rejectedKey: string | null = null;
-/** Object URLs of ElevenLabs audio per language and word, so replays don't use credits again. */
-const audioCache = new Map<string, Promise<string | null>>();
+interface Clip {
+  buffer: AudioBuffer;
+  /** Brings the clip to the target loudness. */
+  gain: number;
+}
+
+/** ElevenLabs audio per language and word, so replays don't use credits again. */
+const audioCache = new Map<string, Promise<Clip | null>>();
 /** The word last asked for while ElevenLabs is on; a newer one stops it. */
-let current: { id: string; audio: HTMLAudioElement | null; busy: boolean } | null = null;
+let current: { id: string; source: AudioBufferSourceNode | null; busy: boolean } | null = null;
+/** Created on first use, with a limiter all clips play through. */
+let audio: { context: AudioContext; output: AudioNode } | null = null;
 /** The word last queued; kept referenced so Chrome doesn't garbage-collect it mid-speech. */
 let latest: SpeechSynthesisUtterance | null = null;
 /** The word, an utterance or an ElevenLabs request, whose hint is still to be read once it ends. */
@@ -107,7 +125,8 @@ export function removeElevenLabsKey() {
  */
 export function speak(text: string, lang: string, hint?: string) {
   const key = loadKey();
-  if (key && key !== rejectedKey) void speakWithElevenLabs(text, lang, hint, key);
+  const output = key && key !== rejectedKey ? getAudioOutput() : null;
+  if (key && output) void speakWithElevenLabs(text, lang, hint, key, output);
   else speakWithBrowser(text, lang, hint);
 }
 
@@ -130,54 +149,70 @@ function startWord(word: object, lang: string, hint: string | undefined) {
   };
 }
 
+/** The shared audio context, resumed here since browsers only allow that after a tap or key. */
+function getAudioOutput() {
+  if (!audio) {
+    if (!('AudioContext' in globalThis)) return null;
+    const context = new AudioContext();
+    const limiter = context.createDynamicsCompressor();
+    limiter.threshold.value = -3;
+    limiter.knee.value = 0;
+    limiter.ratio.value = 20;
+    limiter.attack.value = 0.003;
+    limiter.release.value = 0.1;
+    limiter.connect(context.destination);
+    audio = { context, output: limiter };
+  }
+  if (audio.context.state === 'suspended') audio.context.resume().catch(() => {});
+  return audio;
+}
+
 async function speakWithElevenLabs(
   text: string,
   lang: string,
   hint: string | undefined,
   key: string,
+  { context, output }: { context: AudioContext; output: AudioNode },
 ) {
   const id = `${lang}::${text}`;
   if (current?.id === id && current.busy) return;
 
-  current?.audio?.pause();
-  const request = { id, audio: null as HTMLAudioElement | null, busy: true };
+  current?.source?.stop();
+  const request = { id, source: null as AudioBufferSourceNode | null, busy: true };
   current = request;
   const ended = startWord(request, lang, hint);
-  const done = () => {
-    request.busy = false;
-    ended();
-  };
 
-  let url = audioCache.get(id);
-  if (!url) {
-    url = fetchAudio(text, lang, key);
-    audioCache.set(id, url);
+  let pending = audioCache.get(id);
+  if (!pending) {
+    pending = fetchClip(text, lang, key, context);
+    audioCache.set(id, pending);
   }
-  const objectUrl = await url;
-  if (!objectUrl) audioCache.delete(id);
+  const clip = await pending;
+  if (!clip) audioCache.delete(id);
   // A newer word was asked for meanwhile.
   if (current !== request) return;
 
-  if (!objectUrl) {
+  if (!clip) {
     request.busy = false;
     speakWithBrowser(text, lang, hintPending === request ? hint : undefined);
     return;
   }
 
-  const audio = new Audio(objectUrl);
-  request.audio = audio;
-  audio.onended = done;
-  audio.onerror = done;
-  // Rejects when the browser blocks autoplay or can't play the file.
-  audio.play().catch(() => {
+  const source = context.createBufferSource();
+  source.buffer = clip.buffer;
+  const gain = context.createGain();
+  gain.gain.value = clip.gain;
+  source.connect(gain).connect(output);
+  source.onended = () => {
     request.busy = false;
-    if (current === request)
-      speakWithBrowser(text, lang, hintPending === request ? hint : undefined);
-  });
+    ended();
+  };
+  request.source = source;
+  source.start();
 }
 
-/** Fetches the word's audio as an object URL, or null when ElevenLabs couldn't make it. */
-async function fetchAudio(text: string, lang: string, key: string) {
+/** Fetches and decodes the word's audio, or null when ElevenLabs couldn't make it. */
+async function fetchClip(text: string, lang: string, key: string, context: AudioContext) {
   try {
     const response = await fetch(`${ELEVENLABS_TTS_URL}/${VOICE_IDS[lang] ?? DEFAULT_VOICE_ID}`, {
       method: 'POST',
@@ -194,11 +229,36 @@ async function fetchAudio(text: string, lang: string, key: string) {
       if (await isKeyProblem(response)) pause(key);
       return null;
     }
-    return URL.createObjectURL(await response.blob());
+    const buffer = await context.decodeAudioData(await response.arrayBuffer());
+    return { buffer, gain: getNormalizingGain(buffer) };
   } catch {
-    // Offline or blocked; the browser's voice reads this word instead.
+    // Offline, blocked, or audio the browser can't decode; the browser's voice reads it instead.
     return null;
   }
+}
+
+/** The gain that brings the clip's spoken parts, measured in 20 ms windows, to TARGET_RMS. */
+export function getNormalizingGain(buffer: AudioBuffer) {
+  const windowSize = Math.max(1, Math.round(buffer.sampleRate * 0.02));
+  const channels = Array.from({ length: buffer.numberOfChannels }, (_, channel) =>
+    buffer.getChannelData(channel),
+  );
+  let loudSum = 0;
+  let loudCount = 0;
+  for (let start = 0; start < buffer.length; start += windowSize) {
+    const end = Math.min(start + windowSize, buffer.length);
+    let sum = 0;
+    for (const samples of channels) {
+      for (let i = start; i < end; i++) sum += samples[i] * samples[i];
+    }
+    const count = (end - start) * channels.length;
+    if (Math.sqrt(sum / count) >= SILENCE_RMS) {
+      loudSum += sum;
+      loudCount += count;
+    }
+  }
+  if (loudCount === 0) return 1;
+  return Math.min(MAX_GAIN, TARGET_RMS / Math.sqrt(loudSum / loudCount));
 }
 
 /** Whether the key was rejected or ran out of credits, as opposed to a passing failure. */

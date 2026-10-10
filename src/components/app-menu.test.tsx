@@ -4,9 +4,9 @@ import { expect, test } from 'vitest';
 
 import { AppMenu } from './app-menu';
 
-async function openVoiceSettings(user: ReturnType<typeof userEvent.setup>) {
+async function openVoiceSettings(user: ReturnType<typeof userEvent.setup>, name: string) {
   await user.click(screen.getByRole('button', { name: 'Menu' }));
-  await user.click(screen.getByRole('menuitem', { name: /Better voice/ }));
+  await user.click(screen.getByRole('menuitem', { name }));
 }
 
 test('offers finishing early only during a session', async () => {
@@ -25,14 +25,14 @@ test('saves and removes the ElevenLabs key without showing it back', async () =>
   const user = userEvent.setup();
   render(<AppMenu />);
 
-  await openVoiceSettings(user);
+  await openVoiceSettings(user, 'TTS: Browser');
   expect(screen.getByText(/^Off:/)).toBeInTheDocument();
   await user.type(screen.getByLabelText('API key'), 'secret-key');
   await user.click(screen.getByRole('button', { name: 'Save key' }));
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   expect(localStorage.getItem('memonaut:elevenlabs-key')).toBe('secret-key');
 
-  await openVoiceSettings(user);
+  await openVoiceSettings(user, 'TTS: ElevenLabs');
   expect(screen.getByText(/^On:/)).toBeInTheDocument();
   expect(screen.getByLabelText('New API key')).toHaveValue('');
   await user.click(screen.getByRole('button', { name: 'Remove key' }));

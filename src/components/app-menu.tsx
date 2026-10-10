@@ -1,4 +1,4 @@
-import { AudioLines, Flag, Menu } from 'lucide-react';
+import { AudioLines, Check, Flag, Menu } from 'lucide-react';
 import { useId, useState, type FormEvent } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -28,12 +28,6 @@ import { cn } from '@/lib/utils';
 const ITEM_CLASS =
   "gap-3 rounded-xl px-3 py-3 font-display text-lg font-semibold [&_svg:not([class*='size-'])]:size-5";
 
-const VOICE_STATUS_LABELS: Record<VoiceStatus, string> = {
-  off: 'Off',
-  on: 'On',
-  paused: 'Paused',
-};
-
 /** App actions behind a hamburger: voice settings, and during a session finishing early. */
 export function AppMenu({ onEnd }: { onEnd?: () => void }) {
   const [voiceOpen, setVoiceOpen] = useState(false);
@@ -61,15 +55,21 @@ export function AppMenu({ onEnd }: { onEnd?: () => void }) {
           className="w-auto min-w-52 rounded-2xl border-2 border-line bg-card p-1.5 text-foreground shadow-sticker ring-0"
         >
           <DropdownMenuItem className={ITEM_CLASS} onSelect={() => setVoiceOpen(true)}>
-            <AudioLines /> Better voice
-            <span
-              className={cn(
-                'ml-auto pl-3 font-sans text-sm font-medium text-muted-foreground',
-                voiceStatus === 'paused' && 'text-almost-ink',
-              )}
-            >
-              {VOICE_STATUS_LABELS[voiceStatus]}
-            </span>
+            <AudioLines /> TTS: {voiceStatus === 'off' ? 'Browser' : 'ElevenLabs'}
+            {voiceStatus === 'on' && (
+              // The same badge as a picked subject: the better voice is working.
+              <span
+                aria-hidden
+                className="ml-auto grid shrink-0 size-6 place-items-center rounded-full border-2 border-line bg-correct"
+              >
+                <Check className="size-3.5" strokeWidth={3} />
+              </span>
+            )}
+            {voiceStatus === 'paused' && (
+              <span className="ml-auto pl-3 font-sans text-sm font-medium text-almost-ink">
+                Paused
+              </span>
+            )}
           </DropdownMenuItem>
           {onEnd && (
             <DropdownMenuItem
@@ -128,7 +128,7 @@ function VoiceDialog({
     <Dialog open={open} onOpenChange={(open) => (open ? onOpenChange(true) : close())}>
       <DialogContent className="gap-5 rounded-2xl border-2 border-line bg-card p-6 shadow-sticker ring-0 sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-display text-2xl font-bold">Better voice</DialogTitle>
+          <DialogTitle className="font-display text-2xl font-bold">Text-to-speech</DialogTitle>
           <DialogDescription>
             Browser voices vary a lot by device and can mispronounce words. With an{' '}
             <a
