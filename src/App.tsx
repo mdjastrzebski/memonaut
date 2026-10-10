@@ -1,8 +1,45 @@
+import { useState } from 'react';
+
+import { ExerciseScreen } from '@/components/exercise-screen';
+import { SummaryScreen } from '@/components/summary-screen';
+import { germanNumberConcepts, germanNumbersDeck } from '@/data/german-numbers';
+import { createSession, getCurrentCard, submitReview } from '@/session/session';
+
+function startSession() {
+  return createSession({ deck: germanNumbersDeck, concepts: germanNumberConcepts });
+}
+
 export default function App() {
+  const [session, setSession] = useState(startSession);
+  const [ended, setEnded] = useState(false);
+
+  const finished = ended || !getCurrentCard(session);
+
   return (
-    <main className="flex min-h-svh flex-col items-center justify-center gap-2 p-6">
-      <h1 className="text-4xl font-bold tracking-tight">Memonaut</h1>
-      <p className="text-muted-foreground">Spaced repetition for school subjects.</p>
+    <main className="mx-auto flex min-h-svh max-w-6xl flex-col gap-6 p-4 sm:p-6">
+      <header>
+        <h1 className="text-2xl font-bold tracking-tight">Memonaut</h1>
+        <p className="text-sm text-muted-foreground">
+          Demo session · nothing is saved, reloading starts over.
+        </p>
+      </header>
+
+      {finished ? (
+        <SummaryScreen
+          session={session}
+          onRestart={() => {
+            setSession(startSession());
+            setEnded(false);
+          }}
+        />
+      ) : (
+        <ExerciseScreen
+          key={session.reviews.length}
+          session={session}
+          onReview={(review) => setSession((current) => submitReview(current, review))}
+          onEnd={() => setEnded(true)}
+        />
+      )}
     </main>
   );
 }

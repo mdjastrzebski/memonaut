@@ -1,0 +1,100 @@
+import type { Card, Concept, Deck, ExerciseType, Review } from '@/domain/types';
+import { createSrsCard, reviewSrsCard, type Grade } from '@/srs/scheduler';
+
+/**
+ * Cards due again within this window come back in the same session, like Anki's learn-ahead limit.
+ * This lets a new card go through its learning steps (1m, 10m) and graduate to Review.
+ */
+export const LEARN_AHEAD_MS = 20 * 60 * 1000;
+
+/** One study sitting over a Deck. Lives in memory only. */
+export interface Session {
+  startedAt: Date;
+  deck: Deck;
+  concepts: Record<string, Concept>;
+  cards: Record<string, Card>;
+  /** Card ids still to practise in this session; the first one is current. */
+  queue: string[];
+  reviews: Review[];
+}
+
+interface CreateSessionOptions {
+  deck: Deck;
+  concepts: Concept[];
+  exerciseTypes?: ExerciseType[];
+  now?: Date;
+  random?: () => number;
+}
+
+export function createSession({
+  deck,
+  concepts,
+  exerciseTypes = ['type-answer'],
+  now = new Date(),
+  random = Math.random,
+}: CreateSessionOptions): Session {
+  const deckConcepts = concepts.filter((concept) => deck.conceptIds.includes(concept.id));
+  const cards = deckConcepts.flatMap((concept) =>
+    exerciseTypes.map((exerciseType): Card => ({
+      id: `${concept.id}:${exerciseType}`,
+      conceptId: concept.id,
+      exerciseType,
+      srs: createSrsCard(now),
+    })),
+  );
+
+  return {
+    startedAt: now,
+    deck,
+    concepts: Object.fromEntries(deckConcepts.map((concept) => [concept.id, concept])),
+    cards: Object.fromEntries(cards.map((card) => [card.id, card])),
+    queue: shuffle(
+      cards.map((card) => card.id),
+      random,
+    ),
+    reviews: [],
+  };
+}
+
+export function getCurrentCard(session: Session): Card | undefined {
+  const cardId = session.queue[0];
+  return cardId ? session.cards[cardId] : undefined;
+}
+
+interface SubmitReviewInput {
+  input: string;
+  correct: boolean;
+  rating: Grade;
+  now: Date;
+}
+
+/** Applies a review to the current Card and moves it to the end of the queue if it's due again soon. */
+export function submitReview(
+  session: Session,
+  { input, correct, rating, now }: SubmitReviewInput,
+): Session {
+  const card = getCurrentCard(session);
+  if (!card) {
+    return session;
+  }
+
+  const { card: srsAfter, log } = reviewSrsCard(card.srs, rating, now);
+  const dueSoon = srsAfter.due.getTime() - now.getTime() <= LEARN_AHEAD_MS;
+  const rest = session.queue.slice(1);
+
+  return {
+    ...session,
+    cards: { ...session.cards, [card.id]: { ...card, srs: srsAfter } },
+    queue: dueSoon ? [...rest, card.id] : rest,
+    reviews: [...session.reviews, { cardId: card.id, input, correct, rating, log, srsAfter }],
+  };
+}
+
+function shuffle<T>(items: T[], random: () => number): T[] {
+  const result = [...items];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}

@@ -11,6 +11,15 @@ Memonaut is a spaced-repetition learning web app for school kids. See [README.md
 - Validate before finishing code changes: `pnpm validate` (typecheck, lint, test, format check)
 - Auto-fix formatting and lint: `pnpm validate:fix`
 
+## Code Layout
+
+- `src/domain/`: core types (Subject, Deck, Concept, Card, Review)
+- `src/srs/`: wrapper around `ts-fsrs` (scheduling, previews, retrievability)
+- `src/exercises/`: answer checking per Exercise Type
+- `src/session/`: pure study-session logic (queue, reviews)
+- `src/data/`: preset data sets
+- `src/components/`: React screens; `ui/` holds shadcn/ui components
+
 ## Conventions
 
 - Import from `src` with the `@/` alias, e.g. `@/lib/utils`.
