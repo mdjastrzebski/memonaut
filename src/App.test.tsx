@@ -38,11 +38,26 @@ const numberConcepts = content.concepts.filter((concept) =>
   numbers.conceptIds.includes(concept.id),
 );
 
+/** Opens the unit select box and picks the named unit of the selected Subject. */
+async function pickUnit(user: ReturnType<typeof userEvent.setup>, name: string) {
+  await user.click(screen.getByRole('button', { name: 'Change unit' }));
+  await user.click(
+    screen.getByRole('menuitemradio', {
+      name: (accessibleName) => accessibleName.startsWith(name),
+    }),
+  );
+}
+
+/** The unit tile, which shows the selected unit or else the one last picked. */
+function unitTile(name: string) {
+  return screen.getByRole('radio', { name });
+}
+
 /** Opens the app and starts a session of German numbers 0–10. */
 async function startNumbersSession(user: ReturnType<typeof userEvent.setup>) {
   render(<App />);
   await user.click(screen.getByRole('radio', { name: 'German' }));
-  await user.click(screen.getByRole('radio', { name: 'Numbers 0–10' }));
+  await pickUnit(user, 'Numbers 0–10');
   await user.click(screen.getByRole('radio', { name: 'No limit' }));
   await user.click(screen.getByRole('button', { name: 'Start session' }));
 }
@@ -297,7 +312,7 @@ test('keeps progress after a reload, even mid-session, without asking before lea
   const user = userEvent.setup();
   const { unmount } = render(<App />);
   await user.click(screen.getByRole('radio', { name: 'German' }));
-  await user.click(screen.getByRole('radio', { name: 'Numbers 0–10' }));
+  await pickUnit(user, 'Numbers 0–10');
   await user.click(screen.getByRole('button', { name: 'Start session' }));
 
   // A fast exact dictation is rated Easy, so the word is due again in a few days.
@@ -312,13 +327,9 @@ test('keeps progress after a reload, even mid-session, without asking before lea
   unmount();
   render(<App />);
 
-  expect(screen.getByRole('radio', { name: 'Numbers 0–10' }).closest('label')).toHaveTextContent(
-    'Learned0Learning1New10',
-  );
+  expect(unitTile('Numbers 0–10').closest('label')).toHaveTextContent('Learned0Learning1New10');
   // Its translation hasn't been practised yet, so the word is due today.
-  expect(screen.getByRole('radio', { name: 'Numbers 0–10' }).closest('label')).toHaveTextContent(
-    '1 word due today',
-  );
+  expect(unitTile('Numbers 0–10').closest('label')).toHaveTextContent('1 word due today');
   expect(screen.getByRole('radio', { name: 'German' }).closest('label')).toHaveTextContent(
     '1 word due today',
   );
@@ -340,14 +351,14 @@ test('setup offers each subject with its core set selected first', async () => {
 
   await user.click(screen.getByRole('radio', { name: 'German' }));
   expect(screen.getByRole('radio', { name: 'Essentials' })).toBeChecked();
-  expect(screen.getByRole('radio', { name: 'Kapitel 1' })).not.toBeChecked();
+  expect(unitTile('Kapitel 0')).not.toBeChecked();
 
   const selected = screen.getByRole('region', { name: 'Selected set' });
   expect(within(selected).getByRole('heading', { name: 'Essentials' })).toBeInTheDocument();
   expect(within(selected).getByText('Words', { selector: 'dt' }).nextSibling).toHaveTextContent(
     '30',
   );
-  expect(within(selected).getByText('Exercises').nextSibling).toHaveTextContent('60');
+  expect(within(selected).queryByRole('list', { name: 'Words in set' })).not.toBeInTheDocument();
 });
 
 test('picking a unit shows its stats and words, and starts a session of it', async () => {
@@ -355,13 +366,14 @@ test('picking a unit shows its stats and words, and starts a session of it', asy
   render(<App />);
 
   await user.click(screen.getByRole('radio', { name: 'German' }));
-  await user.click(screen.getByRole('radio', { name: 'Numbers 0–10' }));
+  await pickUnit(user, 'Numbers 0–10');
 
   const selected = screen.getByRole('region', { name: 'Selected set' });
   expect(within(selected).getByText('Words', { selector: 'dt' }).nextSibling).toHaveTextContent(
     '11',
   );
 
+  await user.click(within(selected).getByRole('button', { name: 'Words' }));
   const words = within(selected).getByRole('list', { name: 'Words in set' });
   expect(within(words).getAllByRole('listitem')).toHaveLength(11);
   expect(words).toHaveTextContent('zwei');
@@ -377,11 +389,20 @@ test('switching subject selects its core set and English has no special characte
   render(<App />);
 
   await user.click(screen.getByRole('radio', { name: 'German' }));
-  await user.click(screen.getByRole('radio', { name: 'Kapitel 0' }));
+  await pickUnit(user, 'Kapitel 0');
   await user.click(screen.getByRole('radio', { name: 'English' }));
   expect(screen.getByRole('radio', { name: 'Essentials' })).toBeChecked();
+  // Switching back selects the core set again, but the unit picker keeps the unit last picked.
+  await user.click(screen.getByRole('radio', { name: 'German' }));
+  expect(screen.getByRole('radio', { name: 'Essentials' })).toBeChecked();
+  expect(unitTile('Kapitel 0')).not.toBeChecked();
+  // Clicking the tile, not its select box, picks that unit without opening the menu.
+  await user.click(screen.getByText('Kapitel 0', { selector: 'label *' }).closest('label')!);
+  expect(unitTile('Kapitel 0')).toBeChecked();
+  expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+  await user.click(screen.getByRole('radio', { name: 'English' }));
 
-  await user.click(screen.getByRole('radio', { name: 'Colours' }));
+  await pickUnit(user, 'Colours');
   await user.click(screen.getByRole('button', { name: 'Start session' }));
   expect(screen.queryByRole('button', { name: 'Show special characters' })).not.toBeInTheDocument();
 });
@@ -393,7 +414,7 @@ test('the summary leads back to the setup screen with the same set selected', as
   await finishSession(user);
   await user.click(screen.getByRole('button', { name: 'Choose another set' }));
 
-  expect(screen.getByRole('radio', { name: 'Numbers 0–10' })).toBeChecked();
+  expect(unitTile('Numbers 0–10')).toBeChecked();
 });
 
 test('words practised in a session show their status, with details on hover', async () => {
@@ -407,14 +428,13 @@ test('words practised in a session show their status, with details on hover', as
   await finishSession(user);
   await user.click(screen.getByRole('button', { name: 'Choose another set' }));
 
+  await user.click(screen.getByRole('button', { name: 'Words' }));
   const words = screen.getByRole('list', { name: 'Words in set' });
   const row = within(words).getByText(foreign).closest('li')!;
   const status = within(row).getByRole('button', { name: 'Learning' });
   expect(within(words).getAllByRole('button', { name: 'New' })).toHaveLength(10);
   // The set's tile and its overview count the word as learning.
-  expect(screen.getByRole('radio', { name: 'Numbers 0–10' }).closest('label')).toHaveTextContent(
-    'Learned0Learning1New10',
-  );
+  expect(unitTile('Numbers 0–10').closest('label')).toHaveTextContent('Learned0Learning1New10');
   expect(screen.getByRole('region', { name: 'Selected set' })).toHaveTextContent(
     'Learned0Learning1New10',
   );
@@ -430,7 +450,7 @@ test('a session practises 10 words by default, or as many as chosen', async () =
   render(<App />);
 
   await user.click(screen.getByRole('radio', { name: 'German' }));
-  await user.click(screen.getByRole('radio', { name: 'Kapitel 0' }));
+  await pickUnit(user, 'Kapitel 0');
   expect(screen.getByRole('radio', { name: '10' })).toBeChecked();
   expect(screen.getByText(/10 words · 20 exercises/)).toBeInTheDocument();
 
@@ -450,12 +470,12 @@ test('remembers the subject, set and words per session after a reload', async ()
   const { unmount } = render(<App />);
 
   await user.click(screen.getByRole('radio', { name: 'German' }));
-  await user.click(screen.getByRole('radio', { name: 'Kapitel 0' }));
+  await pickUnit(user, 'Kapitel 0');
   await user.click(screen.getByRole('radio', { name: '20' }));
   unmount();
   render(<App />);
 
   expect(screen.getByRole('radio', { name: 'German' })).toBeChecked();
-  expect(screen.getByRole('radio', { name: 'Kapitel 0' })).toBeChecked();
+  expect(unitTile('Kapitel 0')).toBeChecked();
   expect(screen.getByRole('radio', { name: '20' })).toBeChecked();
 });

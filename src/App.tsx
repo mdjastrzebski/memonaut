@@ -9,7 +9,7 @@ import { SummaryScreen } from '@/components/summary-screen';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { content } from '@/data/content';
-import type { Card } from '@/domain/types';
+import type { Card, Deck } from '@/domain/types';
 import { cn } from '@/lib/utils';
 import { loadProgress, saveProgress } from '@/progress/progress-storage';
 import {
@@ -30,6 +30,7 @@ export default function App() {
     Object.assign({}, ...content.subjects.map((subject) => loadProgress(subject.id))),
   );
   const [sessionSize, setSessionSize] = useState<SessionSize>(initialChoice.sessionSize);
+  const [lastUnitIds, setLastUnitIds] = useState(initialChoice.lastUnitIds);
   const [ended, setEnded] = useState(false);
   const [showSpecialCharacters, setShowSpecialCharacters] = useState(false);
   const [showSrsDetails, setShowSrsDetails] = useState(false);
@@ -63,7 +64,15 @@ export default function App() {
     setSession(next);
   };
 
-  useEffect(() => saveSetupChoice({ deck, sessionSize }), [deck, sessionSize]);
+  const selectDeck = (deck: Deck) => {
+    setDeck(deck);
+    if (deck.kind === 'unit') setLastUnitIds({ ...lastUnitIds, [deck.subjectId]: deck.id });
+  };
+
+  useEffect(
+    () => saveSetupChoice({ deck, sessionSize, lastUnitIds }),
+    [deck, sessionSize, lastUnitIds],
+  );
 
   return (
     <TooltipProvider>
@@ -98,7 +107,8 @@ export default function App() {
             content={content}
             cards={cards}
             deck={deck}
-            onSelectDeck={setDeck}
+            lastUnitIds={lastUnitIds}
+            onSelectDeck={selectDeck}
             sessionSize={sessionSize}
             onSessionSizeChange={setSessionSize}
             onStart={start}

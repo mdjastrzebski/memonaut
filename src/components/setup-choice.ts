@@ -14,6 +14,8 @@ const STORAGE_KEY = 'memonaut:setup';
 export interface SetupChoice {
   deck: Deck;
   sessionSize: SessionSize;
+  /** The unit last picked in each Subject, as Deck ids keyed by Subject id. */
+  lastUnitIds: Record<string, string>;
 }
 
 /**
@@ -27,14 +29,28 @@ export function loadSetupChoice(content: Content): SetupChoice {
     getSubjectDecks(content.decks, String(saved.subjectId))[0] ??
     getSubjectDecks(content.decks, content.subjects[0].id)[0];
   const sessionSize = SESSION_SIZES.find((size) => size === saved.sessionSize);
-  return { deck, sessionSize: sessionSize === undefined ? DEFAULT_SESSION_SIZE : sessionSize };
+  const savedUnitIds =
+    typeof saved.lastUnitIds === 'object' && saved.lastUnitIds !== null ? saved.lastUnitIds : {};
+  // Only units still offered in their Subject are kept.
+  const lastUnitIds = Object.fromEntries(
+    Object.entries(savedUnitIds).filter(([subjectId, deckId]) =>
+      content.decks.some(
+        (deck) => deck.id === deckId && deck.subjectId === subjectId && deck.kind === 'unit',
+      ),
+    ),
+  );
+  return {
+    deck,
+    sessionSize: sessionSize === undefined ? DEFAULT_SESSION_SIZE : sessionSize,
+    lastUnitIds,
+  };
 }
 
-export function saveSetupChoice({ deck, sessionSize }: SetupChoice) {
+export function saveSetupChoice({ deck, sessionSize, lastUnitIds }: SetupChoice) {
   try {
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ subjectId: deck.subjectId, deckId: deck.id, sessionSize }),
+      JSON.stringify({ subjectId: deck.subjectId, deckId: deck.id, sessionSize, lastUnitIds }),
     );
   } catch {
     // Storage can be full or blocked, e.g. in private mode; the choice is then only kept until reload.

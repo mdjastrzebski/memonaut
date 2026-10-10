@@ -1,5 +1,7 @@
 import {
   Check,
+  ChevronDown,
+  ChevronsUpDown,
   Circle,
   CircleCheck,
   CircleDotDashed,
@@ -13,8 +15,14 @@ import { useId, useState, type CSSProperties, type ReactNode } from 'react';
 import { EXERCISES } from '@/components/exercise-types';
 import { getProgress, getWordProgress, type Progress } from '@/components/grades';
 import { SESSION_SIZES, type SessionSize } from '@/components/setup-choice';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Content } from '@/data/content';
 import { getSubjectDecks } from '@/data/decks';
@@ -30,6 +38,8 @@ interface SetupScreenProps {
   cards: Record<string, Card>;
   /** The selected Deck; its Subject is the selected Subject. */
   deck: Deck;
+  /** The unit last picked in each Subject, shown in the unit picker while the core set is selected. */
+  lastUnitIds: Record<string, string>;
   onSelectDeck: (deck: Deck) => void;
   sessionSize: SessionSize;
   onSessionSizeChange: (size: SessionSize) => void;
@@ -41,6 +51,7 @@ export function SetupScreen({
   content,
   cards,
   deck,
+  lastUnitIds,
   onSelectDeck,
   sessionSize,
   onSessionSizeChange,
@@ -54,20 +65,16 @@ export function SetupScreen({
   const decks = getSubjectDecks(content.decks, subject.id);
   const coreDecks = decks.filter((deck) => deck.kind === 'core');
   const unitDecks = decks.filter((deck) => deck.kind === 'unit');
+  const selectedUnit = unitDecks.find((option) => option.id === deck.id);
+  const shownUnit =
+    selectedUnit ??
+    unitDecks.find((option) => option.id === lastUnitIds[subject.id]) ??
+    unitDecks[0];
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_24rem] lg:items-start">
       <div className="flex flex-col gap-8">
-        <div className="flex animate-rise flex-col gap-3">
-          <p className="inline-block -rotate-2 self-start rounded-full border-2 border-line bg-highlight px-3 py-0.5 text-xs font-bold tracking-wider uppercase">
-            Mission control
-          </p>
-          <h2 className="font-display text-4xl font-extrabold tracking-tight sm:text-5xl">
-            What are we practising?
-          </h2>
-        </div>
-
-        <ChoiceGroup legend="Subject">
+        <ChoiceGroup legend="Subject" hideLegend>
           <div className="grid gap-3 sm:grid-cols-2">
             {subjects.map((option, index) => (
               <SubjectTile
@@ -89,8 +96,8 @@ export function SetupScreen({
           </div>
         </ChoiceGroup>
 
-        <ChoiceGroup legend="Set">
-          <div className="flex flex-col gap-3">
+        <ChoiceGroup legend="Unit">
+          <div className="grid gap-3 sm:grid-cols-2">
             {coreDecks.map((option) => (
               <DeckTile
                 key={option.id}
@@ -101,22 +108,15 @@ export function SetupScreen({
                 onSelect={() => onSelectDeck(option)}
               />
             ))}
-            {unitDecks.length > 0 && (
-              <>
-                <h3 className="mt-2 font-display text-lg font-bold">Units</h3>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {unitDecks.map((option) => (
-                    <DeckTile
-                      key={option.id}
-                      deck={option}
-                      cards={cards}
-                      now={now}
-                      checked={option.id === deck.id}
-                      onSelect={() => onSelectDeck(option)}
-                    />
-                  ))}
-                </div>
-              </>
+            {shownUnit && (
+              <UnitTile
+                units={unitDecks}
+                cards={cards}
+                now={now}
+                shown={shownUnit}
+                checked={shownUnit === selectedUnit}
+                onSelect={onSelectDeck}
+              />
             )}
           </div>
         </ChoiceGroup>
@@ -140,10 +140,22 @@ export function SetupScreen({
   );
 }
 
-function ChoiceGroup({ legend, children }: { legend: string; children: ReactNode }) {
+interface ChoiceGroupProps {
+  legend: string;
+  /** Keeps the legend for screen readers only. */
+  hideLegend?: boolean;
+  children: ReactNode;
+}
+
+function ChoiceGroup({ legend, hideLegend, children }: ChoiceGroupProps) {
   return (
     <fieldset className="flex flex-col gap-3">
-      <legend className="mb-3 text-xs font-bold tracking-wider text-muted-foreground uppercase">
+      <legend
+        className={cn(
+          'mb-3 text-xs font-bold tracking-wider text-muted-foreground uppercase',
+          hideLegend && 'sr-only',
+        )}
+      >
         {legend}
       </legend>
       {children}
@@ -177,7 +189,7 @@ function ChoiceTile({
     <label
       style={style}
       className={cn(
-        'group relative flex animate-rise cursor-pointer items-center gap-4 rounded-2xl border-2 border-line bg-card p-4 shadow-sticker-sm transition-all hover:-translate-y-px hover:shadow-sticker has-checked:bg-highlight/45 has-checked:shadow-sticker has-focus-visible:ring-3 has-focus-visible:ring-ring/50',
+        'group relative flex animate-rise cursor-pointer items-center gap-4 rounded-2xl border-2 border-line bg-card p-4 shadow-sticker-sm transition-all hover:-translate-y-px hover:shadow-sticker has-checked:bg-highlight/45 has-checked:shadow-sticker has-[input:focus-visible]:ring-3 has-[input:focus-visible]:ring-ring/50',
         className,
       )}
     >
@@ -268,16 +280,80 @@ function DeckTile({ deck, cards, now, checked, onSelect }: DeckTileProps) {
         </span>
       )}
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="flex flex-wrap items-center gap-2">
-          <span aria-hidden className="font-display text-lg font-bold">
-            {deck.name}
-          </span>
-          {core && <Badge>Core set</Badge>}
+        <span aria-hidden className="font-display text-lg font-bold">
+          {deck.name}
         </span>
         <DueToday count={countDueToday(deck.conceptIds, cards, now)} />
         <span className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm text-muted-foreground">
-          {core ? `Key words to keep fresh all year · ${words}` : words}
+          {words}
           <ProgressCounts progress={progress} />
+        </span>
+      </span>
+    </ChoiceTile>
+  );
+}
+
+interface UnitTileProps {
+  units: Deck[];
+  cards: Record<string, Card>;
+  now: Date;
+  /** The selected unit, or else the one last picked. */
+  shown: Deck;
+  checked: boolean;
+  onSelect: (deck: Deck) => void;
+}
+
+/** The shown unit as a tile to select, with a select box to switch to another unit. */
+function UnitTile({ units, cards, now, shown, checked, onSelect }: UnitTileProps) {
+  return (
+    <ChoiceTile name={shown.name} group="deck" checked={checked} onSelect={() => onSelect(shown)}>
+      <span className="flex min-w-0 flex-1 flex-col gap-1">
+        <DropdownMenu>
+          {/* Clicking the select box opens the menu; clicking elsewhere on the tile selects it. */}
+          <DropdownMenuTrigger
+            aria-label="Change unit"
+            className="flex items-center gap-2 rounded-xl border-2 border-line bg-background px-3 py-1.5 text-left shadow-sticker-sm transition-colors outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 data-[state=open]:bg-muted"
+          >
+            <span aria-hidden className="min-w-0 flex-1 truncate font-display text-lg font-bold">
+              {shown.name}
+            </span>
+            <ChevronsUpDown aria-hidden className="size-5 shrink-0" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            sideOffset={8}
+            className="rounded-2xl border-2 border-line bg-card p-1.5 text-foreground shadow-sticker ring-0"
+          >
+            <DropdownMenuRadioGroup
+              value={checked ? shown.id : ''}
+              onValueChange={(id) => onSelect(units.find((unit) => unit.id === id)!)}
+            >
+              {units.map((unit) => {
+                const due = countDueToday(unit.conceptIds, cards, now);
+                return (
+                  <DropdownMenuRadioItem
+                    key={unit.id}
+                    value={unit.id}
+                    className="flex-col items-start gap-0 rounded-xl px-3 py-2"
+                  >
+                    <span className="font-display font-bold">{unit.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {plural(unit.conceptIds.length, 'word')}
+                      {due > 0 && ` · ${due} due today`}
+                    </span>
+                  </DropdownMenuRadioItem>
+                );
+              })}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <DueToday count={countDueToday(shown.conceptIds, cards, now)} />
+        <span className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm text-muted-foreground">
+          {plural(shown.conceptIds.length, 'word')}
+          <ProgressCounts
+            progress={shown.conceptIds.map(
+              (conceptId) => getConceptStatus(conceptId, cards).progress,
+            )}
+          />
         </span>
       </span>
     </ChoiceTile>
@@ -297,6 +373,8 @@ interface DeckOverviewProps {
 function DeckOverview({ content, cards, subject, deck, now, onStart }: DeckOverviewProps) {
   const concepts = content.concepts.filter((concept) => deck.conceptIds.includes(concept.id));
   const words = concepts.map((concept) => ({ concept, ...getConceptStatus(concept.id, cards) }));
+  const [showWords, setShowWords] = useState(false);
+  const wordListId = useId();
 
   return (
     <section
@@ -317,39 +395,38 @@ function DeckOverview({ content, cards, subject, deck, now, onStart }: DeckOverv
           value={countDueToday(deck.conceptIds, cards, now)}
           note="Words to practise again"
         />
-        <StatTile
-          className="col-span-2"
-          label="Exercises"
-          value={concepts.length * EXERCISE_TYPES.length}
-          note={
-            <span className="flex flex-wrap gap-x-2">
-              {EXERCISE_TYPES.map((type) => {
-                const { label, Icon } = EXERCISES[type];
-                return (
-                  <span key={type} className="flex items-center gap-1">
-                    <Icon aria-hidden className="size-3" />
-                    {label}
-                  </span>
-                );
-              })}
-            </span>
-          }
-        />
       </dl>
 
       <div className="flex flex-col gap-2">
         <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-          <h3 className="font-display font-bold">Words</h3>
+          <h3 className="font-display font-bold">
+            <button
+              type="button"
+              aria-expanded={showWords}
+              aria-controls={wordListId}
+              onClick={() => setShowWords(!showWords)}
+              className="flex cursor-pointer items-center gap-1 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              Words
+              <ChevronDown
+                aria-hidden
+                className={cn('size-4 transition-transform', showWords && 'rotate-180')}
+              />
+            </button>
+          </h3>
           <ProgressCounts progress={words.map((word) => word.progress)} />
         </div>
-        <ul
-          aria-label="Words in set"
-          className="flex max-h-80 flex-col overflow-y-auto rounded-2xl border-2 border-foreground/15 bg-background px-3 py-1 text-sm"
-        >
-          {words.map((word) => (
-            <WordRow key={word.concept.id} word={word} now={now} />
-          ))}
-        </ul>
+        {showWords && (
+          <ul
+            id={wordListId}
+            aria-label="Words in set"
+            className="flex max-h-72 flex-col overflow-y-auto rounded-2xl border-2 border-foreground/15 bg-background px-3 py-1 text-sm"
+          >
+            {words.map((word) => (
+              <WordRow key={word.concept.id} word={word} now={now} />
+            ))}
+          </ul>
+        )}
       </div>
 
       <Button variant="cta" className="h-14 rounded-2xl text-lg" onClick={onStart}>
@@ -487,17 +564,11 @@ interface StatTileProps {
   label: string;
   value: number;
   note?: ReactNode;
-  className?: string;
 }
 
-function StatTile({ label, value, note, className }: StatTileProps) {
+function StatTile({ label, value, note }: StatTileProps) {
   return (
-    <div
-      className={cn(
-        'flex flex-col gap-0.5 rounded-2xl border-2 border-line bg-background p-3 shadow-sticker-sm',
-        className,
-      )}
-    >
+    <div className="flex flex-col gap-0.5 rounded-2xl border-2 border-line bg-background p-3 shadow-sticker-sm">
       <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
       <dd className="font-display text-3xl font-bold tabular-nums">{value}</dd>
       {note && <dd className="text-xs text-muted-foreground">{note}</dd>}
