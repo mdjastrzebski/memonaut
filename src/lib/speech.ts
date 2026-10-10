@@ -13,12 +13,22 @@ const VOICE_IDS: Record<string, string> = {
   'de-DE': 'TX3LPaxmHKxFdv7VOQHJ',
   'en-GB': 'JBFqnCBsd6RMkjVDRZzb',
   'en-US': 'TX3LPaxmHKxFdv7VOQHJ',
+  'es-ES': 'JBFqnCBsd6RMkjVDRZzb',
+  'fr-FR': 'JBFqnCBsd6RMkjVDRZzb',
+  'it-IT': 'SAz9YHcvj6GT2YYXdXww',
+  'pl-PL': 'TX3LPaxmHKxFdv7VOQHJ',
+  'pt-PT': 'SAz9YHcvj6GT2YYXdXww',
 };
 /** Said "before" the word, so a short word is pronounced in the right language. */
 const PREVIOUS_TEXTS: Record<string, string> = {
   'de-DE': 'Das nächste Wort ist auf Deutsch.',
   'en-GB': 'The next word is in British English.',
   'en-US': 'The next word is in American English.',
+  'es-ES': 'La siguiente palabra está en español.',
+  'fr-FR': 'Le mot suivant est en français.',
+  'it-IT': 'La prossima parola è in italiano.',
+  'pl-PL': 'Następne słowo jest po polsku.',
+  'pt-PT': 'A próxima palavra está em português.',
 };
 
 /**
@@ -221,7 +231,8 @@ function speakWithBrowser(text: string, lang: string, hint?: string) {
 
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = lang;
-  utterance.rate = 0.9;
+  // Slow, as in memo-bot, so a child can follow each sound.
+  utterance.rate = 0.6;
   utterance.onerror = (event) => {
     // "not-allowed" means the page hasn't been interacted with yet.
     console.warn(`Could not read "${text}" aloud: ${event.error}`);
