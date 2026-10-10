@@ -29,7 +29,7 @@ export const GRADE_STYLES: Record<
   [Rating.Easy]: {
     mark: '✓',
     text: 'text-correct-ink',
-    fill: 'bg-correct',
+    fill: 'bg-fast',
     tint: 'bg-correct/20',
     border: 'border-correct',
   },

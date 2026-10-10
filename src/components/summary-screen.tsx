@@ -1,4 +1,4 @@
-import { Compass, RotateCcw } from 'lucide-react';
+import { Rocket } from 'lucide-react';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 
 import { EXERCISES } from '@/components/exercise-types';
@@ -36,25 +36,23 @@ const GRADE_LABELS: Record<Grade, string> = {
   [Rating.Again]: 'Missed',
 };
 
-const GROUPS: { progress: Progress; title: string; note: string }[] = [
-  { progress: 'learning', title: 'Keep practising', note: 'These come back soon.' },
-  { progress: 'learned', title: 'Learned', note: 'See you again in a few days.' },
-  { progress: 'new', title: 'Not seen yet', note: 'Waiting for the next session.' },
-];
+const PROGRESS_LABELS: Record<Progress, { label: string; className: string }> = {
+  learning: { label: 'Practise', className: 'border-almost bg-almost/25 text-almost-ink' },
+  learned: { label: 'Learned', className: 'border-correct bg-correct/20 text-correct-ink' },
+  new: { label: 'Not seen', className: 'border-transparent bg-muted text-muted-foreground' },
+};
 
 interface SummaryScreenProps {
   session: Session;
-  onRestart: () => void;
-  /** Goes back to choosing a subject and set. */
-  onChooseSet: () => void;
+  /** Goes back to the setup screen to choose the next session. */
+  onNewSession: () => void;
   showSrsDetails: boolean;
   onToggleSrsDetails: () => void;
 }
 
 export function SummaryScreen({
   session,
-  onRestart,
-  onChooseSet,
+  onNewSession,
   showSrsDetails,
   onToggleSrsDetails,
 }: SummaryScreenProps) {
@@ -72,13 +70,12 @@ export function SummaryScreen({
   const { reviews } = session;
   const correctCount = reviews.filter((review) => review.rating !== Rating.Again).length;
   const accuracy = reviews.length ? correctCount / reviews.length : 0;
-  const learnedCount = cards.filter((card) => getProgress(card.srs.state) === 'learned').length;
+  const { newWords, repeatedWords } = countWords(session);
 
   const stats: [label: string, value: string][] = [
-    ['Answers', String(reviews.length)],
-    ['Learned', `${learnedCount}/${cards.length}`],
-    ['Fast answers', String(reviews.filter((review) => review.rating === Rating.Easy).length)],
     ['Time', formatDuration(now.getTime() - session.startedAt.getTime())],
+    ['Repeated words', String(repeatedWords)],
+    ['New words', String(newWords)],
   ];
 
   return (
@@ -97,7 +94,7 @@ export function SummaryScreen({
         </div>
       </section>
 
-      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <dl className="grid grid-cols-3 gap-3">
         {stats.map(([label, value], index) => (
           <div
             key={label}
@@ -110,38 +107,27 @@ export function SummaryScreen({
         ))}
       </dl>
 
-      {GROUPS.map(({ progress, title, note }) => {
-        const group = cards.filter((card) => getProgress(card.srs.state) === progress);
-        if (group.length === 0) return null;
-        return (
-          <section key={progress} className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <h3 className="font-display text-2xl font-bold">{title}</h3>
-              <span className="text-sm text-muted-foreground">
-                {group.length} · {note}
-              </span>
-            </div>
-            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {group.map((card, index) => (
-                <WordTile
-                  key={card.id}
-                  session={session}
-                  card={card}
-                  now={now}
-                  style={{ animationDelay: `${300 + index * 40}ms` }}
-                />
-              ))}
-            </ul>
-          </section>
-        );
-      })}
+      <section className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <h3 className="font-display text-2xl font-bold">Words</h3>
+          <span className="text-sm text-muted-foreground">Coming back soonest first</span>
+        </div>
+        <ol aria-label="Session words" className="flex flex-col gap-2">
+          {sortByResult(cards).map((card, index) => (
+            <WordRow
+              key={card.id}
+              session={session}
+              card={card}
+              now={now}
+              style={{ animationDelay: `${300 + index * 30}ms` }}
+            />
+          ))}
+        </ol>
+      </section>
 
-      <div className="flex flex-col-reverse justify-center gap-3 sm:flex-row">
-        <Button variant="sticker" className="h-14 rounded-2xl px-6 text-lg" onClick={onChooseSet}>
-          <Compass className="size-5" /> Choose another set
-        </Button>
-        <Button variant="cta" className="h-14 rounded-2xl px-8 text-lg" onClick={onRestart}>
-          <RotateCcw className="size-5" /> Start a new session
+      <div className="flex justify-center">
+        <Button variant="cta" className="h-14 rounded-2xl px-8 text-lg" onClick={onNewSession}>
+          <Rocket className="size-5" /> Start a new session
         </Button>
       </div>
 
@@ -150,6 +136,23 @@ export function SummaryScreen({
       </SrsDetails>
     </div>
   );
+}
+
+/**
+ * Words practised in this session: new if none of their cards had been practised before,
+ * repeated otherwise.
+ */
+function countWords(session: Session): { newWords: number; repeatedWords: number } {
+  const seenCards = new Set<string>();
+  const isNewWord = new Map<string, boolean>();
+  for (const review of session.reviews) {
+    if (seenCards.has(review.cardId)) continue;
+    seenCards.add(review.cardId);
+    const { conceptId } = session.cards[review.cardId];
+    isNewWord.set(conceptId, (isNewWord.get(conceptId) ?? true) && review.log.state === State.New);
+  }
+  const newWords = [...isNewWord.values()].filter(Boolean).length;
+  return { newWords, repeatedWords: isNewWord.size - newWords };
 }
 
 function getHeadline(reviewCount: number, accuracy: number): string {
@@ -240,70 +243,82 @@ function RatingBar({ reviews }: { reviews: Review[] }) {
   );
 }
 
-interface WordTileProps {
+/**
+ * Practised words by when they come back, so the ones needing more practice lead;
+ * ties go to the harder word. Words not seen yet come last.
+ */
+function sortByResult(cards: Card[]): Card[] {
+  const seen = cards.filter((card) => card.srs.state !== State.New);
+  const unseen = cards.filter((card) => card.srs.state === State.New);
+  seen.sort(
+    (a, b) => a.srs.due.getTime() - b.srs.due.getTime() || b.srs.difficulty - a.srs.difficulty,
+  );
+  return [...seen, ...unseen];
+}
+
+interface WordRowProps {
   session: Session;
   card: Card;
   now: Date;
   style: CSSProperties;
 }
 
-function WordTile({ session, card, now, style }: WordTileProps) {
+function WordRow({ session, card, now, style }: WordRowProps) {
   const concept = session.concepts[card.conceptId];
   const attempts = session.reviews.filter((review) => review.cardId === card.id);
   const progress = getProgress(card.srs.state);
-
+  const isNew = progress === 'new';
   const { label, Icon } = EXERCISES[card.exerciseType];
-  const hint = (
-    <span className="flex items-center gap-1.5 font-display text-sm font-bold text-rocket">
-      {concept.hint}
-      <Icon aria-label={label} className="size-4 text-muted-foreground" />
-    </span>
-  );
-
-  // Keep answers hidden for words the learner hasn't practised yet.
-  if (progress === 'new') {
-    return (
-      <li
-        style={style}
-        className="flex animate-rise items-baseline justify-between gap-2 rounded-2xl border-2 border-dashed border-foreground/40 px-3 py-2.5"
-      >
-        <span className="font-display text-lg font-semibold">{concept.local}</span>
-        {hint}
-      </li>
-    );
-  }
 
   return (
     <li
       style={style}
-      className="flex animate-rise flex-col gap-2 rounded-2xl border-2 border-line bg-card p-3 shadow-sticker-sm"
+      className={cn(
+        'flex animate-rise flex-wrap items-center gap-x-3 gap-y-1.5 rounded-2xl border-2 px-3 py-2.5',
+        isNew ? 'border-transparent bg-muted/50' : 'border-line bg-card shadow-sticker-sm',
+      )}
     >
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="text-sm text-muted-foreground">{concept.local}</span>
-        {hint}
-      </div>
-      <span className="font-display text-2xl leading-tight font-bold break-words">
-        {concept.foreign}
+      <span
+        className={cn(
+          'w-20 shrink-0 rounded-full border-2 px-2 py-0.5 text-center text-xs font-bold',
+          PROGRESS_LABELS[progress].className,
+        )}
+      >
+        {PROGRESS_LABELS[progress].label}
       </span>
-      <div className="mt-auto flex items-center justify-between gap-2">
-        <span className="flex flex-wrap gap-1">
-          {attempts.map((review, index) => (
-            <span
-              key={index}
-              title={GRADE_LABELS[review.rating]}
-              className={cn(
-                'grid size-6 place-items-center rounded-full border-2 border-line text-xs font-bold',
-                GRADE_STYLES[review.rating].fill,
-              )}
-            >
-              {GRADE_STYLES[review.rating].mark}
-            </span>
-          ))}
+      <Icon aria-label={label} className="size-4 shrink-0 text-muted-foreground" />
+      <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">
+        <span className="text-sm text-muted-foreground">{concept.local}</span>
+        <span
+          className={cn(
+            'font-display text-lg leading-tight font-bold break-words',
+            isNew && 'text-muted-foreground',
+          )}
+        >
+          {concept.foreign}
         </span>
-        <span className="text-xs whitespace-nowrap text-muted-foreground">
-          back {formatRelative(card.srs.due, now)}
+      </span>
+      {!isNew && (
+        <span className="ml-auto flex items-center gap-3">
+          <span className="flex gap-1">
+            {attempts.map((review, index) => (
+              <span
+                key={index}
+                title={GRADE_LABELS[review.rating]}
+                className={cn(
+                  'grid size-6 place-items-center rounded-full border-2 border-line text-xs font-bold',
+                  GRADE_STYLES[review.rating].fill,
+                )}
+              >
+                {GRADE_STYLES[review.rating].mark}
+              </span>
+            ))}
+          </span>
+          <span className="w-24 text-right text-sm whitespace-nowrap text-muted-foreground">
+            back {formatRelative(card.srs.due, now)}
+          </span>
         </span>
-      </div>
+      )}
     </li>
   );
 }

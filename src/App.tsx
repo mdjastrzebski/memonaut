@@ -64,6 +64,13 @@ export default function App() {
     setSession(next);
   };
 
+  // Back to the setup screen; mid-session it asks first, since leaving ends the session.
+  const goHome = () => {
+    if (exercising && !window.confirm('Leave this session? Your answers so far are saved.')) return;
+    setCards(allCards);
+    setSession(null);
+  };
+
   const selectDeck = (deck: Deck) => {
     setDeck(deck);
     if (deck.kind === 'unit') setLastUnitIds({ ...lastUnitIds, [deck.subjectId]: deck.id });
@@ -84,17 +91,16 @@ export default function App() {
             exercising && 'grid grid-cols-[1fr_minmax(0,42rem)_1fr]',
           )}
         >
-          <div className="flex items-center gap-3">
-            <Logo />
-            <h1
-              className={cn(
-                'font-display text-2xl font-extrabold tracking-tight',
-                exercising && 'max-sm:sr-only',
-              )}
+          <h1 className="font-display text-2xl font-extrabold tracking-tight">
+            <button
+              type="button"
+              onClick={goHome}
+              className="flex cursor-pointer items-center gap-3 rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
             >
-              Memonaut
-            </h1>
-          </div>
+              <Logo />
+              <span className={cn(exercising && 'max-sm:sr-only')}>Memonaut</span>
+            </button>
+          </h1>
           {exercising && session && <SessionProgress session={session} />}
           <div className="ml-auto flex items-center gap-2">
             <ThemeToggle />
@@ -116,11 +122,7 @@ export default function App() {
         ) : finished ? (
           <SummaryScreen
             session={session}
-            onRestart={start}
-            onChooseSet={() => {
-              setCards(allCards);
-              setSession(null);
-            }}
+            onNewSession={goHome}
             showSrsDetails={showSrsDetails}
             onToggleSrsDetails={() => setShowSrsDetails((show) => !show)}
           />

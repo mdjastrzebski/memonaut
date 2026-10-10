@@ -83,6 +83,11 @@ async function retypeAnswer(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByRole('textbox', { name: 'Retype answer' }), `${answer}{Enter}`);
 }
 
+/** The rows of the summary's word list. */
+function sessionWords() {
+  return within(screen.getByRole('list', { name: 'Session words' })).getAllByRole('listitem');
+}
+
 async function finishSession(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: 'Session menu' }));
   await user.click(screen.getByRole('menuitem', { name: 'Finish now' }));
@@ -186,7 +191,10 @@ test('ending the session shows results with SRS details collapsed', async () => 
   await finishSession(user);
 
   expect(screen.getByText(/Session results/)).toBeInTheDocument();
-  expect(screen.getByRole('heading', { name: 'Keep practising' })).toBeInTheDocument();
+  // The missed word comes back soonest, so it leads the list.
+  expect(sessionWords()[0]).toHaveTextContent('Practise');
+  expect(screen.getByText('New words').nextSibling).toHaveTextContent('1');
+  expect(screen.getByText('Repeated words').nextSibling).toHaveTextContent('0');
   expect(screen.queryByText('Review log')).not.toBeInTheDocument();
 
   await user.click(screen.getByRole('button', { name: 'SRS details' }));
@@ -298,6 +306,31 @@ test('finishing early asks first and stays on cancel', async () => {
   await finishSession(user);
   expect(confirm).toHaveBeenCalledOnce();
   expect(screen.getByRole('textbox', { name: 'Answer' })).toBeInTheDocument();
+});
+
+test('the logo leads back to the setup screen, asking first mid-session', async () => {
+  const user = userEvent.setup();
+  await startEssentialsSession(user);
+
+  confirm.mockReturnValueOnce(false);
+  await user.click(screen.getByRole('button', { name: 'Memonaut' }));
+  expect(confirm).toHaveBeenCalledOnce();
+  expect(screen.getByRole('textbox', { name: 'Answer' })).toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: 'Memonaut' }));
+  expect(confirm).toHaveBeenCalledTimes(2);
+  expect(screen.getByRole('button', { name: 'Start session' })).toBeInTheDocument();
+});
+
+test('the logo leads back to the setup screen from the summary without asking', async () => {
+  const user = userEvent.setup();
+  await startEssentialsSession(user);
+  await finishSession(user);
+  confirm.mockClear();
+
+  await user.click(screen.getByRole('button', { name: 'Memonaut' }));
+  expect(confirm).not.toHaveBeenCalled();
+  expect(screen.getByRole('button', { name: 'Start session' })).toBeInTheDocument();
 });
 
 test('Enter on a focused menu item picks it instead of checking the answer', async () => {
@@ -418,7 +451,7 @@ test('the summary leads back to the setup screen with the same set selected', as
   await user.click(screen.getByRole('button', { name: 'Start session' }));
 
   await finishSession(user);
-  await user.click(screen.getByRole('button', { name: 'Choose another set' }));
+  await user.click(screen.getByRole('button', { name: 'Start a new session' }));
 
   expect(unitTile('Kapitel 0')).toBeChecked();
 });
@@ -432,7 +465,7 @@ test('words practised in a session show their status, with details on hover', as
   await user.type(screen.getByRole('textbox', { name: 'Answer' }), `${foreign}{Enter}`);
   await user.keyboard('{Enter}');
   await finishSession(user);
-  await user.click(screen.getByRole('button', { name: 'Choose another set' }));
+  await user.click(screen.getByRole('button', { name: 'Start a new session' }));
 
   await user.click(screen.getByRole('button', { name: 'Words' }));
   const words = screen.getByRole('list', { name: 'Words in set' });
@@ -463,13 +496,13 @@ test('a session practises 10 words by default, or as many as chosen', async () =
 
   await user.click(screen.getByRole('button', { name: 'Start session' }));
   await finishSession(user);
-  expect(screen.getByText('20 · Waiting for the next session.')).toBeInTheDocument();
+  expect(sessionWords()).toHaveLength(20);
 
-  await user.click(screen.getByRole('button', { name: 'Choose another set' }));
+  await user.click(screen.getByRole('button', { name: 'Start a new session' }));
   await user.click(screen.getByRole('radio', { name: '5' }));
   await user.click(screen.getByRole('button', { name: 'Start session' }));
   await finishSession(user);
-  expect(screen.getByText('10 · Waiting for the next session.')).toBeInTheDocument();
+  expect(sessionWords()).toHaveLength(10);
 });
 
 test('remembers the subject, set and words per session after a reload', async () => {
