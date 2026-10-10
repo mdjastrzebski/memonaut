@@ -2,7 +2,7 @@
 
 Memonaut is a learning web app for school kids, built on spaced repetition. It helps a learner keep what they learn in school subjects, such as English, German, Polish or Przyroda, by scheduling each piece of knowledge for review just before it would be forgotten.
 
-> **Status:** early design. The concepts below are settled. The project is scaffolded, but no features are built yet.
+> **Status:** early prototype. The concepts below are settled. A demo study session (German numbers, type-the-answer, FSRS scheduling) runs in memory; nothing is saved yet.
 
 ## Goals
 

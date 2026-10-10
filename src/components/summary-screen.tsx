@@ -11,7 +11,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { formatDuration, formatNumber, formatPercent, formatRelative } from '@/lib/format';
+import {
+  formatDuration,
+  formatNumber,
+  formatPercent,
+  formatRelative,
+  formatSeconds,
+} from '@/lib/format';
 import type { Session } from '@/session/session';
 import {
   getRetrievability,
@@ -177,9 +183,7 @@ export function SummaryScreen({ session, onRestart }: SummaryScreenProps) {
                     <TableCell className={ANSWER_MARKS[review.rating].className}>
                       {ANSWER_MARKS[review.rating].mark} {review.input}
                     </TableCell>
-                    <TableCell className="text-right">
-                      {(review.elapsedMs / 1000).toFixed(1)}s
-                    </TableCell>
+                    <TableCell className="text-right">{formatSeconds(review.elapsedMs)}</TableCell>
                     <TableCell>{ratingName(review.rating)}</TableCell>
                     <TableCell className="whitespace-nowrap">
                       <StateBadge state={log.state} /> → <StateBadge state={srsAfter.state} />

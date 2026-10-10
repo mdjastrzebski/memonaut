@@ -12,6 +12,11 @@ export function formatDuration(ms: number): string {
   return `${(abs / (365 * DAY)).toFixed(1)}y`;
 }
 
+/** Seconds with one decimal, e.g. "2.5s". */
+export function formatSeconds(ms: number): string {
+  return `${(ms / 1000).toFixed(1)}s`;
+}
+
 /** "in 10m", "now" or "5m ago". */
 export function formatRelative(date: Date, now: Date): string {
   const diff = date.getTime() - now.getTime();

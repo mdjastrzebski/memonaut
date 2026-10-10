@@ -1,8 +1,8 @@
 import { Rating, type Grade } from '@/srs/scheduler';
 
 /** An exact answer typed within `FAST_BASE_MS + FAST_PER_CHAR_MS × answer length` is rated Easy. */
-export const FAST_BASE_MS = 2500;
-export const FAST_PER_CHAR_MS = 500;
+const FAST_BASE_MS = 2500;
+const FAST_PER_CHAR_MS = 500;
 
 /** A forgiven mistake in an almost-correct answer. */
 export type AnswerIssue = 'case' | 'diacritics' | 'typo';
@@ -12,7 +12,6 @@ export interface AnswerResult {
   /** Every mistake forgiven to rate the answer Hard. */
   issues: AnswerIssue[];
   elapsedMs: number;
-  fastLimitMs: number;
 }
 
 const TRANSLITERATIONS: Record<string, string> = {
@@ -42,18 +41,12 @@ export function getFastLimitMs(answer: string): number {
  * each mistake is reported if it still makes a difference when the others are forgiven.
  */
 export function gradeAnswer(expected: string, input: string, elapsedMs: number): AnswerResult {
-  const fastLimitMs = getFastLimitMs(expected);
-  const result = (grade: Grade, issues: AnswerIssue[] = []) => ({
-    grade,
-    issues,
-    elapsedMs,
-    fastLimitMs,
-  });
+  const result = (grade: Grade, issues: AnswerIssue[] = []) => ({ grade, issues, elapsedMs });
 
   const target = normalizeSpacing(expected);
   const given = normalizeSpacing(input);
   if (given === target) {
-    return result(elapsedMs <= fastLimitMs ? Rating.Easy : Rating.Good);
+    return result(elapsedMs <= getFastLimitMs(expected) ? Rating.Easy : Rating.Good);
   }
 
   const lower = (value: string) => value.toLowerCase();

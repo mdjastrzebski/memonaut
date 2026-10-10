@@ -12,7 +12,7 @@ import {
   type AnswerIssue,
   type AnswerResult,
 } from '@/exercises/type-answer';
-import { formatDuration } from '@/lib/format';
+import { formatDuration, formatSeconds } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import {
   getCurrentCard,
@@ -226,11 +226,7 @@ export function ExerciseScreen({
                 · wrong case, missing umlaut or one letter off → Hard · otherwise → Again. Cards due
                 within {formatDuration(LEARN_AHEAD_MS)} come back in this session.
               </p>
-              <RatingPreview
-                card={card.srs}
-                now={now}
-                highlight={grade !== undefined ? [grade] : undefined}
-              />
+              <RatingPreview card={card.srs} now={now} highlight={grade} />
             </div>
           </div>
         )}
@@ -277,8 +273,4 @@ function getHeadline({ grade, issues }: AnswerResult): string {
     case Rating.Again:
       return 'Not quite.';
   }
-}
-
-function formatSeconds(ms: number): string {
-  return `${(ms / 1000).toFixed(1)}s`;
 }
