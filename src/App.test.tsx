@@ -353,7 +353,7 @@ test('picking a unit shows its stats and words, and starts a session of it', asy
   expect(within(words).getAllByRole('button', { name: 'New' })).toHaveLength(11);
 
   await user.click(within(selected).getByRole('button', { name: 'Start session' }));
-  expect(screen.getByText('Numbers 0–10')).toBeInTheDocument();
+  expect(screen.getByRole('progressbar', { name: 'Numbers 0–10 progress' })).toBeInTheDocument();
   expect(screen.getByRole('textbox', { name: 'Answer' })).toBeInTheDocument();
 });
 

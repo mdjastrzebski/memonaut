@@ -10,7 +10,6 @@ import {
 
 import { AnswerComparison } from '@/components/answer-comparison';
 import { GRADE_STYLES } from '@/components/grades';
-import { SessionProgress } from '@/components/session-progress';
 import { SpecialCharacters } from '@/components/special-characters';
 import { CardStats, RatingPreview, SrsDetails, StateBadge } from '@/components/srs-stats';
 import { Button } from '@/components/ui/button';
@@ -39,7 +38,6 @@ const GRADE_ICONS: Record<Grade, LucideIcon> = {
 interface ExerciseScreenProps {
   session: Session;
   onReview: (review: SubmitReviewInput) => void;
-  onEnd: () => void;
   /** Its language is used to read words aloud and its special characters are offered on screen. */
   subject: Subject;
   showSpecialCharacters: boolean;
@@ -59,7 +57,6 @@ interface Checked {
 export function ExerciseScreen({
   session,
   onReview,
-  onEnd,
   subject,
   showSpecialCharacters,
   onToggleSpecialCharacters,
@@ -160,12 +157,10 @@ export function ExerciseScreen({
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
-      <SessionProgress session={session} onEnd={onEnd} />
-
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
       <section
         aria-label="Exercise"
-        className="relative animate-card-in overflow-hidden rounded-[2rem] border-2 border-line bg-card px-6 pt-7 pb-6 shadow-sticker-lg sm:px-10 sm:pt-9 sm:pb-8"
+        className="relative animate-card-in overflow-hidden rounded-[2rem] border-2 border-line bg-card px-6 pt-6 pb-6 shadow-sticker-lg sm:px-10 sm:pt-8 sm:pb-8"
       >
         {/* A hint like "3" would give away the word's meaning in dictation. */}
         {concept.hint && !dictation && (
@@ -174,11 +169,8 @@ export function ExerciseScreen({
           </span>
         )}
 
-        <p className="relative inline-block -rotate-2 rounded-full border-2 border-line bg-highlight px-3 py-0.5 text-xs font-bold tracking-wider uppercase">
-          {dictation ? 'Write what you hear' : `Type in ${subject.name}`}
-        </p>
         {dictation ? (
-          <div className="relative mt-4 mb-8">
+          <div className="relative mb-6">
             <Button
               type="button"
               variant="sticker"
@@ -191,7 +183,7 @@ export function ExerciseScreen({
             </Button>
           </div>
         ) : (
-          <h2 className="relative mt-4 mb-6 font-display text-4xl font-extrabold tracking-tight break-words sm:text-5xl">
+          <h2 className="relative mb-6 font-display text-4xl font-extrabold tracking-tight break-words sm:text-5xl">
             {concept.local}
           </h2>
         )}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { ExerciseScreen } from '@/components/exercise-screen';
+import { SessionProgress } from '@/components/session-progress';
 import { loadSetupChoice, saveSetupChoice, type SessionSize } from '@/components/setup-choice';
 import { SetupScreen } from '@/components/setup-screen';
 import { SummaryScreen } from '@/components/summary-screen';
@@ -8,6 +9,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { content } from '@/data/content';
 import type { Card } from '@/domain/types';
+import { cn } from '@/lib/utils';
 import { loadProgress, saveProgress } from '@/progress/progress-storage';
 import {
   createSession,
@@ -33,6 +35,7 @@ export default function App() {
 
   const subject = content.subjects.find((subject) => subject.id === deck.subjectId)!;
   const finished = session !== null && (ended || !getCurrentCard(session));
+  const exercising = session !== null && !finished;
   const allCards = session ? { ...cards, ...session.cards } : cards;
 
   const start = () => {
@@ -59,15 +62,35 @@ export default function App() {
     setSession(next);
   };
 
+  const endSession = () => window.confirm('End this session?') && setEnded(true);
+
   useEffect(() => saveSetupChoice({ deck, sessionSize }), [deck, sessionSize]);
 
   return (
     <TooltipProvider>
       <main className="mx-auto flex min-h-svh max-w-6xl flex-col gap-6 p-4 sm:p-6">
-        <header className="flex items-center gap-3">
-          <Logo />
-          <h1 className="font-display text-2xl font-extrabold tracking-tight">Memonaut</h1>
-          <ThemeToggle />
+        {/* During a session the progress sits in the header, lined up with the exercise card. */}
+        <header
+          className={cn(
+            'flex items-center gap-3',
+            exercising && 'grid grid-cols-[1fr_minmax(0,42rem)_1fr]',
+          )}
+        >
+          <div className="flex items-center gap-3">
+            <Logo />
+            <h1
+              className={cn(
+                'font-display text-2xl font-extrabold tracking-tight',
+                exercising && 'max-sm:sr-only',
+              )}
+            >
+              Memonaut
+            </h1>
+          </div>
+          {exercising && session && <SessionProgress session={session} onEnd={endSession} />}
+          <div className="ml-auto">
+            <ThemeToggle />
+          </div>
         </header>
 
         {session === null ? (
@@ -96,7 +119,6 @@ export default function App() {
             key={session.reviews.length}
             session={session}
             onReview={review}
-            onEnd={() => window.confirm('End this session?') && setEnded(true)}
             subject={subject}
             showSpecialCharacters={showSpecialCharacters}
             onToggleSpecialCharacters={() => setShowSpecialCharacters((show) => !show)}
