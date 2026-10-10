@@ -10,31 +10,43 @@ function currentConcept() {
   return germanNumberConcepts.find((concept) => concept.prompt === prompt)!;
 }
 
-test('practises a word and shows SRS stats', async () => {
+test('rates a fast exact answer as Easy and continues on Enter', async () => {
   const user = userEvent.setup();
   render(<App />);
 
   expect(screen.getByRole('region', { name: 'SRS details' })).toBeInTheDocument();
   expect(screen.getByText('Reviews: 0')).toBeInTheDocument();
 
-  await user.type(
-    screen.getByRole('textbox', { name: 'Answer' }),
-    `${currentConcept().answer}{Enter}`,
-  );
-  expect(screen.getByRole('status')).toHaveTextContent('Correct!');
+  const input = screen.getByRole('textbox', { name: 'Answer' });
+  await user.type(input, `${currentConcept().answer}{Enter}`);
+  expect(screen.getByRole('status')).toHaveTextContent('Correct and fast!');
+  expect(screen.getByRole('status')).toHaveTextContent('Rated Easy');
 
-  await user.click(screen.getByRole('button', { name: /Good/ }));
+  await user.keyboard('{Enter}');
   expect(screen.getByText('Reviews: 1')).toBeInTheDocument();
 });
 
-test('wrong answer can only be rated Again', async () => {
+test('rates an answer with wrong capitalization as Hard', async () => {
+  const user = userEvent.setup();
+  render(<App />);
+
+  const { answer } = currentConcept();
+  const capitalized = answer[0].toUpperCase() + answer.slice(1);
+  await user.type(screen.getByRole('textbox', { name: 'Answer' }), `${capitalized}{Enter}`);
+
+  expect(screen.getByRole('status')).toHaveTextContent('Almost! Check: capital letters.');
+  expect(screen.getByRole('status')).toHaveTextContent(`The answer is ${answer}.`);
+  expect(screen.getByRole('status')).toHaveTextContent('Rated Hard');
+});
+
+test('rates a wrong answer as Again without asking', async () => {
   const user = userEvent.setup();
   render(<App />);
 
   await user.type(screen.getByRole('textbox', { name: 'Answer' }), 'falsch{Enter}');
-  expect(screen.getByRole('status')).toHaveTextContent('Not quite');
-  expect(screen.getByRole('button', { name: /Again/ })).toBeInTheDocument();
-  expect(screen.queryByRole('button', { name: /Good/ })).not.toBeInTheDocument();
+  expect(screen.getByRole('status')).toHaveTextContent('Not quite.');
+  expect(screen.getByRole('status')).toHaveTextContent('Rated Again');
+  expect(screen.queryByRole('button', { name: /^(Hard|Good|Easy)/ })).not.toBeInTheDocument();
 });
 
 test('ending the session shows results', async () => {

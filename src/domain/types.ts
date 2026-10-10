@@ -1,5 +1,7 @@
 import type { Card as FsrsCard, Grade, ReviewLog } from 'ts-fsrs';
 
+import type { AnswerIssue } from '@/exercises/type-answer';
+
 /** A separate area of study, e.g. English, German or Przyroda. */
 export interface Subject {
   id: string;
@@ -47,8 +49,12 @@ export interface Review {
   cardId: string;
   /** What the learner typed. */
   input: string;
-  correct: boolean;
+  /** Time from showing the exercise to checking the answer. */
+  elapsedMs: number;
+  /** Rating given automatically from the answer and how fast it was typed. */
   rating: Grade;
+  /** Mistakes forgiven in an almost-correct answer rated Hard. */
+  issues: AnswerIssue[];
   /** FSRS review log: the Card's memory state before this review. */
   log: ReviewLog;
   /** The Card's memory state after this review. */

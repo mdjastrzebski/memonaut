@@ -34,7 +34,13 @@ test('learning card returns to the end of the queue', () => {
   let session = create();
   const first = getCurrentCard(session)!;
 
-  session = submitReview(session, { input: 'x', correct: false, rating: Rating.Again, now: start });
+  session = submitReview(session, {
+    input: 'x',
+    elapsedMs: 1000,
+    issues: [],
+    rating: Rating.Again,
+    now: start,
+  });
 
   expect(session.cards[first.id].srs.state).toBe(State.Learning);
   expect(session.queue).toEqual([expect.not.stringMatching(first.id), first.id]);
@@ -47,11 +53,24 @@ test('card leaves the session once it graduates to review', () => {
   const first = getCurrentCard(session)!;
 
   // New → Learning (10m step), then Learning → Review (days).
-  session = submitReview(session, { input: 'a', correct: true, rating: Rating.Good, now: start });
-  session = submitReview(session, { input: 'b', correct: true, rating: Rating.Easy, now: start });
   session = submitReview(session, {
     input: 'a',
-    correct: true,
+    elapsedMs: 1000,
+    issues: [],
+    rating: Rating.Good,
+    now: start,
+  });
+  session = submitReview(session, {
+    input: 'b',
+    elapsedMs: 1000,
+    issues: [],
+    rating: Rating.Easy,
+    now: start,
+  });
+  session = submitReview(session, {
+    input: 'a',
+    elapsedMs: 1000,
+    issues: [],
     rating: Rating.Good,
     now: minutes(1),
   });

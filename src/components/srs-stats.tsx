@@ -89,12 +89,12 @@ export function CardStats({ card, now }: CardStatsProps) {
 interface RatingPreviewProps {
   card: FsrsCard;
   now: Date;
-  /** Grades the learner can pick; others are dimmed. */
-  available?: readonly Grade[];
+  /** Grades to emphasize; others are dimmed. */
+  highlight?: readonly Grade[];
 }
 
 /** What each rating would do to the card if reviewed at `now`. */
-export function RatingPreview({ card, now, available = GRADES }: RatingPreviewProps) {
+export function RatingPreview({ card, now, highlight = GRADES }: RatingPreviewProps) {
   const preview = previewReview(card, now);
 
   return (
@@ -114,7 +114,7 @@ export function RatingPreview({ card, now, available = GRADES }: RatingPreviewPr
           return (
             <TableRow
               key={grade}
-              className={cn('tabular-nums', !available.includes(grade) && 'opacity-40')}
+              className={cn('tabular-nums', !highlight.includes(grade) && 'opacity-40')}
             >
               <TableCell className="font-medium">{ratingName(grade)}</TableCell>
               <TableCell>

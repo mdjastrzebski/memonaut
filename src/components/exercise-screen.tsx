@@ -1,19 +1,35 @@
-import { useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 
 import { SpecialCharacters } from '@/components/special-characters';
 import { CardStats, RatingPreview, StateBadge } from '@/components/srs-stats';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { checkAnswer } from '@/exercises/type-answer';
+import {
+  getFastLimitMs,
+  gradeAnswer,
+  type AnswerIssue,
+  type AnswerResult,
+} from '@/exercises/type-answer';
 import { formatDuration } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { getCurrentCard, LEARN_AHEAD_MS, type Session } from '@/session/session';
+import {
+  getCurrentCard,
+  LEARN_AHEAD_MS,
+  type Session,
+  type SubmitReviewInput,
+} from '@/session/session';
 import { previewReview, Rating, ratingName, State, type Grade } from '@/srs/scheduler';
+
+const ISSUE_MESSAGES: Record<AnswerIssue, string> = {
+  case: 'capital letters',
+  diacritics: 'umlauts or ß',
+  typo: 'one letter off',
+};
 
 interface ExerciseScreenProps {
   session: Session;
-  onReview: (review: { input: string; correct: boolean; rating: Grade; now: Date }) => void;
+  onReview: (review: SubmitReviewInput) => void;
   onEnd: () => void;
   specialCharacters?: string[];
   showSpecialCharacters: boolean;
@@ -21,7 +37,7 @@ interface ExerciseScreenProps {
 }
 
 interface Checked {
-  correct: boolean;
+  result: AnswerResult;
   at: Date;
 }
 
@@ -52,25 +68,21 @@ export function ExerciseScreen({
 
   const concept = session.concepts[card.conceptId];
   const now = checked?.at ?? shownAt;
-  const grades: Grade[] = checked?.correct
-    ? [Rating.Hard, Rating.Good, Rating.Easy]
-    : [Rating.Again];
-  const defaultGrade = checked?.correct ? Rating.Good : Rating.Again;
+  const grade = checked?.result.grade;
+  const fastLimitMs = getFastLimitMs(concept.answer);
   const preview = previewReview(card.srs, now);
   const earlierReviews = session.reviews.filter((review) => review.cardId === card.id);
-
-  const rate = (rating: Grade) => {
-    if (!checked) return;
-    onReview({ input, correct: checked.correct, rating, now: checked.at });
-  };
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     if (!checked) {
       if (input.trim() === '') return;
-      setChecked({ correct: checkAnswer(concept.answer, input), at: new Date() });
+      const at = new Date();
+      const elapsedMs = at.getTime() - shownAt.getTime();
+      setChecked({ result: gradeAnswer(concept.answer, input, elapsedMs), at });
     } else {
-      rate(defaultGrade);
+      const { grade, issues, elapsedMs } = checked.result;
+      onReview({ input, elapsedMs, rating: grade, issues, now: checked.at });
     }
   };
 
@@ -81,15 +93,6 @@ export function ExerciseScreen({
     pendingCaret.current = start + character.length;
     setInput(input.slice(0, start) + character + input.slice(end));
     element?.focus();
-  };
-
-  const handleKeyDown = (event: KeyboardEvent) => {
-    if (!checked) return;
-    const grade = Number(event.key) as Grade;
-    if (grades.includes(grade)) {
-      event.preventDefault();
-      rate(grade);
-    }
   };
 
   return (
@@ -115,11 +118,9 @@ export function ExerciseScreen({
                 value={input}
                 readOnly={checked !== null}
                 onChange={(event) => setInput(event.target.value)}
-                onKeyDown={handleKeyDown}
                 className={cn(
                   'h-12 text-center text-xl md:text-xl',
-                  checked?.correct === true && 'border-emerald-600',
-                  checked?.correct === false && 'border-destructive',
+                  grade !== undefined && GRADE_STYLES[grade].border,
                 )}
               />
               {!checked && specialCharacters.length > 0 && (
@@ -147,41 +148,26 @@ export function ExerciseScreen({
               <SpecialCharacters characters={specialCharacters} onInsert={insertCharacter} />
             )}
 
-            {checked && (
+            {checked && grade !== undefined && (
               <>
-                <p
-                  role="status"
-                  className={cn(
-                    'text-center text-lg font-medium',
-                    checked.correct ? 'text-emerald-600' : 'text-destructive',
-                  )}
-                >
-                  {checked.correct ? 'Correct!' : `Not quite. The answer is "${concept.answer}".`}
-                </p>
-                <div className="flex justify-center gap-2">
-                  {grades.map((grade) => (
-                    <Button
-                      key={grade}
-                      type="button"
-                      size="lg"
-                      variant={grade === defaultGrade ? 'default' : 'outline'}
-                      onClick={() => rate(grade)}
-                      className="h-auto min-w-24 flex-col gap-0 py-2"
-                    >
-                      <span>
-                        {ratingName(grade)} <kbd className="opacity-60">{grade}</kbd>
-                      </span>
-                      <span className="text-xs opacity-70">
-                        {formatDuration(preview[grade].card.due.getTime() - now.getTime())}
-                      </span>
-                    </Button>
-                  ))}
+                <div role="status" className="flex flex-col gap-2 text-center">
+                  <div className={GRADE_STYLES[grade].text}>
+                    <p className="text-lg font-medium">{getHeadline(checked.result)}</p>
+                    {grade === Rating.Hard || grade === Rating.Again ? (
+                      <p>
+                        The answer is <span className="font-semibold">{concept.answer}</span>.
+                      </p>
+                    ) : null}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Rated <span className="font-medium text-foreground">{ratingName(grade)}</span> ·{' '}
+                    {formatSeconds(checked.result.elapsedMs)} · next in{' '}
+                    {formatDuration(preview[grade].card.due.getTime() - now.getTime())}
+                  </p>
                 </div>
-                <p className="text-center text-xs text-muted-foreground">
-                  {checked.correct
-                    ? 'Pick how hard it felt. Enter = Good.'
-                    : 'A wrong answer is always rated Again. Press Enter to continue.'}
-                </p>
+                <Button type="submit" size="lg" className="mx-auto h-11 px-8">
+                  Continue
+                </Button>
               </>
             )}
           </form>
@@ -211,10 +197,15 @@ export function ExerciseScreen({
         <div>
           <h2 className="font-medium text-foreground">Rating preview</h2>
           <p>
-            What each rating would do. Cards due within {formatDuration(LEARN_AHEAD_MS)} come back
-            in this session.
+            Rated automatically: exact within {formatSeconds(fastLimitMs)} → Easy · exact → Good ·
+            wrong case, missing umlaut or one letter off → Hard · otherwise → Again. Cards due
+            within {formatDuration(LEARN_AHEAD_MS)} come back in this session.
           </p>
-          <RatingPreview card={card.srs} now={now} available={checked ? grades : undefined} />
+          <RatingPreview
+            card={card.srs}
+            now={now}
+            highlight={grade !== undefined ? [grade] : undefined}
+          />
         </div>
       </section>
     </div>
@@ -239,4 +230,28 @@ function SessionProgress({ session, onEnd }: { session: Session; onEnd: () => vo
       </Button>
     </div>
   );
+}
+
+const GRADE_STYLES: Record<Grade, { text: string; border: string }> = {
+  [Rating.Again]: { text: 'text-destructive', border: 'border-destructive' },
+  [Rating.Hard]: { text: 'text-amber-600', border: 'border-amber-500' },
+  [Rating.Good]: { text: 'text-emerald-600', border: 'border-emerald-600' },
+  [Rating.Easy]: { text: 'text-emerald-600', border: 'border-emerald-600' },
+};
+
+function getHeadline({ grade, issues }: AnswerResult): string {
+  switch (grade) {
+    case Rating.Easy:
+      return 'Correct and fast!';
+    case Rating.Good:
+      return 'Correct!';
+    case Rating.Hard:
+      return `Almost! Check: ${issues.map((issue) => ISSUE_MESSAGES[issue]).join(', ')}.`;
+    case Rating.Again:
+      return 'Not quite.';
+  }
+}
+
+function formatSeconds(ms: number): string {
+  return `${(ms / 1000).toFixed(1)}s`;
 }

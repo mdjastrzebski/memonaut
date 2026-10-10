@@ -1,4 +1,5 @@
 import type { Card, Concept, Deck, ExerciseType, Review } from '@/domain/types';
+import type { AnswerIssue } from '@/exercises/type-answer';
 import { createSrsCard, reviewSrsCard, type Grade } from '@/srs/scheduler';
 
 /**
@@ -61,24 +62,22 @@ export function getCurrentCard(session: Session): Card | undefined {
   return cardId ? session.cards[cardId] : undefined;
 }
 
-interface SubmitReviewInput {
+export interface SubmitReviewInput {
   input: string;
-  correct: boolean;
+  elapsedMs: number;
   rating: Grade;
+  issues: AnswerIssue[];
   now: Date;
 }
 
 /** Applies a review to the current Card and moves it to the end of the queue if it's due again soon. */
-export function submitReview(
-  session: Session,
-  { input, correct, rating, now }: SubmitReviewInput,
-): Session {
+export function submitReview(session: Session, { now, ...answer }: SubmitReviewInput): Session {
   const card = getCurrentCard(session);
   if (!card) {
     return session;
   }
 
-  const { card: srsAfter, log } = reviewSrsCard(card.srs, rating, now);
+  const { card: srsAfter, log } = reviewSrsCard(card.srs, answer.rating, now);
   const dueSoon = srsAfter.due.getTime() - now.getTime() <= LEARN_AHEAD_MS;
   const rest = session.queue.slice(1);
 
@@ -86,7 +85,7 @@ export function submitReview(
     ...session,
     cards: { ...session.cards, [card.id]: { ...card, srs: srsAfter } },
     queue: dueSoon ? [...rest, card.id] : rest,
-    reviews: [...session.reviews, { cardId: card.id, input, correct, rating, log, srsAfter }],
+    reviews: [...session.reviews, { cardId: card.id, ...answer, log, srsAfter }],
   };
 }
 

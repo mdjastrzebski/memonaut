@@ -1,17 +1,63 @@
-import { expect, test } from 'vitest';
+import { describe, expect, test } from 'vitest';
 
-import { checkAnswer } from './type-answer';
+import { Rating } from '@/srs/scheduler';
 
-test('ignores case and surrounding whitespace', () => {
-  expect(checkAnswer('drei', '  Drei ')).toBe(true);
+import { getFastLimitMs, gradeAnswer } from './type-answer';
+
+const SLOW = 60_000;
+
+describe('exact answers', () => {
+  test('fast answer is Easy', () => {
+    expect(gradeAnswer('drei', 'drei', 1000).grade).toBe(Rating.Easy);
+  });
+
+  test('slow answer is Good', () => {
+    expect(gradeAnswer('drei', 'drei', SLOW).grade).toBe(Rating.Good);
+  });
+
+  test('ignores surrounding and repeated whitespace', () => {
+    expect(gradeAnswer('guten Tag', '  guten   Tag ', SLOW).grade).toBe(Rating.Good);
+  });
+
+  test('fast limit grows with answer length', () => {
+    expect(getFastLimitMs('sieben')).toBeGreaterThan(getFastLimitMs('eins'));
+    const limit = getFastLimitMs('sieben');
+    expect(gradeAnswer('sieben', 'sieben', limit).grade).toBe(Rating.Easy);
+    expect(gradeAnswer('sieben', 'sieben', limit + 1).grade).toBe(Rating.Good);
+  });
 });
 
-test('accepts umlaut transliterations', () => {
-  expect(checkAnswer('fünf', 'fuenf')).toBe(true);
-  expect(checkAnswer('fünf', 'FÜNF')).toBe(true);
+describe('almost correct answers are Hard', () => {
+  test.each([
+    ['drei', 'Drei', ['case']],
+    ['fünf', 'funf', ['diacritics']],
+    ['fünf', 'fuenf', ['diacritics']],
+    ['Straße', 'Strasse', ['diacritics']],
+    ['sieben', 'siben', ['typo']],
+    ['sieben', 'siebem', ['typo']],
+    ['acht', 'achtt', ['typo']],
+    // Mistakes accumulate.
+    ['fünf', 'Funf', ['case', 'diacritics']],
+    ['fünf', 'FUENF', ['case', 'diacritics']],
+    ['über', 'Uber', ['case', 'diacritics']],
+    ['sieben', 'Siebem', ['case', 'typo']],
+    ['fünf', 'funff', ['diacritics', 'typo']],
+    ['fünf', 'fuemf', ['diacritics', 'typo']],
+    ['fünf', 'Funff', ['case', 'diacritics', 'typo']],
+  ])('%s ← %s', (expected, input, issues) => {
+    const result = gradeAnswer(expected, input, 0);
+    expect(result.grade).toBe(Rating.Hard);
+    expect(result.issues).toEqual(issues);
+  });
 });
 
-test('rejects wrong answers', () => {
-  expect(checkAnswer('drei', 'zwei')).toBe(false);
-  expect(checkAnswer('fünf', 'funf')).toBe(false);
+describe('wrong answers are Again', () => {
+  test.each([
+    ['drei', 'zwei'],
+    ['sieben', 'sibem'],
+    ['acht', 'echtt'],
+    ['fünf', 'Fumff'],
+  ])('%s ← %s', (expected, input) => {
+    expect(gradeAnswer(expected, input, 0).grade).toBe(Rating.Again);
+  });
 });

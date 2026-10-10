@@ -12,11 +12,25 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { formatDuration, formatNumber, formatPercent, formatRelative } from '@/lib/format';
-import { cn } from '@/lib/utils';
 import type { Session } from '@/session/session';
-import { getRetrievability, GRADES, ratingName, State, stateName } from '@/srs/scheduler';
+import {
+  getRetrievability,
+  GRADES,
+  Rating,
+  ratingName,
+  State,
+  stateName,
+  type Grade,
+} from '@/srs/scheduler';
 
 const DAY = 24 * 60 * 60 * 1000;
+
+const ANSWER_MARKS: Record<Grade, { mark: string; className: string }> = {
+  [Rating.Again]: { mark: '✗', className: 'text-destructive' },
+  [Rating.Hard]: { mark: '≈', className: 'text-amber-600' },
+  [Rating.Good]: { mark: '✓', className: 'text-emerald-600' },
+  [Rating.Easy]: { mark: '✓', className: 'text-emerald-600' },
+};
 
 interface SummaryScreenProps {
   session: Session;
@@ -27,7 +41,7 @@ export function SummaryScreen({ session, onRestart }: SummaryScreenProps) {
   const [now] = useState(() => new Date());
   const cards = Object.values(session.cards);
   const { reviews } = session;
-  const correctCount = reviews.filter((review) => review.correct).length;
+  const correctCount = reviews.filter((review) => review.rating !== Rating.Again).length;
 
   const overview: [label: string, value: string][] = [
     ['Reviews', String(reviews.length)],
@@ -140,6 +154,7 @@ export function SummaryScreen({ session, onRestart }: SummaryScreenProps) {
                 <TableHead>At</TableHead>
                 <TableHead>Concept</TableHead>
                 <TableHead>Typed</TableHead>
+                <TableHead className="text-right">Time</TableHead>
                 <TableHead>Rating</TableHead>
                 <TableHead>State</TableHead>
                 <TableHead className="text-right">Stability</TableHead>
@@ -159,10 +174,11 @@ export function SummaryScreen({ session, onRestart }: SummaryScreenProps) {
                       +{formatDuration(log.review.getTime() - session.startedAt.getTime())}
                     </TableCell>
                     <TableCell>{concept.prompt}</TableCell>
-                    <TableCell
-                      className={cn(review.correct ? 'text-emerald-600' : 'text-destructive')}
-                    >
-                      {review.correct ? '✓' : '✗'} {review.input}
+                    <TableCell className={ANSWER_MARKS[review.rating].className}>
+                      {ANSWER_MARKS[review.rating].mark} {review.input}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {(review.elapsedMs / 1000).toFixed(1)}s
                     </TableCell>
                     <TableCell>{ratingName(review.rating)}</TableCell>
                     <TableCell className="whitespace-nowrap">
