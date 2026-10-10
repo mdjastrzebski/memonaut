@@ -1,29 +1,11 @@
-import { X } from 'lucide-react';
-
-import { Button } from '@/components/ui/button';
 import { getSessionProgress, type Session } from '@/session/session';
 
-interface SessionProgressProps {
-  session: Session;
-  onEnd: () => void;
-}
-
-/** One compact row: the end button, a bar that fills up over the whole session, and its percent. */
-export function SessionProgress({ session, onEnd }: SessionProgressProps) {
+/** One compact row: a bar that fills up over the whole session, and its percent. */
+export function SessionProgress({ session }: { session: Session }) {
   const percent = Math.round(getSessionProgress(session) * 100);
 
   return (
     <div className="flex items-center gap-3">
-      <Button
-        variant="ghost"
-        size="icon"
-        aria-label="End session"
-        className="-ml-2 shrink-0"
-        onClick={onEnd}
-      >
-        <X className="size-5" />
-      </Button>
-
       <div
         role="progressbar"
         aria-label={`${session.deck.name} progress`}

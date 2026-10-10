@@ -95,6 +95,8 @@ export function ExerciseScreen({
       const element = inputRef.current;
       const target = event.target as HTMLElement;
       if (!element || target === element || event.defaultPrevented || event.isComposing) return;
+      // Leave keys to an open menu, e.g. Enter on "Finish now".
+      if (target.closest('[role="menu"]')) return;
       if (event.ctrlKey || event.metaKey || event.altKey) return;
 
       if (event.key === 'Enter') {

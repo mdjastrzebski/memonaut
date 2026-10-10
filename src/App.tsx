@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { ExerciseScreen } from '@/components/exercise-screen';
+import { SessionMenu } from '@/components/session-menu';
 import { SessionProgress } from '@/components/session-progress';
 import { loadSetupChoice, saveSetupChoice, type SessionSize } from '@/components/setup-choice';
 import { SetupScreen } from '@/components/setup-screen';
@@ -62,8 +63,6 @@ export default function App() {
     setSession(next);
   };
 
-  const endSession = () => window.confirm('End this session?') && setEnded(true);
-
   useEffect(() => saveSetupChoice({ deck, sessionSize }), [deck, sessionSize]);
 
   return (
@@ -87,9 +86,10 @@ export default function App() {
               Memonaut
             </h1>
           </div>
-          {exercising && session && <SessionProgress session={session} onEnd={endSession} />}
-          <div className="ml-auto">
+          {exercising && session && <SessionProgress session={session} />}
+          <div className="ml-auto flex items-center gap-2">
             <ThemeToggle />
+            {exercising && <SessionMenu onEnd={() => setEnded(true)} />}
           </div>
         </header>
 

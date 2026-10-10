@@ -65,6 +65,11 @@ async function retypeAnswer(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByRole('textbox', { name: 'Retype answer' }), `${answer}{Enter}`);
 }
 
+async function finishSession(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: 'Session menu' }));
+  await user.click(screen.getByRole('menuitem', { name: 'Finish now' }));
+}
+
 test('rates a fast exact answer as Easy and continues on Enter', async () => {
   const user = userEvent.setup();
   await startNumbersSession(user);
@@ -160,8 +165,7 @@ test('ending the session shows results with SRS details collapsed', async () => 
 
   await user.type(screen.getByRole('textbox', { name: 'Answer' }), 'falsch{Enter}');
   await retypeAnswer(user);
-  await user.click(screen.getByRole('button', { name: 'End session' }));
-  expect(confirm).toHaveBeenCalledOnce();
+  await finishSession(user);
 
   expect(screen.getByText(/Session results/)).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'Keep practising' })).toBeInTheDocument();
@@ -268,14 +272,25 @@ test('translation exercises come after every dictation exercise', async () => {
   expect(spoken.slice(spokenBefore)).toEqual([foreign]);
 });
 
-test('ending the session asks first and stays on cancel', async () => {
+test('finishing early asks first and stays on cancel', async () => {
   const user = userEvent.setup();
   await startNumbersSession(user);
 
   confirm.mockReturnValueOnce(false);
-  await user.click(screen.getByRole('button', { name: 'End session' }));
+  await finishSession(user);
   expect(confirm).toHaveBeenCalledOnce();
   expect(screen.getByRole('textbox', { name: 'Answer' })).toBeInTheDocument();
+});
+
+test('Enter on a focused menu item picks it instead of checking the answer', async () => {
+  const user = userEvent.setup();
+  await startNumbersSession(user);
+
+  await user.type(screen.getByRole('textbox', { name: 'Answer' }), 'falsch');
+  await user.click(screen.getByRole('button', { name: 'Session menu' }));
+  screen.getByRole('menuitem', { name: 'Finish now' }).focus();
+  await user.keyboard('{Enter}');
+  expect(screen.getByText(/Session results/)).toBeInTheDocument();
 });
 
 test('keeps progress after a reload, even mid-session, without asking before leaving', async () => {
@@ -375,7 +390,7 @@ test('the summary leads back to the setup screen with the same set selected', as
   const user = userEvent.setup();
   await startNumbersSession(user);
 
-  await user.click(screen.getByRole('button', { name: 'End session' }));
+  await finishSession(user);
   await user.click(screen.getByRole('button', { name: 'Choose another set' }));
 
   expect(screen.getByRole('radio', { name: 'Numbers 0–10' })).toBeChecked();
@@ -389,7 +404,7 @@ test('words practised in a session show their status, with details on hover', as
   const { foreign } = currentConcept();
   await user.type(screen.getByRole('textbox', { name: 'Answer' }), `${foreign}{Enter}`);
   await user.keyboard('{Enter}');
-  await user.click(screen.getByRole('button', { name: 'End session' }));
+  await finishSession(user);
   await user.click(screen.getByRole('button', { name: 'Choose another set' }));
 
   const words = screen.getByRole('list', { name: 'Words in set' });
@@ -420,13 +435,13 @@ test('a session practises 10 words by default, or as many as chosen', async () =
   expect(screen.getByText(/10 words · 20 exercises/)).toBeInTheDocument();
 
   await user.click(screen.getByRole('button', { name: 'Start session' }));
-  await user.click(screen.getByRole('button', { name: 'End session' }));
+  await finishSession(user);
   expect(screen.getByText('20 · Waiting for the next session.')).toBeInTheDocument();
 
   await user.click(screen.getByRole('button', { name: 'Choose another set' }));
   await user.click(screen.getByRole('radio', { name: '5' }));
   await user.click(screen.getByRole('button', { name: 'Start session' }));
-  await user.click(screen.getByRole('button', { name: 'End session' }));
+  await finishSession(user);
   expect(screen.getByText('10 · Waiting for the next session.')).toBeInTheDocument();
 });
 
