@@ -35,6 +35,7 @@ describe('small differences are diffed letter by letter', () => {
     ['guten Tag', ' guten  tag ', ['=g', '=u', '=t', '=e', '=n', '= ', '~t/T', '=a', '=g']],
     ['es?', 'Es', ['~E/e', '=s', '=/?']],
     ['es', 'Es!', ['~E/e', '=s', '=!/']],
+    ['¿es?', 'Es', ['=/¿', '~E/e', '=s', '=/?']],
     ["es's?", 'Es’s?', ['~E/e', '=s', "='", '=s', '=?']],
   ])('%s ← %s', (expected, input, parts) => {
     expect(notation(diffAnswer(expected, input))).toEqual(parts);

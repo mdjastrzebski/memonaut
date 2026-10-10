@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 
 import { Rating } from '@/srs/scheduler';
 
-import { getFastLimitMs, gradeAnswer } from './type-answer';
+import { getFastLimitMs, gradeAnswer, normalizePunctuation } from './type-answer';
 
 const SLOW = 60_000;
 
@@ -27,8 +27,16 @@ describe('exact answers', () => {
     ['Ist alles klar?', 'Ist alles klar?!'],
     ['drei', 'drei.'],
     ['noch einmal, bitte', 'noch einmal ,bitte'],
+    ['¿Qué tal?', 'Qué tal'],
+    ['¡Hola!', '¡ Hola'],
+    ['hola', '¡hola!'],
   ])('forgives punctuation: %s ← %s', (expected, input) => {
     expect(gradeAnswer(expected, input, SLOW)).toMatchObject({ grade: Rating.Good, issues: [] });
+  });
+
+  test('keeps decimal commas', () => {
+    expect(normalizePunctuation('3,5 Liter')).toBe('3,5 Liter');
+    expect(normalizePunctuation('ja,bitte')).toBe('ja, bitte');
   });
 
   test('fast limit grows with answer length', () => {

@@ -73,11 +73,11 @@ export function normalizeSpacing(value: string): string {
 
 /**
  * Tidies up differences that aren't mistakes, so they don't count against the answer: spacing,
- * curly quotes from phone keyboards and a missing or extra ".", "?" or "!" at the end.
- * "Wie geht’s dir ?" → "Wie geht's dir".
+ * curly quotes from phone keyboards, a missing or extra ".", "?" or "!" at the end and Spanish
+ * "¿" or "¡" at the start. "Wie geht’s dir ?" → "Wie geht's dir", "¿Qué tal?" → "Qué tal".
  */
 export function normalizeAnswer(value: string): string {
-  return splitEndPunctuation(normalizePunctuation(value))[0];
+  return splitOuterPunctuation(normalizePunctuation(value))[1];
 }
 
 /** Straightens curly quotes and fixes spacing around punctuation: "noch einmal ,bitte" → "noch einmal, bitte". */
@@ -87,10 +87,10 @@ export function normalizePunctuation(value: string): string {
     .replace(/,(?=\p{L})/gu, ', ');
 }
 
-/** "Ist alles klar?" → ["Ist alles klar", "?"]. */
-export function splitEndPunctuation(value: string): [text: string, punctuation: string] {
-  const [, text, punctuation] = /^(.*?)\s*([.?!]*)$/su.exec(value)!;
-  return [text, punctuation];
+/** "¿Qué tal?" → ["¿", "Qué tal", "?"]. */
+export function splitOuterPunctuation(value: string): [start: string, text: string, end: string] {
+  const [, start, text, end] = /^([¿¡]*)\s*(.*?)\s*([.?!]*)$/su.exec(value)!;
+  return [start, text, end];
 }
 
 /** Edit distance when "u", "ue" and "ü" (and "ss" and "ß") count as the same. */
