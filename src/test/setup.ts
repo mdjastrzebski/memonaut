@@ -9,6 +9,9 @@ globalThis.ResizeObserver ??= class {
   disconnect() {}
 };
 
+// jsdom can't play media and logs an error for each attempt.
+HTMLMediaElement.prototype.play = () => Promise.resolve();
+
 afterEach(() => {
   cleanup();
 });

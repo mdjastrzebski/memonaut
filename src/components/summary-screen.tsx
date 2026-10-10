@@ -1,5 +1,5 @@
 import { Languages, RotateCcw, Volume2 } from 'lucide-react';
-import { useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 
 import { getProgress, GRADE_STYLES, type Progress } from '@/components/grades';
 import { SrsDetails, StateBadge } from '@/components/srs-stats';
@@ -20,6 +20,7 @@ import {
   formatRelative,
   formatSeconds,
 } from '@/lib/format';
+import { playCompleted } from '@/lib/sounds';
 import { cn } from '@/lib/utils';
 import type { Session } from '@/session/session';
 import { getRetrievability, GRADES, Rating, ratingName, State, type Grade } from '@/srs/scheduler';
@@ -59,6 +60,15 @@ export function SummaryScreen({
   onToggleSrsDetails,
 }: SummaryScreenProps) {
   const [now] = useState(() => new Date());
+
+  // The ref keeps StrictMode's second effect run from playing it twice.
+  const played = useRef(false);
+  useEffect(() => {
+    if (!played.current) {
+      played.current = true;
+      playCompleted();
+    }
+  }, []);
   const cards = Object.values(session.cards);
   const { reviews } = session;
   const correctCount = reviews.filter((review) => review.rating !== Rating.Again).length;

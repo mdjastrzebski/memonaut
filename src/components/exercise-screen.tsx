@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { getFastLimitMs, gradeAnswer, type AnswerResult } from '@/exercises/type-answer';
 import { formatDuration, formatSeconds } from '@/lib/format';
+import { playCorrect } from '@/lib/sounds';
 import { speak } from '@/lib/speech';
 import { cn } from '@/lib/utils';
 import {
@@ -115,7 +116,9 @@ export function ExerciseScreen({
       if (input.trim() === '') return;
       const at = new Date();
       const elapsedMs = at.getTime() - shownAt.getTime();
-      setChecked({ result: gradeAnswer(concept.foreign, input, elapsedMs), at });
+      const result = gradeAnswer(concept.foreign, input, elapsedMs);
+      setChecked({ result, at });
+      if (result.grade === Rating.Good || result.grade === Rating.Easy) playCorrect();
       // In translation, the learner hears the German word once they've typed it.
       if (!dictation) playWord();
     } else if (!retyping || retypedCorrectly) {
