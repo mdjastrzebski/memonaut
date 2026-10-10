@@ -2,7 +2,7 @@ import { Rocket } from 'lucide-react';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 
 import { EXERCISES } from '@/components/exercise-types';
-import { getProgress, GRADE_STYLES, type Progress } from '@/components/grades';
+import { getProgress, GRADE_STYLES, PROGRESS_LABELS, type Progress } from '@/components/grades';
 import { SrsDetails, StateBadge } from '@/components/srs-stats';
 import { Button } from '@/components/ui/button';
 import {
@@ -36,10 +36,10 @@ const GRADE_LABELS: Record<Grade, string> = {
   [Rating.Again]: 'Missed',
 };
 
-const PROGRESS_LABELS: Record<Progress, { label: string; className: string }> = {
-  learning: { label: 'Practise', className: 'border-almost bg-almost/25 text-almost-ink' },
-  learned: { label: 'Learned', className: 'border-correct bg-correct/20 text-correct-ink' },
-  new: { label: 'Not seen', className: 'border-transparent bg-muted text-muted-foreground' },
+const PROGRESS_STYLES: Record<Progress, string> = {
+  learning: 'border-almost bg-almost/25 text-almost-ink',
+  learned: 'border-correct bg-correct/20 text-correct-ink',
+  new: 'border-transparent bg-muted text-muted-foreground',
 };
 
 interface SummaryScreenProps {
@@ -284,10 +284,10 @@ function WordRow({ session, card, now, style }: WordRowProps) {
       <span
         className={cn(
           'w-20 shrink-0 rounded-full border-2 px-2 py-0.5 text-center text-xs font-bold',
-          PROGRESS_LABELS[progress].className,
+          PROGRESS_STYLES[progress],
         )}
       >
-        {PROGRESS_LABELS[progress].label}
+        {PROGRESS_LABELS[progress]}
       </span>
       <Icon aria-label={label} className="size-4 shrink-0 text-muted-foreground" />
       <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">

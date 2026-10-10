@@ -13,7 +13,7 @@ import {
 import { useId, useState, type CSSProperties, type ReactNode } from 'react';
 
 import { EXERCISES } from '@/components/exercise-types';
-import { getProgress, getWordProgress, type Progress } from '@/components/grades';
+import { getProgress, getWordProgress, PROGRESS_LABELS, type Progress } from '@/components/grades';
 import { SESSION_SIZES, type SessionSize } from '@/components/setup-choice';
 import { Button } from '@/components/ui/button';
 import {
@@ -428,10 +428,10 @@ function DeckOverview({ content, cards, subject, deck, now, onStart }: DeckOverv
   );
 }
 
-const WORD_STATUS: Record<Progress, { label: string; Icon: LucideIcon; className: string }> = {
-  learned: { label: 'Learned', Icon: CircleCheck, className: 'text-correct-ink' },
-  learning: { label: 'Learning', Icon: CircleDotDashed, className: 'text-almost-ink' },
-  new: { label: 'New', Icon: Circle, className: 'text-muted-foreground' },
+const WORD_STATUS: Record<Progress, { Icon: LucideIcon; className: string }> = {
+  learned: { Icon: CircleCheck, className: 'text-correct-ink' },
+  learning: { Icon: CircleDotDashed, className: 'text-almost-ink' },
+  new: { Icon: Circle, className: 'text-muted-foreground' },
 };
 
 const PROGRESS_ORDER: Progress[] = ['learned', 'learning', 'new'];
@@ -460,7 +460,8 @@ function ProgressCounts({ progress }: { progress: Progress[] }) {
   return (
     <span className="flex gap-3 text-xs text-muted-foreground">
       {PROGRESS_ORDER.map((status) => {
-        const { label, Icon, className } = WORD_STATUS[status];
+        const { Icon, className } = WORD_STATUS[status];
+        const label = PROGRESS_LABELS[status];
         const count = progress.filter((value) => value === status).length;
         return (
           <Tooltip key={status}>
@@ -482,7 +483,8 @@ function ProgressCounts({ progress }: { progress: Progress[] }) {
 /** A word with its status as a symbol; hovering it tells how each exercise is going. */
 function WordRow({ word, now }: { word: Word; now: Date }) {
   const { concept, exercises, progress } = word;
-  const { label, Icon, className } = WORD_STATUS[progress];
+  const { Icon, className } = WORD_STATUS[progress];
+  const label = PROGRESS_LABELS[progress];
 
   return (
     <li className="flex items-center gap-2.5 border-b border-foreground/10 py-1.5 last:border-b-0">
@@ -511,7 +513,7 @@ function WordRow({ word, now }: { word: Word; now: Date }) {
 /** One exercise's status in words, e.g. "learned, back in 3d". */
 function describeCard(srs: FsrsCard | undefined, now: Date): string {
   if (!srs || srs.state === State.New) return 'not practised yet';
-  const progress = WORD_STATUS[getProgress(srs.state)].label.toLowerCase();
+  const progress = PROGRESS_LABELS[getProgress(srs.state)].toLowerCase();
   return `${progress}, back ${formatRelative(srs.due, now)}`;
 }
 

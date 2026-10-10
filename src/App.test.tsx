@@ -192,7 +192,7 @@ test('ending the session shows results with SRS details collapsed', async () => 
 
   expect(screen.getByText(/Session results/)).toBeInTheDocument();
   // The missed word comes back soonest, so it leads the list.
-  expect(sessionWords()[0]).toHaveTextContent('Practise');
+  expect(sessionWords()[0]).toHaveTextContent('Learning');
   expect(screen.getByText('New words').nextSibling).toHaveTextContent('1');
   expect(screen.getByText('Repeated words').nextSibling).toHaveTextContent('0');
   expect(screen.queryByText('Review log')).not.toBeInTheDocument();
