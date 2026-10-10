@@ -44,6 +44,8 @@ const PROGRESS_LABELS: Record<Progress, { label: string; className: string }> = 
 
 interface SummaryScreenProps {
   session: Session;
+  /** Time spent practising, without the idle stretches. */
+  activeMs: number;
   /** Goes back to the setup screen to choose the next session. */
   onNewSession: () => void;
   showSrsDetails: boolean;
@@ -52,6 +54,7 @@ interface SummaryScreenProps {
 
 export function SummaryScreen({
   session,
+  activeMs,
   onNewSession,
   showSrsDetails,
   onToggleSrsDetails,
@@ -73,7 +76,7 @@ export function SummaryScreen({
   const { newWords, repeatedWords } = countWords(session);
 
   const stats: [label: string, value: string][] = [
-    ['Time', formatDuration(now.getTime() - session.startedAt.getTime())],
+    ['Time', formatDuration(activeMs)],
     ['Repeated words', String(repeatedWords)],
     ['New words', String(newWords)],
   ];

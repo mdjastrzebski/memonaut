@@ -10,6 +10,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { content } from '@/data/content';
 import type { Card, Deck } from '@/domain/types';
+import { useActiveTime } from '@/lib/use-active-time';
 import { cn } from '@/lib/utils';
 import { loadProgress, saveProgress } from '@/progress/progress-storage';
 import {
@@ -39,6 +40,7 @@ export default function App() {
   const finished = session !== null && (ended || !getCurrentCard(session));
   const exercising = session !== null && !finished;
   const allCards = session ? { ...cards, ...session.cards } : cards;
+  const getActiveMs = useActiveTime(exercising);
 
   const start = () => {
     setCards(allCards);
@@ -122,6 +124,7 @@ export default function App() {
         ) : finished ? (
           <SummaryScreen
             session={session}
+            activeMs={getActiveMs()}
             onNewSession={goHome}
             showSrsDetails={showSrsDetails}
             onToggleSrsDetails={() => setShowSrsDetails((show) => !show)}
