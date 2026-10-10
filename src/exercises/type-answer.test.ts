@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 
 import { Rating } from '@/srs/scheduler';
 
-import { getFastLimitMs, gradeAnswer } from './type-answer';
+import { getFastLimitMs, gradeAnswer, normalizePunctuation } from './type-answer';
 
 const SLOW = 60_000;
 
@@ -17,6 +17,26 @@ describe('exact answers', () => {
 
   test('ignores surrounding and repeated whitespace', () => {
     expect(gradeAnswer('guten Tag', '  guten   Tag ', SLOW).grade).toBe(Rating.Good);
+  });
+
+  test.each([
+    ["what's your name?", 'what’s your name?'],
+    ["wie geht's dir?", 'wie geht´s dir?'],
+    ["what's your name?", "what's your name"],
+    ['Ist alles klar?', 'Ist alles klar ?'],
+    ['Ist alles klar?', 'Ist alles klar?!'],
+    ['drei', 'drei.'],
+    ['noch einmal, bitte', 'noch einmal ,bitte'],
+    ['¿Qué tal?', 'Qué tal'],
+    ['¡Hola!', '¡ Hola'],
+    ['hola', '¡hola!'],
+  ])('forgives punctuation: %s ← %s', (expected, input) => {
+    expect(gradeAnswer(expected, input, SLOW)).toMatchObject({ grade: Rating.Good, issues: [] });
+  });
+
+  test('keeps decimal commas', () => {
+    expect(normalizePunctuation('3,5 Liter')).toBe('3,5 Liter');
+    expect(normalizePunctuation('ja,bitte')).toBe('ja, bitte');
   });
 
   test('fast limit grows with answer length', () => {
@@ -52,6 +72,8 @@ describe('almost correct answers are Hard', () => {
     ['fünf', 'funff', ['diacritics', 'typo']],
     ['fünf', 'fuemf', ['diacritics', 'typo']],
     ['fünf', 'Funff', ['case', 'diacritics', 'typo']],
+    // Punctuation is forgiven on top.
+    ["what's your name?", 'What’s your name', ['case']],
   ])('%s ← %s', (expected, input, issues) => {
     const result = gradeAnswer(expected, input, 0);
     expect(result.grade).toBe(Rating.Hard);

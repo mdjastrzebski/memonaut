@@ -1,4 +1,9 @@
-import { normalizeSpacing, stripDiacritics, transliterate } from '@/exercises/type-answer';
+import {
+  normalizePunctuation,
+  splitOuterPunctuation,
+  stripDiacritics,
+  transliterate,
+} from '@/exercises/type-answer';
 
 /**
  * How a piece of the typed answer lines up with the expected answer:
@@ -24,16 +29,28 @@ const COST: Record<DiffKind, number> = { match: 0, minor: 1, wrong: 2, extra: 2,
  * Lines up a typed answer with the expected one letter by letter, or returns `undefined` when they
  * differ too much for a letter diff to help, e.g. a different word. Wrong capitalization and
  * missing umlauts don't count towards that, so "FUENF" still diffs against "fünf".
+ *
+ * Like grading, it forgives curly quotes, the "?", "." or "!" at the end and the "¿" or "¡" at the
+ * start: those show as a match, even when only one side has them.
  */
 export function diffAnswer(expected: string, input: string): DiffPart[] | undefined {
-  const parts = alignLetters(normalizeSpacing(expected), normalizeSpacing(input));
+  const [expectedStart, expectedText, expectedEnd] = splitOuterPunctuation(
+    normalizePunctuation(expected),
+  );
+  const [typedStart, typedText, typedEnd] = splitOuterPunctuation(normalizePunctuation(input));
+  const parts = alignLetters(expectedText, typedText);
   const mistakes = parts.filter((part) => COST[part.kind] > COST.minor).length;
-  return mistakes <= getMaxMistakes(expected) ? parts : undefined;
+  if (mistakes > getMaxMistakes(expectedText)) return undefined;
+  if (expectedStart || typedStart)
+    parts.unshift({ kind: 'match', typed: typedStart, expected: expectedStart });
+  if (expectedEnd || typedEnd)
+    parts.push({ kind: 'match', typed: typedEnd, expected: expectedEnd });
+  return parts;
 }
 
 /** About one mistake per three letters, so a short word allows one. */
 function getMaxMistakes(expected: string): number {
-  return Math.max(1, Math.floor(normalizeSpacing(expected).length / 3));
+  return Math.max(1, Math.floor(expected.length / 3));
 }
 
 /** Weighted edit distance alignment, where near-misses are cheaper than wrong letters. */

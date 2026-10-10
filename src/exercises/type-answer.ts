@@ -35,7 +35,7 @@ export function getFastLimitMs(answer: string): number {
 }
 
 /**
- * Rates a typed answer automatically:
+ * Rates a typed answer automatically, after tidying up both answers with `normalizeAnswer`:
  * - Easy: exact and typed within the fast limit
  * - Good: exact
  * - Hard: exact after forgiving any combination of wrong capitalization, missing umlauts or ß
@@ -48,8 +48,8 @@ export function getFastLimitMs(answer: string): number {
 export function gradeAnswer(expected: string, input: string, elapsedMs: number): AnswerResult {
   const result = (grade: Grade, issues: AnswerIssue[] = []) => ({ grade, issues, elapsedMs });
 
-  const target = normalizeSpacing(expected);
-  const given = normalizeSpacing(input);
+  const target = normalizeAnswer(expected);
+  const given = normalizeAnswer(input);
   if (given === target) {
     return result(elapsedMs <= getFastLimitMs(expected) ? Rating.Easy : Rating.Good);
   }
@@ -69,6 +69,28 @@ export function gradeAnswer(expected: string, input: string, elapsedMs: number):
 
 export function normalizeSpacing(value: string): string {
   return value.trim().replace(/\s+/g, ' ');
+}
+
+/**
+ * Tidies up differences that aren't mistakes, so they don't count against the answer: spacing,
+ * curly quotes from phone keyboards, a missing or extra ".", "?" or "!" at the end and Spanish
+ * "¿" or "¡" at the start. "Wie geht’s dir ?" → "Wie geht's dir", "¿Qué tal?" → "Qué tal".
+ */
+export function normalizeAnswer(value: string): string {
+  return splitOuterPunctuation(normalizePunctuation(value))[1];
+}
+
+/** Straightens curly quotes and fixes spacing around punctuation: "noch einmal ,bitte" → "noch einmal, bitte". */
+export function normalizePunctuation(value: string): string {
+  return normalizeSpacing(value.replace(/[‘’‚‛ʼ`´]/g, "'").replace(/[“”„‟]/g, '"'))
+    .replace(/ (?=[,.!?;:])/g, '')
+    .replace(/,(?=\p{L})/gu, ', ');
+}
+
+/** "¿Qué tal?" → ["¿", "Qué tal", "?"]. */
+export function splitOuterPunctuation(value: string): [start: string, text: string, end: string] {
+  const [, start, text, end] = /^([¿¡]*)\s*(.*?)\s*([.?!]*)$/su.exec(value)!;
+  return [start, text, end];
 }
 
 /** Edit distance when "u", "ue" and "ü" (and "ss" and "ß") count as the same. */
