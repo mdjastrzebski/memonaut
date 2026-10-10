@@ -4,6 +4,7 @@ import { ExerciseScreen } from '@/components/exercise-screen';
 import { loadSetupChoice, saveSetupChoice, type SessionSize } from '@/components/setup-choice';
 import { SetupScreen } from '@/components/setup-screen';
 import { SummaryScreen } from '@/components/summary-screen';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { content } from '@/data/content';
 import type { Card } from '@/domain/types';
@@ -66,6 +67,7 @@ export default function App() {
         <header className="flex items-center gap-3">
           <Logo />
           <h1 className="font-display text-2xl font-extrabold tracking-tight">Memonaut</h1>
+          <ThemeToggle />
         </header>
 
         {session === null ? (

@@ -27,7 +27,7 @@ export function SessionProgress({ session, onEnd }: SessionProgressProps) {
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={percent}
-        className="h-4 overflow-hidden rounded-full border-2 border-foreground bg-card shadow-sticker-sm"
+        className="h-4 overflow-hidden rounded-full border-2 border-line bg-card shadow-sticker-sm"
       >
         <div
           className="h-full rounded-full bg-correct transition-[width] duration-500 ease-out"

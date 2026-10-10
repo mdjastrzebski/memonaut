@@ -83,7 +83,7 @@ export function SummaryScreen({
 
   return (
     <div className="flex flex-col gap-8">
-      <section className="relative flex animate-card-in flex-col items-center gap-6 overflow-hidden rounded-[2rem] border-2 border-foreground bg-card p-6 shadow-sticker-lg sm:flex-row sm:p-10">
+      <section className="relative flex animate-card-in flex-col items-center gap-6 overflow-hidden rounded-[2rem] border-2 border-line bg-card p-6 shadow-sticker-lg sm:flex-row sm:p-10">
         <AccuracyRing value={accuracy} empty={reviews.length === 0} />
 
         <div className="flex flex-1 flex-col gap-3 text-center sm:text-left">
@@ -101,7 +101,7 @@ export function SummaryScreen({
         {stats.map(([label, value], index) => (
           <div
             key={label}
-            className="animate-rise rounded-2xl border-2 border-foreground bg-card p-4 shadow-sticker-sm"
+            className="animate-rise rounded-2xl border-2 border-line bg-card p-4 shadow-sticker-sm"
             style={{ animationDelay: `${150 + index * 60}ms` }}
           >
             <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
@@ -215,15 +215,12 @@ function RatingBar({ reviews }: { reviews: Review[] }) {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex h-4 origin-left animate-grow overflow-hidden rounded-full border-2 border-foreground">
+      <div className="flex h-4 origin-left animate-grow overflow-hidden rounded-full border-2 border-line">
         {counts.map(({ grade, count }) =>
           count > 0 ? (
             <span
               key={grade}
-              className={cn(
-                'border-r-2 border-foreground last:border-r-0',
-                GRADE_STYLES[grade].fill,
-              )}
+              className={cn('border-r-2 border-line last:border-r-0', GRADE_STYLES[grade].fill)}
               style={{ flexGrow: count }}
             />
           ) : null,
@@ -233,10 +230,7 @@ function RatingBar({ reviews }: { reviews: Review[] }) {
         {counts.map(({ grade, count }) => (
           <li key={grade} className="flex items-center gap-1.5">
             <span
-              className={cn(
-                'size-3 rounded-full border-2 border-foreground',
-                GRADE_STYLES[grade].fill,
-              )}
+              className={cn('size-3 rounded-full border-2 border-line', GRADE_STYLES[grade].fill)}
             />
             {GRADE_LABELS[grade]} <span className="font-semibold tabular-nums">{count}</span>
           </li>
@@ -282,7 +276,7 @@ function WordTile({ session, card, now, style }: WordTileProps) {
   return (
     <li
       style={style}
-      className="flex animate-rise flex-col gap-2 rounded-2xl border-2 border-foreground bg-card p-3 shadow-sticker-sm"
+      className="flex animate-rise flex-col gap-2 rounded-2xl border-2 border-line bg-card p-3 shadow-sticker-sm"
     >
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-sm text-muted-foreground">{concept.local}</span>
@@ -298,7 +292,7 @@ function WordTile({ session, card, now, style }: WordTileProps) {
               key={index}
               title={GRADE_LABELS[review.rating]}
               className={cn(
-                'grid size-6 place-items-center rounded-full border-2 border-foreground text-xs font-bold',
+                'grid size-6 place-items-center rounded-full border-2 border-line text-xs font-bold',
                 GRADE_STYLES[review.rating].fill,
               )}
             >
