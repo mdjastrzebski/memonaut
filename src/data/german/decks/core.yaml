@@ -1,0 +1,37 @@
+id: core
+kind: core
+name: Essentials
+concepts:
+  - { id: ja, local: tak, foreign: ja }
+  - { id: nein, local: nie, foreign: nein }
+  - { id: bitte, local: proszę, foreign: bitte }
+include:
+  [
+    number-0,
+    number-1,
+    number-2,
+    number-3,
+    number-4,
+    number-5,
+    number-6,
+    number-7,
+    number-8,
+    number-9,
+    number-10,
+    ich,
+    du,
+    er,
+    sie,
+    ich-bin,
+    du-bist,
+    er-ist,
+    sie-ist,
+    ich-heisse,
+    hallo,
+    guten-tag,
+    tschuess,
+    auf-wiedersehen,
+    danke,
+    entschuldigung,
+    ich-verstehe-nicht,
+  ]

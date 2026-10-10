@@ -1,0 +1,25 @@
+id: numbers-0-20
+kind: unit
+name: Numbers 0–20
+concepts:
+  - { id: number-0, local: zero, foreign: zero, hint: 0 }
+  - { id: number-1, local: jeden, foreign: one, hint: 1 }
+  - { id: number-2, local: dwa, foreign: two, hint: 2 }
+  - { id: number-3, local: trzy, foreign: three, hint: 3 }
+  - { id: number-4, local: cztery, foreign: four, hint: 4 }
+  - { id: number-5, local: pięć, foreign: five, hint: 5 }
+  - { id: number-6, local: sześć, foreign: six, hint: 6 }
+  - { id: number-7, local: siedem, foreign: seven, hint: 7 }
+  - { id: number-8, local: osiem, foreign: eight, hint: 8 }
+  - { id: number-9, local: dziewięć, foreign: nine, hint: 9 }
+  - { id: number-10, local: dziesięć, foreign: ten, hint: 10 }
+  - { id: number-11, local: jedenaście, foreign: eleven, hint: 11 }
+  - { id: number-12, local: dwanaście, foreign: twelve, hint: 12 }
+  - { id: number-13, local: trzynaście, foreign: thirteen, hint: 13 }
+  - { id: number-14, local: czternaście, foreign: fourteen, hint: 14 }
+  - { id: number-15, local: piętnaście, foreign: fifteen, hint: 15 }
+  - { id: number-16, local: szesnaście, foreign: sixteen, hint: 16 }
+  - { id: number-17, local: siedemnaście, foreign: seventeen, hint: 17 }
+  - { id: number-18, local: osiemnaście, foreign: eighteen, hint: 18 }
+  - { id: number-19, local: dziewiętnaście, foreign: nineteen, hint: 19 }
+  - { id: number-20, local: dwadzieścia, foreign: twenty, hint: 20 }

@@ -8,6 +8,9 @@ import { createSrsCard, reviewSrsCard, type Grade } from '@/srs/scheduler';
  */
 export const LEARN_AHEAD_MS = 20 * 60 * 1000;
 
+/** Every Exercise Type, easiest first. A session practises each Concept with all of them. */
+export const EXERCISE_TYPES: ExerciseType[] = ['dictation', 'translation'];
+
 /** One study sitting over a Deck. Lives in memory only. */
 export interface Session {
   startedAt: Date;
@@ -31,7 +34,7 @@ interface CreateSessionOptions {
 export function createSession({
   deck,
   concepts,
-  exerciseTypes = ['dictation', 'translation'],
+  exerciseTypes = EXERCISE_TYPES,
   now = new Date(),
   random = Math.random,
 }: CreateSessionOptions): Session {

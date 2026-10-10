@@ -1,37 +1,44 @@
 import { useEffect, useState } from 'react';
 
 import { ExerciseScreen } from '@/components/exercise-screen';
+import { SetupScreen } from '@/components/setup-screen';
 import { SummaryScreen } from '@/components/summary-screen';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { content } from '@/data/content';
-import { createSession, getCurrentCard, submitReview } from '@/session/session';
+import { getSubjectDecks } from '@/data/decks';
+import type { Deck } from '@/domain/types';
+import { createSession, getCurrentCard, submitReview, type Session } from '@/session/session';
 
-const deck = content.decks.find((deck) => deck.id === 'german/numbers-0-10')!;
-const subject = content.subjects.find((subject) => subject.id === deck.subjectId)!;
-
-function startSession() {
+function startSession(deck: Deck) {
   return createSession({ deck, concepts: content.concepts });
 }
 
 export default function App() {
-  const [session, setSession] = useState(startSession);
+  const [deck, setDeck] = useState(() => getSubjectDecks(content.decks, content.subjects[0].id)[0]);
+  const [session, setSession] = useState<Session | null>(null);
   const [ended, setEnded] = useState(false);
-  // Open by default for languages that need special characters, e.g. German umlauts.
-  const [showSpecialCharacters, setShowSpecialCharacters] = useState(
-    () => (subject.specialCharacters?.length ?? 0) > 0,
-  );
+  const [showSpecialCharacters, setShowSpecialCharacters] = useState(false);
   const [showSrsDetails, setShowSrsDetails] = useState(false);
 
-  const finished = ended || !getCurrentCard(session);
+  const subject = content.subjects.find((subject) => subject.id === deck.subjectId)!;
+  const finished = session !== null && (ended || !getCurrentCard(session));
+  const studying = session !== null && !finished;
+
+  const start = () => {
+    setSession(startSession(deck));
+    setEnded(false);
+    // Open by default for languages that need special characters, e.g. German umlauts.
+    setShowSpecialCharacters((subject.specialCharacters?.length ?? 0) > 0);
+  };
 
   // Nothing is saved, so ask before a reload or closed tab throws the session away. Browsers show
   // their own message here.
   useEffect(() => {
-    if (finished) return;
+    if (!studying) return;
     const warn = (event: BeforeUnloadEvent) => event.preventDefault();
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
-  }, [finished]);
+  }, [studying]);
 
   return (
     <TooltipProvider>
@@ -41,13 +48,13 @@ export default function App() {
           <h1 className="font-display text-2xl font-extrabold tracking-tight">Memonaut</h1>
         </header>
 
-        {finished ? (
+        {session === null ? (
+          <SetupScreen content={content} deck={deck} onSelectDeck={setDeck} onStart={start} />
+        ) : finished ? (
           <SummaryScreen
             session={session}
-            onRestart={() => {
-              setSession(startSession());
-              setEnded(false);
-            }}
+            onRestart={start}
+            onChooseSet={() => setSession(null)}
             showSrsDetails={showSrsDetails}
             onToggleSrsDetails={() => setShowSrsDetails((show) => !show)}
           />
@@ -55,10 +62,9 @@ export default function App() {
           <ExerciseScreen
             key={session.reviews.length}
             session={session}
-            onReview={(review) => setSession((current) => submitReview(current, review))}
+            onReview={(review) => setSession((current) => current && submitReview(current, review))}
             onEnd={() => window.confirm('End this session?') && setEnded(true)}
-            foreignLanguage={subject.foreignLanguage}
-            specialCharacters={subject.specialCharacters}
+            subject={subject}
             showSpecialCharacters={showSpecialCharacters}
             onToggleSpecialCharacters={() => setShowSpecialCharacters((show) => !show)}
             showSrsDetails={showSrsDetails}

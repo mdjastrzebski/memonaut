@@ -15,6 +15,7 @@ import { SpecialCharacters } from '@/components/special-characters';
 import { CardStats, RatingPreview, SrsDetails, StateBadge } from '@/components/srs-stats';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import type { Subject } from '@/domain/types';
 import { getFastLimitMs, gradeAnswer, type AnswerResult } from '@/exercises/type-answer';
 import { formatDuration, formatSeconds } from '@/lib/format';
 import { playCorrect } from '@/lib/sounds';
@@ -39,9 +40,8 @@ interface ExerciseScreenProps {
   session: Session;
   onReview: (review: SubmitReviewInput) => void;
   onEnd: () => void;
-  /** BCP 47 tag used to read words aloud in dictation exercises. */
-  foreignLanguage: string;
-  specialCharacters?: string[];
+  /** Its language is used to read words aloud and its special characters are offered on screen. */
+  subject: Subject;
   showSpecialCharacters: boolean;
   onToggleSpecialCharacters: () => void;
   showSrsDetails: boolean;
@@ -60,8 +60,7 @@ export function ExerciseScreen({
   session,
   onReview,
   onEnd,
-  foreignLanguage,
-  specialCharacters = [],
+  subject,
   showSpecialCharacters,
   onToggleSpecialCharacters,
   showSrsDetails,
@@ -75,10 +74,11 @@ export function ExerciseScreen({
   const inputRef = useRef<HTMLInputElement>(null);
   const pendingCaret = useRef<number | null>(null);
 
+  const specialCharacters = subject.specialCharacters ?? [];
   const card = getCurrentCard(session);
   const concept = card && session.concepts[card.conceptId];
   const dictation = card?.exerciseType === 'dictation';
-  const playWord = () => concept && speak(concept.foreign, foreignLanguage);
+  const playWord = () => concept && speak(concept.foreign, subject.foreignLanguage);
 
   // Read the word aloud as soon as a dictation exercise appears. The ref keeps StrictMode's second
   // effect run from cancelling and queueing it again.
@@ -142,7 +142,7 @@ export function ExerciseScreen({
       const result = gradeAnswer(concept.foreign, input, elapsedMs);
       setChecked({ result, at });
       if (result.grade === Rating.Good || result.grade === Rating.Easy) playCorrect();
-      // In translation, the learner hears the German word once they've typed it.
+      // In translation, the learner hears the foreign word once they've typed it.
       if (!dictation) playWord();
     } else if (!retyping || retypedCorrectly) {
       const { grade, issues, elapsedMs } = checked.result;
@@ -175,7 +175,7 @@ export function ExerciseScreen({
         )}
 
         <p className="relative inline-block -rotate-2 rounded-full border-2 border-foreground bg-almost px-3 py-0.5 text-xs font-bold tracking-wider uppercase">
-          {dictation ? 'Write what you hear' : 'Type in German'}
+          {dictation ? 'Write what you hear' : `Type in ${subject.name}`}
         </p>
         {dictation ? (
           <div className="relative mt-4 mb-8">
@@ -261,7 +261,7 @@ export function ExerciseScreen({
                     onMouseDown={(event) => event.preventDefault()}
                     onClick={onToggleSpecialCharacters}
                   >
-                    äöü
+                    {specialCharacters.slice(0, 3).join('')}
                   </Button>
                 )}
                 <Button

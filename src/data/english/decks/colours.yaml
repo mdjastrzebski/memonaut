@@ -1,0 +1,15 @@
+id: colours
+kind: unit
+name: Colours
+concepts:
+  - { id: red, local: czerwony, foreign: red }
+  - { id: blue, local: niebieski, foreign: blue }
+  - { id: green, local: zielony, foreign: green }
+  - { id: yellow, local: żółty, foreign: yellow }
+  - { id: orange, local: pomarańczowy, foreign: orange }
+  - { id: purple, local: fioletowy, foreign: purple }
+  - { id: pink, local: różowy, foreign: pink }
+  - { id: brown, local: brązowy, foreign: brown }
+  - { id: black, local: czarny, foreign: black }
+  - { id: white, local: biały, foreign: white }
+  - { id: grey, local: szary, foreign: grey }

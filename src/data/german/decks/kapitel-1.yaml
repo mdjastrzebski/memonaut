@@ -1,0 +1,89 @@
+id: kapitel-1
+kind: unit
+name: Kapitel 1
+include:
+  [
+    number-0,
+    number-1,
+    number-2,
+    number-3,
+    number-4,
+    number-5,
+    number-6,
+    number-7,
+    number-8,
+    number-9,
+    number-10,
+  ]
+concepts:
+  - { id: ich, local: ja, foreign: ich }
+  - { id: du, local: ty, foreign: du }
+  - { id: er, local: on, foreign: er }
+  - { id: sie, local: ona, foreign: sie }
+  - { id: ich-heisse, local: ja nazywam się, foreign: ich heiße }
+  - { id: du-heisst, local: ty nazywasz się, foreign: du heißt }
+  - { id: er-heisst, local: on nazywa się, foreign: er heißt }
+  - { id: sie-heisst, local: ona nazywa się, foreign: sie heißt }
+  - { id: ich-bin, local: ja jestem, foreign: ich bin }
+  - { id: du-bist, local: ty jesteś, foreign: du bist }
+  - { id: er-ist, local: on jest, foreign: er ist }
+  - { id: sie-ist, local: ona jest, foreign: sie ist }
+  - { id: ich-bin-da, local: jestem obecny, foreign: ich bin da }
+  - { id: number-11, local: jedenaście, foreign: elf, hint: 11 }
+  - { id: number-12, local: dwanaście, foreign: zwölf, hint: 12 }
+  - { id: number-13, local: trzynaście, foreign: dreizehn, hint: 13 }
+  - { id: number-14, local: czternaście, foreign: vierzehn, hint: 14 }
+  - { id: number-15, local: piętnaście, foreign: fünfzehn, hint: 15 }
+  - { id: number-16, local: szesnaście, foreign: sechzehn, hint: 16 }
+  - { id: number-17, local: siedemnaście, foreign: siebzehn, hint: 17 }
+  - { id: number-18, local: osiemnaście, foreign: achtzehn, hint: 18 }
+  - { id: number-19, local: dziewiętnaście, foreign: neunzehn, hint: 19 }
+  - { id: number-20, local: dwadzieścia, foreign: zwanzig, hint: 20 }
+  - { id: noch-mal, local: jeszcze raz, foreign: noch mal }
+  - { id: sehr-gut, local: bardzo dobrze, foreign: sehr gut }
+  - { id: gut, local: dobrze, foreign: gut }
+  - { id: so-lala, local: tak sobie, foreign: so lala }
+  - { id: schlecht, local: źle, foreign: schlecht }
+  - { id: sehr-schlecht, local: bardzo źle, foreign: sehr schlecht }
+  - { id: hallo, local: cześć, foreign: hallo }
+  - { id: entschuldigung, local: przepraszam, foreign: Entschuldigung }
+  - { id: guten-morgen, local: dzień dobry (rano), foreign: Guten Morgen }
+  - { id: guten-tag, local: dzień dobry, foreign: Guten Tag }
+  - { id: guten-abend, local: dobry wieczór, foreign: Guten Abend }
+  - { id: gute-nacht, local: dobranoc, foreign: Gute Nacht }
+  - { id: tschuess, local: pa, foreign: Tschüss }
+  - { id: auf-wiedersehen, local: do widzenia, foreign: Auf Wiedersehen }
+  - { id: der-name, local: imię, foreign: der Name }
+  - { id: die-telefonnummer, local: numer telefonu, foreign: die Telefonnummer }
+  - { id: die-handynummer, local: numer komórki, foreign: die Handynummer }
+  - { id: das-alter, local: wiek, foreign: das Alter }
+  - { id: wie-heisst-du, local: jak się nazywasz?, foreign: wie heißt du? }
+  - { id: wie-ist-dein-name, local: jak masz na imię?, foreign: wie ist dein Name? }
+  - { id: wer-bist-du, local: kim jesteś?, foreign: wer bist du? }
+  - { id: wer-ist-das, local: kto to jest?, foreign: wer ist das? }
+  - { id: wie-gehts-dir, local: jak się masz?, foreign: wie geht's dir? }
+  - {
+      id: wie-ist-deine-telefonnummer,
+      local: jaki jest twój numer telefonu?,
+      foreign: wie ist deine Telefonnummer?,
+    }
+  - { id: meine-telefonnummer-ist, local: mój numer telefonu to, foreign: meine Telefonnummer ist }
+  - { id: wie-alt-bist-du, local: ile masz lat?, foreign: wie alt bist du? }
+  - {
+      id: wie-buchstabiert-man-das,
+      local: jak się to literuje?,
+      foreign: wie buchstabiert man das?,
+    }
+  - { id: ich-bin-10-jahre-alt, local: mam 10 lat, foreign: ich bin 10 Jahre alt }
+  - { id: ich-wohne, local: ja mieszkam, foreign: ich wohne }
+  - { id: ich-wohne-in-breslau, local: mieszkam we Wrocławiu, foreign: ich wohne in Breslau }
+  - { id: die-schwester, local: siostra, foreign: die Schwester }
+  - { id: meine-schwester, local: moja siostra, foreign: meine Schwester }
+  - { id: der-freund, local: przyjaciel, foreign: der Freund }
+  - { id: die-freundin, local: przyjaciółka, foreign: die Freundin }
+  - { id: er-ist-mein-freund, local: on jest moim przyjacielem, foreign: er ist mein Freund }
+  - {
+      id: sie-ist-meine-freundin,
+      local: ona jest moją przyjaciółką,
+      foreign: sie ist meine Freundin,
+    }

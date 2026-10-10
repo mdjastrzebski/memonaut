@@ -1,0 +1,27 @@
+id: days-months-seasons
+kind: unit
+name: Days, months and seasons
+concepts:
+  - { id: monday, local: poniedziałek, foreign: Monday }
+  - { id: tuesday, local: wtorek, foreign: Tuesday }
+  - { id: wednesday, local: środa, foreign: Wednesday }
+  - { id: thursday, local: czwartek, foreign: Thursday }
+  - { id: friday, local: piątek, foreign: Friday }
+  - { id: saturday, local: sobota, foreign: Saturday }
+  - { id: sunday, local: niedziela, foreign: Sunday }
+  - { id: january, local: styczeń, foreign: January }
+  - { id: february, local: luty, foreign: February }
+  - { id: march, local: marzec, foreign: March }
+  - { id: april, local: kwiecień, foreign: April }
+  - { id: may, local: maj, foreign: May }
+  - { id: june, local: czerwiec, foreign: June }
+  - { id: july, local: lipiec, foreign: July }
+  - { id: august, local: sierpień, foreign: August }
+  - { id: september, local: wrzesień, foreign: September }
+  - { id: october, local: październik, foreign: October }
+  - { id: november, local: listopad, foreign: November }
+  - { id: december, local: grudzień, foreign: December }
+  - { id: spring, local: wiosna, foreign: spring }
+  - { id: summer, local: lato, foreign: summer }
+  - { id: autumn, local: jesień, foreign: autumn }
+  - { id: winter, local: zima, foreign: winter }

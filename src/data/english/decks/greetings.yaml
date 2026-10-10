@@ -1,0 +1,18 @@
+id: greetings
+kind: unit
+name: Hello!
+concepts:
+  - { id: hello, local: cześć, foreign: hello }
+  - { id: goodbye, local: do widzenia, foreign: goodbye }
+  - { id: bye, local: pa, foreign: bye }
+  - { id: good-morning, local: dzień dobry (rano), foreign: good morning }
+  - { id: good-afternoon, local: dzień dobry (po południu), foreign: good afternoon }
+  - { id: good-evening, local: dobry wieczór, foreign: good evening }
+  - { id: good-night, local: dobranoc, foreign: good night }
+  - { id: please, local: proszę, foreign: please }
+  - { id: thank-you, local: dziękuję, foreign: thank you }
+  - { id: sorry, local: przepraszam, foreign: sorry }
+  - { id: yes, local: tak, foreign: yes }
+  - { id: no, local: nie, foreign: no }
+  - { id: how-are-you, local: jak się masz?, foreign: how are you? }
+  - { id: whats-your-name, local: jak masz na imię?, foreign: what's your name? }

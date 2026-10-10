@@ -1,6 +1,7 @@
-import { Languages, RotateCcw, Volume2 } from 'lucide-react';
+import { Compass, RotateCcw } from 'lucide-react';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 
+import { EXERCISES } from '@/components/exercise-types';
 import { getProgress, GRADE_STYLES, type Progress } from '@/components/grades';
 import { SrsDetails, StateBadge } from '@/components/srs-stats';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { Card, ExerciseType, Review } from '@/domain/types';
+import type { Card, Review } from '@/domain/types';
 import {
   formatDuration,
   formatNumber,
@@ -35,11 +36,6 @@ const GRADE_LABELS: Record<Grade, string> = {
   [Rating.Again]: 'Missed',
 };
 
-const EXERCISES: Record<ExerciseType, { label: string; Icon: typeof Volume2 }> = {
-  dictation: { label: 'Dictation', Icon: Volume2 },
-  translation: { label: 'Translation', Icon: Languages },
-};
-
 const GROUPS: { progress: Progress; title: string; note: string }[] = [
   { progress: 'learning', title: 'Keep practising', note: 'These come back soon.' },
   { progress: 'learned', title: 'Learned', note: 'See you again in a few days.' },
@@ -49,6 +45,8 @@ const GROUPS: { progress: Progress; title: string; note: string }[] = [
 interface SummaryScreenProps {
   session: Session;
   onRestart: () => void;
+  /** Goes back to choosing a subject and set. */
+  onChooseSet: () => void;
   showSrsDetails: boolean;
   onToggleSrsDetails: () => void;
 }
@@ -56,6 +54,7 @@ interface SummaryScreenProps {
 export function SummaryScreen({
   session,
   onRestart,
+  onChooseSet,
   showSrsDetails,
   onToggleSrsDetails,
 }: SummaryScreenProps) {
@@ -137,9 +136,14 @@ export function SummaryScreen({
         );
       })}
 
-      <Button variant="cta" className="mx-auto h-14 rounded-2xl px-8 text-lg" onClick={onRestart}>
-        <RotateCcw className="size-5" /> Start a new session
-      </Button>
+      <div className="flex flex-col-reverse justify-center gap-3 sm:flex-row">
+        <Button variant="sticker" className="h-14 rounded-2xl px-6 text-lg" onClick={onChooseSet}>
+          <Compass className="size-5" /> Choose another set
+        </Button>
+        <Button variant="cta" className="h-14 rounded-2xl px-8 text-lg" onClick={onRestart}>
+          <RotateCcw className="size-5" /> Start a new session
+        </Button>
+      </div>
 
       <SrsDetails open={showSrsDetails} onToggle={onToggleSrsDetails}>
         <SessionSrsTables session={session} now={now} />
