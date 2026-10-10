@@ -1,4 +1,4 @@
-import { RotateCcw } from 'lucide-react';
+import { Languages, RotateCcw, Volume2 } from 'lucide-react';
 import { useState, type CSSProperties } from 'react';
 
 import { getProgress, GRADE_STYLES, type Progress } from '@/components/grades';
@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { Card, Review } from '@/domain/types';
+import type { Card, ExerciseType, Review } from '@/domain/types';
 import {
   formatDuration,
   formatNumber,
@@ -32,6 +32,11 @@ const GRADE_LABELS: Record<Grade, string> = {
   [Rating.Good]: 'Correct',
   [Rating.Hard]: 'Almost',
   [Rating.Again]: 'Missed',
+};
+
+const EXERCISES: Record<ExerciseType, { label: string; Icon: typeof Volume2 }> = {
+  dictation: { label: 'Dictation', Icon: Volume2 },
+  translation: { label: 'Translation', Icon: Languages },
 };
 
 const GROUPS: { progress: Progress; title: string; note: string }[] = [
@@ -239,8 +244,12 @@ function WordTile({ session, card, now, style }: WordTileProps) {
   const attempts = session.reviews.filter((review) => review.cardId === card.id);
   const progress = getProgress(card.srs.state);
 
-  const hint = concept.hint && (
-    <span className="font-display text-sm font-bold text-rocket">{concept.hint}</span>
+  const { label, Icon } = EXERCISES[card.exerciseType];
+  const hint = (
+    <span className="flex items-center gap-1.5 font-display text-sm font-bold text-rocket">
+      {concept.hint}
+      <Icon aria-label={label} className="size-4 text-muted-foreground" />
+    </span>
   );
 
   // Keep answers hidden for words the learner hasn't practised yet.
@@ -330,7 +339,8 @@ function SessionSrsTables({ session, now }: { session: Session; now: Date }) {
               return (
                 <TableRow key={card.id} className="tabular-nums">
                   <TableCell>
-                    {concept.local} → <span className="font-medium">{concept.foreign}</span>
+                    {concept.local} → <span className="font-medium">{concept.foreign}</span> ·{' '}
+                    {EXERCISES[card.exerciseType].label}
                   </TableCell>
                   <TableCell>
                     <StateBadge state={card.srs.state} />
@@ -374,7 +384,8 @@ function SessionSrsTables({ session, now }: { session: Session; now: Date }) {
           </TableHeader>
           <TableBody>
             {reviews.map((review, index) => {
-              const concept = session.concepts[session.cards[review.cardId].conceptId];
+              const card = session.cards[review.cardId];
+              const concept = session.concepts[card.conceptId];
               const { log, srsAfter } = review;
               const wasNew = log.state === State.New;
               return (
@@ -383,7 +394,9 @@ function SessionSrsTables({ session, now }: { session: Session; now: Date }) {
                   <TableCell>
                     +{formatDuration(log.review.getTime() - session.startedAt.getTime())}
                   </TableCell>
-                  <TableCell>{concept.local}</TableCell>
+                  <TableCell>
+                    {concept.local} · {EXERCISES[card.exerciseType].label}
+                  </TableCell>
                   <TableCell className={GRADE_STYLES[review.rating].text}>
                     {GRADE_STYLES[review.rating].mark} {review.input}
                   </TableCell>

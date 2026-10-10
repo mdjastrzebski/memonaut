@@ -20,14 +20,36 @@ const start = new Date('2026-01-01T10:00:00Z');
 const minutes = (n: number) => new Date(start.getTime() + n * 60_000);
 
 function create() {
-  return createSession({ deck, concepts, now: start, random: () => 0.99 });
+  return createSession({
+    deck,
+    concepts,
+    exerciseTypes: ['translation'],
+    now: start,
+    random: () => 0.99,
+  });
 }
 
 test('creates one new card per concept and exercise type', () => {
-  const session = create();
-  expect(Object.keys(session.cards)).toEqual(['one:type-answer', 'two:type-answer']);
+  const session = createSession({ deck, concepts, now: start });
+  expect(Object.keys(session.cards)).toEqual([
+    'one:dictation',
+    'two:dictation',
+    'one:translation',
+    'two:translation',
+  ]);
   expect(Object.values(session.cards).every((card) => card.srs.state === State.New)).toBe(true);
-  expect(session.queue).toHaveLength(2);
+});
+
+test('queues every dictation card before the translation cards', () => {
+  for (const value of [0, 0.5, 0.99]) {
+    const session = createSession({ deck, concepts, now: start, random: () => value });
+    expect(session.queue.map((id) => session.cards[id].exerciseType)).toEqual([
+      'dictation',
+      'dictation',
+      'translation',
+      'translation',
+    ]);
+  }
 });
 
 test('learning card returns to the end of the queue', () => {

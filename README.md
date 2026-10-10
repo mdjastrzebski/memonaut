@@ -2,7 +2,7 @@
 
 Memonaut is a learning web app for school kids, built on spaced repetition. It helps a learner keep what they learn in school subjects, such as English, German, Polish or Przyroda, by scheduling each piece of knowledge for review just before it would be forgotten.
 
-> **Status:** early prototype. The concepts below are settled. A demo study session (German numbers, type-the-answer, FSRS scheduling) runs in memory; nothing is saved yet.
+> **Status:** early prototype. The concepts below are settled. A demo study session (German numbers, dictation then translation, FSRS scheduling) runs in memory; nothing is saved yet.
 
 ## Goals
 
@@ -41,6 +41,8 @@ Because review state lives on Cards rather than on Decks, studying a unit deck a
 
 Cards of the same Concept are siblings. A study session should avoid showing two siblings close together, so that one exercise doesn't give away the answer to another.
 
+Exercise Types are ordered from easiest: a session queues every `dictation` Card (hear the foreign word, type how it's spelled) before any `translation` Card (see the local word, type the foreign one). This also keeps siblings apart.
+
 ## Content
 
 Learning content lives in YAML files under `src/data/`, one folder per Subject. Only what to learn is stored there; learning state (Cards and Reviews) will be kept separately, keyed by Concept id.
@@ -60,7 +62,6 @@ A Concept is defined once, in the Deck that introduces it. Other Decks of the sa
 
 - Can a Concept exist in no Deck at all, e.g. after its unit is removed, while keeping its review history?
 - Is there exactly one core Deck per Subject, or can there be several?
-- Which Exercise Types come first?
 - Where is data stored: only in the browser, or synced through a backend?
 
 ## Development

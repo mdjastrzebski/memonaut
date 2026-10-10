@@ -1,13 +1,41 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { expect, test } from 'vitest';
+import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import App from './App';
 import { content } from './data/content';
 
+// jsdom has no speech synthesis; record what would be read aloud instead.
+const spoken: string[] = [];
+
+beforeEach(() => {
+  spoken.length = 0;
+  vi.stubGlobal(
+    'SpeechSynthesisUtterance',
+    class {
+      text: string;
+      constructor(text: string) {
+        this.text = text;
+      }
+    },
+  );
+  vi.stubGlobal('speechSynthesis', {
+    getVoices: () => [],
+    cancel: () => {},
+    speak: (utterance: { text: string }) => spoken.push(utterance.text),
+  });
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+/** The word read aloud in a dictation exercise, or the one shown in a translation exercise. */
 function currentConcept() {
-  const local = screen.getByRole('heading', { level: 2 }).textContent;
-  return content.concepts.find((concept) => concept.local === local)!;
+  const heading = screen.queryByRole('heading', { level: 2 });
+  return heading
+    ? content.concepts.find((concept) => concept.local === heading.textContent)!
+    : content.concepts.find((concept) => concept.foreign === spoken.at(-1))!;
 }
 
 async function retypeAnswer(user: ReturnType<typeof userEvent.setup>) {
@@ -122,12 +150,23 @@ test('ending the session shows results with SRS details collapsed', async () => 
   expect(screen.getByText('Review log')).toBeInTheDocument();
 });
 
+test('special characters keyboard starts open for German and can be hidden', async () => {
+  const user = userEvent.setup();
+  render(<App />);
+
+  const toggle = screen.getByRole('button', { name: 'Show special characters' });
+  expect(toggle).toHaveAttribute('aria-pressed', 'true');
+  expect(screen.getByRole('group', { name: 'Special characters' })).toBeInTheDocument();
+
+  await user.click(toggle);
+  expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  expect(screen.queryByRole('group', { name: 'Special characters' })).not.toBeInTheDocument();
+});
+
 test('special characters keyboard inserts at the caret', async () => {
   const user = userEvent.setup();
   render(<App />);
 
-  expect(screen.queryByRole('group', { name: 'Special characters' })).not.toBeInTheDocument();
-  await user.click(screen.getByRole('button', { name: 'Show special characters' }));
   const keyboard = screen.getByRole('group', { name: 'Special characters' });
 
   const input = screen.getByRole('textbox', { name: 'Answer' });
@@ -138,4 +177,49 @@ test('special characters keyboard inserts at the caret', async () => {
 
   expect(input).toHaveValue('füxnf');
   expect(input).toHaveFocus();
+});
+
+test('dictation reads the word aloud and shows its meaning only after checking', async () => {
+  const user = userEvent.setup();
+  render(<App />);
+
+  expect(spoken).toHaveLength(1);
+  const { local, foreign, hint } = currentConcept();
+  expect(screen.queryByText(local)).not.toBeInTheDocument();
+  expect(screen.queryByText(hint!)).not.toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: 'Listen' }));
+  expect(spoken).toEqual([foreign, foreign]);
+
+  await user.type(screen.getByRole('textbox', { name: 'Answer' }), `${foreign}{Enter}`);
+  expect(screen.getByRole('status')).toHaveTextContent(`Means ${local}`);
+  expect(screen.queryByText(hint!)).not.toBeInTheDocument();
+});
+
+test('translation exercises come after every dictation exercise', async () => {
+  const user = userEvent.setup();
+  render(<App />);
+
+  let dictations = 0;
+  while (screen.queryByRole('button', { name: 'Listen' })) {
+    // A fast exact answer is rated Easy, so the card leaves the session.
+    await user.type(
+      screen.getByRole('textbox', { name: 'Answer' }),
+      `${currentConcept().foreign}{Enter}`,
+    );
+    await user.keyboard('{Enter}');
+    dictations++;
+  }
+
+  expect(dictations).toBe(11);
+  const { local, foreign } = currentConcept();
+  expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(local);
+  expect(screen.queryByRole('status')).not.toBeInTheDocument();
+
+  // The German word is read aloud only after checking the answer.
+  const spokenBefore = spoken.length;
+  await user.type(screen.getByRole('textbox', { name: 'Answer' }), 'falsch');
+  expect(spoken).toHaveLength(spokenBefore);
+  await user.keyboard('{Enter}');
+  expect(spoken.slice(spokenBefore)).toEqual([foreign]);
 });

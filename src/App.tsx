@@ -16,7 +16,10 @@ function startSession() {
 export default function App() {
   const [session, setSession] = useState(startSession);
   const [ended, setEnded] = useState(false);
-  const [showSpecialCharacters, setShowSpecialCharacters] = useState(false);
+  // Open by default for languages that need special characters, e.g. German umlauts.
+  const [showSpecialCharacters, setShowSpecialCharacters] = useState(
+    () => (subject.specialCharacters?.length ?? 0) > 0,
+  );
   const [showSrsDetails, setShowSrsDetails] = useState(false);
 
   const finished = ended || !getCurrentCard(session);
@@ -50,6 +53,7 @@ export default function App() {
             session={session}
             onReview={(review) => setSession((current) => submitReview(current, review))}
             onEnd={() => setEnded(true)}
+            foreignLanguage={subject.foreignLanguage}
             specialCharacters={subject.specialCharacters}
             showSpecialCharacters={showSpecialCharacters}
             onToggleSpecialCharacters={() => setShowSpecialCharacters((show) => !show)}

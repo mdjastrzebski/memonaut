@@ -22,6 +22,7 @@ export interface Session {
 interface CreateSessionOptions {
   deck: Deck;
   concepts: Concept[];
+  /** Easiest first: all Cards of one type are queued before any Card of the next. */
   exerciseTypes?: ExerciseType[];
   now?: Date;
   random?: () => number;
@@ -30,13 +31,13 @@ interface CreateSessionOptions {
 export function createSession({
   deck,
   concepts,
-  exerciseTypes = ['type-answer'],
+  exerciseTypes = ['dictation', 'translation'],
   now = new Date(),
   random = Math.random,
 }: CreateSessionOptions): Session {
   const deckConcepts = concepts.filter((concept) => deck.conceptIds.includes(concept.id));
-  const cards = deckConcepts.flatMap((concept) =>
-    exerciseTypes.map((exerciseType): Card => ({
+  const cards = exerciseTypes.flatMap((exerciseType) =>
+    deckConcepts.map((concept): Card => ({
       id: `${concept.id}:${exerciseType}`,
       conceptId: concept.id,
       exerciseType,
@@ -49,9 +50,11 @@ export function createSession({
     deck,
     concepts: Object.fromEntries(deckConcepts.map((concept) => [concept.id, concept])),
     cards: Object.fromEntries(cards.map((card) => [card.id, card])),
-    queue: shuffle(
-      cards.map((card) => card.id),
-      random,
+    queue: exerciseTypes.flatMap((exerciseType) =>
+      shuffle(
+        cards.filter((card) => card.exerciseType === exerciseType).map((card) => card.id),
+        random,
+      ),
     ),
     reviews: [],
   };

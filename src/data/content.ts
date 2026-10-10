@@ -8,6 +8,7 @@ const id = z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'Use lowercase letters, 
 const subjectSchema = z.strictObject({
   id,
   name: z.string(),
+  foreignLanguage: z.string(),
   specialCharacters: z.array(z.string()).optional(),
 });
 

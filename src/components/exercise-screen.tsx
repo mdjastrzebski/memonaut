@@ -1,5 +1,12 @@
-import { ArrowRight, Check, RotateCcw, Target, Zap, type LucideIcon } from 'lucide-react';
-import { useLayoutEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
+import { ArrowRight, Check, RotateCcw, Target, Volume2, Zap, type LucideIcon } from 'lucide-react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type FormEvent,
+} from 'react';
 
 import { AnswerComparison } from '@/components/answer-comparison';
 import { GRADE_STYLES } from '@/components/grades';
@@ -15,6 +22,7 @@ import {
   type AnswerResult,
 } from '@/exercises/type-answer';
 import { formatDuration, formatSeconds } from '@/lib/format';
+import { speak } from '@/lib/speech';
 import { cn } from '@/lib/utils';
 import {
   getCurrentCard,
@@ -41,6 +49,8 @@ interface ExerciseScreenProps {
   session: Session;
   onReview: (review: SubmitReviewInput) => void;
   onEnd: () => void;
+  /** BCP 47 tag used to read words aloud in dictation exercises. */
+  foreignLanguage: string;
   specialCharacters?: string[];
   showSpecialCharacters: boolean;
   onToggleSpecialCharacters: () => void;
@@ -60,6 +70,7 @@ export function ExerciseScreen({
   session,
   onReview,
   onEnd,
+  foreignLanguage,
   specialCharacters = [],
   showSpecialCharacters,
   onToggleSpecialCharacters,
@@ -73,6 +84,22 @@ export function ExerciseScreen({
   const inputRef = useRef<HTMLInputElement>(null);
   const pendingCaret = useRef<number | null>(null);
 
+  const card = getCurrentCard(session);
+  const concept = card && session.concepts[card.conceptId];
+  const dictation = card?.exerciseType === 'dictation';
+  const playWord = () => concept && speak(concept.foreign, foreignLanguage);
+
+  // Read the word aloud as soon as a dictation exercise appears. The ref keeps StrictMode's second
+  // effect run from cancelling and queueing it again.
+  const autoPlayed = useRef(false);
+  useEffect(() => {
+    if (dictation && !autoPlayed.current) {
+      autoPlayed.current = true;
+      playWord();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only once per exercise
+  }, []);
+
   // Restore the caret after inserting a special character.
   useLayoutEffect(() => {
     if (pendingCaret.current !== null) {
@@ -81,10 +108,8 @@ export function ExerciseScreen({
     }
   }, [input, retyped]);
 
-  const card = getCurrentCard(session);
-  if (!card) return null;
+  if (!card || !concept) return null;
 
-  const concept = session.concepts[card.conceptId];
   const now = checked?.at ?? shownAt;
   const grade = checked?.result.grade;
   const fastLimitMs = getFastLimitMs(concept.foreign);
@@ -102,6 +127,8 @@ export function ExerciseScreen({
       const at = new Date();
       const elapsedMs = at.getTime() - shownAt.getTime();
       setChecked({ result: gradeAnswer(concept.foreign, input, elapsedMs), at });
+      // In translation, the learner hears the German word once they've typed it.
+      if (!dictation) playWord();
     } else if (!retyping || retypedCorrectly) {
       const { grade, issues, elapsedMs } = checked.result;
       onReview({ input, elapsedMs, rating: grade, issues, now: checked.at });
@@ -125,18 +152,33 @@ export function ExerciseScreen({
         aria-label="Exercise"
         className="relative animate-card-in overflow-hidden rounded-[2rem] border-2 border-foreground bg-card px-6 pt-7 pb-6 shadow-sticker-lg sm:px-10 sm:pt-9 sm:pb-8"
       >
-        {concept.hint && (
+        {/* A hint like "3" would give away the word's meaning in dictation. */}
+        {concept.hint && !dictation && (
           <span className="pointer-events-none absolute -top-4 right-4 rotate-6 font-display text-[8.5rem] leading-none font-black text-rocket/25 select-none sm:right-8 sm:text-[11rem]">
             {concept.hint}
           </span>
         )}
 
         <p className="relative inline-block -rotate-2 rounded-full border-2 border-foreground bg-almost px-3 py-0.5 text-xs font-bold tracking-wider uppercase">
-          Type in German
+          {dictation ? 'Write what you hear' : 'Type in German'}
         </p>
-        <h2 className="relative mt-4 mb-8 font-display text-6xl font-extrabold tracking-tight break-words sm:text-7xl">
-          {concept.local}
-        </h2>
+        {dictation ? (
+          <div className="relative mt-4 mb-8">
+            <Button
+              type="button"
+              variant="sticker"
+              className="h-20 gap-3 rounded-2xl px-6 font-display text-2xl"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={playWord}
+            >
+              <Volume2 className="size-8" /> Listen
+            </Button>
+          </div>
+        ) : (
+          <h2 className="relative mt-4 mb-8 font-display text-6xl font-extrabold tracking-tight break-words sm:text-7xl">
+            {concept.local}
+          </h2>
+        )}
 
         <form onSubmit={handleSubmit} className="relative flex flex-col gap-4">
           {retyping ? (
@@ -145,6 +187,7 @@ export function ExerciseScreen({
                 result={checked.result}
                 input={input}
                 answer={concept.foreign}
+                meaning={dictation ? concept.local : undefined}
                 nextInMs={preview[checked.result.grade].card.due.getTime() - now.getTime()}
               />
               <p className="-mb-2 font-semibold">Now type the answer to continue:</p>
@@ -233,6 +276,7 @@ export function ExerciseScreen({
                 result={checked.result}
                 input={input}
                 answer={concept.foreign}
+                meaning={dictation ? concept.local : undefined}
                 nextInMs={preview[checked.result.grade].card.due.getTime() - now.getTime()}
               />
               <Button type="submit" variant="cta" className="h-13 rounded-2xl text-lg">
@@ -296,10 +340,12 @@ interface FeedbackProps {
   result: AnswerResult;
   input: string;
   answer: string;
+  /** The local word, shown after a dictation exercise. */
+  meaning?: string;
   nextInMs: number;
 }
 
-function Feedback({ result, input, answer, nextInMs }: FeedbackProps) {
+function Feedback({ result, input, answer, meaning, nextInMs }: FeedbackProps) {
   const { grade, elapsedMs } = result;
   const style = GRADE_STYLES[grade];
   const Icon = GRADE_ICONS[grade];
@@ -328,6 +374,11 @@ function Feedback({ result, input, answer, nextInMs }: FeedbackProps) {
       <div className="flex min-w-0 flex-col gap-1">
         <p className={cn('font-display text-xl font-bold', style.text)}>{getHeadline(result)}</p>
         {wrong && <AnswerComparison input={input} answer={answer} shake={grade === Rating.Again} />}
+        {meaning && (
+          <p className="text-sm">
+            Means <span className="font-semibold">{meaning}</span>
+          </p>
+        )}
         <p className="text-xs text-muted-foreground">
           Rated <span className="font-semibold text-foreground">{ratingName(grade)}</span> ·{' '}
           {formatSeconds(elapsedMs)} · comes back in {formatDuration(nextInMs)}

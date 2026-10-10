@@ -6,6 +6,8 @@ import type { AnswerIssue } from '@/exercises/type-answer';
 export interface Subject {
   id: string;
   name: string;
+  /** BCP 47 tag of the language being learned, used to read words aloud, e.g. "de-DE". */
+  foreignLanguage: string;
   /** Characters offered on the on-screen keyboard, e.g. German umlauts. */
   specialCharacters?: string[];
 }
@@ -34,8 +36,12 @@ export interface Concept {
   hint?: string;
 }
 
-/** A way to practise a Concept. */
-export type ExerciseType = 'type-answer';
+/**
+ * A way to practise a Concept:
+ * - dictation: hear the foreign word and type how it's spelled
+ * - translation: see the local word and type the foreign one
+ */
+export type ExerciseType = 'dictation' | 'translation';
 
 /** One Concept practised with one Exercise Type. It holds its own FSRS review state. */
 export interface Card {

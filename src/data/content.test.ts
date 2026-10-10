@@ -2,7 +2,7 @@ import { expect, test } from 'vitest';
 
 import { buildContent, content } from './content';
 
-const subject = 'id: german\nname: German\n';
+const subject = 'id: german\nname: German\nforeignLanguage: de-DE\n';
 
 test('loads the bundled content', () => {
   expect(content.subjects.map((subject) => subject.id)).toContain('german');
