@@ -29,7 +29,7 @@ import { getSubjectDecks } from '@/data/decks';
 import type { Card, Concept, Deck, ExerciseType, Subject } from '@/domain/types';
 import { formatRelative } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { countDueToday, EXERCISE_TYPES, getCardId } from '@/session/session';
+import { countDueToday, getCardId } from '@/session/session';
 import { State, type FsrsCard } from '@/srs/scheduler';
 
 interface SetupScreenProps {
@@ -96,6 +96,7 @@ export function SetupScreen({
                 key={option.id}
                 deck={option}
                 cards={cards}
+                exerciseTypes={subject.exerciseTypes}
                 now={now}
                 checked={option.id === deck.id}
                 onSelect={() => onSelectDeck(option)}
@@ -105,6 +106,7 @@ export function SetupScreen({
               <UnitTile
                 units={unitDecks}
                 cards={cards}
+                exerciseTypes={subject.exerciseTypes}
                 now={now}
                 unit={tileUnit}
                 checked={tileUnit === selectedUnit}
@@ -118,6 +120,7 @@ export function SetupScreen({
           value={sessionSize}
           onChange={onSessionSizeChange}
           wordCount={deck.conceptIds.length}
+          exerciseCount={subject.exerciseTypes.length}
         />
       </div>
 
@@ -246,12 +249,13 @@ function SubjectTile({ subject, content, checked, onSelect, style }: SubjectTile
 interface CoreTileProps {
   deck: Deck;
   cards: Record<string, Card>;
+  exerciseTypes: ExerciseType[];
   now: Date;
   checked: boolean;
   onSelect: () => void;
 }
 
-function CoreTile({ deck, cards, now, checked, onSelect }: CoreTileProps) {
+function CoreTile({ deck, cards, exerciseTypes, now, checked, onSelect }: CoreTileProps) {
   return (
     <ChoiceTile
       name={deck.name}
@@ -268,7 +272,7 @@ function CoreTile({ deck, cards, now, checked, onSelect }: CoreTileProps) {
         <span aria-hidden className="flex h-11 items-center font-display text-lg font-bold">
           {deck.name}
         </span>
-        <DeckStats deck={deck} cards={cards} now={now} />
+        <DeckStats deck={deck} cards={cards} exerciseTypes={exerciseTypes} now={now} />
       </span>
     </ChoiceTile>
   );
@@ -277,6 +281,7 @@ function CoreTile({ deck, cards, now, checked, onSelect }: CoreTileProps) {
 interface UnitTileProps {
   units: Deck[];
   cards: Record<string, Card>;
+  exerciseTypes: ExerciseType[];
   now: Date;
   /** The unit on the tile: the selected one, or else the one last picked. */
   unit: Deck;
@@ -285,7 +290,7 @@ interface UnitTileProps {
 }
 
 /** A unit as a tile to select, with a select box to switch to another unit. */
-function UnitTile({ units, cards, now, unit, checked, onSelect }: UnitTileProps) {
+function UnitTile({ units, cards, exerciseTypes, now, unit, checked, onSelect }: UnitTileProps) {
   return (
     <ChoiceTile name={unit.name} group="deck" checked={checked} onSelect={() => onSelect(unit)}>
       <span className="flex min-w-0 flex-1 flex-col gap-1">
@@ -309,7 +314,7 @@ function UnitTile({ units, cards, now, unit, checked, onSelect }: UnitTileProps)
               onValueChange={(id) => onSelect(units.find((option) => option.id === id)!)}
             >
               {units.map((option) => {
-                const due = countDueToday(option.conceptIds, cards, now);
+                const due = countDueToday(option.conceptIds, cards, now, exerciseTypes);
                 return (
                   <DropdownMenuRadioItem
                     key={option.id}
@@ -327,21 +332,30 @@ function UnitTile({ units, cards, now, unit, checked, onSelect }: UnitTileProps)
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>
-        <DeckStats deck={unit} cards={cards} now={now} />
+        <DeckStats deck={unit} cards={cards} exerciseTypes={exerciseTypes} now={now} />
       </span>
     </ChoiceTile>
   );
 }
 
+interface DeckStatsProps {
+  deck: Deck;
+  cards: Record<string, Card>;
+  exerciseTypes: ExerciseType[];
+  now: Date;
+}
+
 /** A deck tile's rows below its name: words due today, word count and progress. */
-function DeckStats({ deck, cards, now }: { deck: Deck; cards: Record<string, Card>; now: Date }) {
+function DeckStats({ deck, cards, exerciseTypes, now }: DeckStatsProps) {
   return (
     <>
-      <DueToday count={countDueToday(deck.conceptIds, cards, now)} />
+      <DueToday count={countDueToday(deck.conceptIds, cards, now, exerciseTypes)} />
       <span className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm text-muted-foreground">
         {plural(deck.conceptIds.length, 'word')}
         <ProgressCounts
-          progress={deck.conceptIds.map((conceptId) => getConceptStatus(conceptId, cards).progress)}
+          progress={deck.conceptIds.map(
+            (conceptId) => getConceptStatus(conceptId, cards, exerciseTypes).progress,
+          )}
         />
       </span>
     </>
@@ -360,7 +374,11 @@ interface DeckOverviewProps {
 /** What's in the selected Deck, how well each word is known, and the start button. */
 function DeckOverview({ content, cards, subject, deck, now, onStart }: DeckOverviewProps) {
   const concepts = content.concepts.filter((concept) => deck.conceptIds.includes(concept.id));
-  const words = concepts.map((concept) => ({ concept, ...getConceptStatus(concept.id, cards) }));
+  const { exerciseTypes } = subject;
+  const words = concepts.map((concept) => ({
+    concept,
+    ...getConceptStatus(concept.id, cards, exerciseTypes),
+  }));
   const [showWords, setShowWords] = useState(false);
   const wordListId = useId();
 
@@ -380,11 +398,11 @@ function DeckOverview({ content, cards, subject, deck, now, onStart }: DeckOverv
         <StatTile
           label="Words"
           value={concepts.length}
-          note={`Exercises: ${concepts.length * EXERCISE_TYPES.length}`}
+          note={`Exercises: ${concepts.length * exerciseTypes.length}`}
         />
         <StatTile
           label="Due today"
-          value={countDueToday(deck.conceptIds, cards, now)}
+          value={countDueToday(deck.conceptIds, cards, now, exerciseTypes)}
           note="Words to practise again"
         />
       </dl>
@@ -446,8 +464,12 @@ interface Word extends ConceptStatus {
   concept: Concept;
 }
 
-function getConceptStatus(conceptId: string, cards: Record<string, Card>): ConceptStatus {
-  const exercises = EXERCISE_TYPES.map((type) => ({
+function getConceptStatus(
+  conceptId: string,
+  cards: Record<string, Card>,
+  exerciseTypes: ExerciseType[],
+): ConceptStatus {
+  const exercises = exerciseTypes.map((type) => ({
     type,
     srs: cards[getCardId(conceptId, type)]?.srs,
   }));
@@ -505,7 +527,7 @@ function WordRow({ word, now }: { word: Word; now: Date }) {
         </TooltipContent>
       </Tooltip>
       <span className="min-w-0 flex-1 font-semibold break-words">{concept.foreign}</span>
-      <span className="text-right text-muted-foreground">{concept.local}</span>
+      {concept.local && <span className="text-right text-muted-foreground">{concept.local}</span>}
     </li>
   );
 }
@@ -522,10 +544,12 @@ interface SessionSizePickerProps {
   onChange: (size: SessionSize) => void;
   /** Words in the selected set. */
   wordCount: number;
+  /** Exercises per word. */
+  exerciseCount: number;
 }
 
 /** Segmented buttons for the most words to practise in one session. */
-function SessionSizePicker({ value, onChange, wordCount }: SessionSizePickerProps) {
+function SessionSizePicker({ value, onChange, wordCount, exerciseCount }: SessionSizePickerProps) {
   const words = Math.min(value ?? Infinity, wordCount);
   return (
     <ChoiceGroup legend="Words per session">
@@ -547,7 +571,7 @@ function SessionSizePicker({ value, onChange, wordCount }: SessionSizePickerProp
         ))}
       </div>
       <p className="text-sm text-muted-foreground">
-        {plural(words, 'word')} · {words * EXERCISE_TYPES.length} exercises
+        {plural(words, 'word')} · {words * exerciseCount} exercises
       </p>
     </ChoiceGroup>
   );

@@ -2,6 +2,7 @@ import { parse } from 'yaml';
 import { z } from 'zod';
 
 import type { Concept, Deck, Subject } from '@/domain/types';
+import { EXERCISE_TYPES } from '@/session/session';
 
 const id = z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'Use lowercase letters, digits and dashes');
 
@@ -11,13 +12,20 @@ const subjectSchema = z.strictObject({
   emoji: z.string().optional(),
   foreignLanguage: z.string(),
   specialCharacters: z.array(z.string()).optional(),
+  /** Every Exercise Type if left out; kept in order from easiest whatever the order listed. */
+  exerciseTypes: z
+    .array(z.enum(EXERCISE_TYPES))
+    .min(1)
+    .default(EXERCISE_TYPES)
+    .transform((listed) => EXERCISE_TYPES.filter((type) => listed.includes(type))),
 });
 
 const conceptSchema = z.strictObject({
   id,
-  local: z.string().min(1),
+  local: z.string().min(1).optional(),
   foreign: z.string().min(1),
   hint: z.string().optional(),
+  spokenHint: z.string().min(1).optional(),
   /** Puts the Concept in the Subject's core Deck. */
   core: z
     .enum(['true', 'false'])
@@ -78,6 +86,9 @@ export function buildContent(files: Record<string, string>): Content {
     const coreIds = new Set<string>();
 
     const addConcept = (path: string, fields: Omit<Concept, 'subjectId'>) => {
+      if (fields.local === undefined && subject.exerciseTypes.includes('translation')) {
+        throw new Error(`${path}: concept "${fields.id}" needs a local word for translation`);
+      }
       const concept = { ...fields, id: prefix(fields.id), subjectId: subject.id };
       const existing = concepts.get(fields.id);
       if (!existing) {
@@ -133,7 +144,12 @@ export function buildContent(files: Record<string, string>): Content {
 }
 
 function isSameConcept(a: Concept, b: Concept): boolean {
-  return a.local === b.local && a.foreign === b.foreign && a.hint === b.hint;
+  return (
+    a.local === b.local &&
+    a.foreign === b.foreign &&
+    a.hint === b.hint &&
+    a.spokenHint === b.spokenHint
+  );
 }
 
 function read<T>(path: string, source: string, schema: z.ZodType<T>): T {

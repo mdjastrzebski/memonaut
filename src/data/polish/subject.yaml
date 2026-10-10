@@ -1,0 +1,7 @@
+id: polish
+name: Polish
+emoji: 🇵🇱
+foreignLanguage: pl-PL
+specialCharacters: [ą, ć, ę, ł, ń, ó, ś, ź, ż]
+# Spelling practice (ortografia): words have no translation.
+exerciseTypes: [dictation]

@@ -18,7 +18,7 @@ import type { Subject } from '@/domain/types';
 import { getFastLimitMs, gradeAnswer, type AnswerResult } from '@/exercises/type-answer';
 import { formatDuration, formatSeconds } from '@/lib/format';
 import { playCorrect } from '@/lib/sounds';
-import { speak } from '@/lib/speech';
+import { speak, stopHint } from '@/lib/speech';
 import { cn } from '@/lib/utils';
 import {
   getCurrentCard,
@@ -75,7 +75,10 @@ export function ExerciseScreen({
   const card = getCurrentCard(session);
   const concept = card && session.concepts[card.conceptId];
   const dictation = card?.exerciseType === 'dictation';
-  const playWord = () => concept && speak(concept.foreign, subject.foreignLanguage);
+  // In dictation, a spoken hint follows the word to tell it apart from words that sound the same.
+  const playWord = () =>
+    concept &&
+    speak(concept.foreign, subject.foreignLanguage, dictation ? concept.spokenHint : undefined);
 
   // Read the word aloud as soon as a dictation exercise appears. The ref keeps StrictMode's second
   // effect run from cancelling and queueing it again.
@@ -140,6 +143,8 @@ export function ExerciseScreen({
       const elapsedMs = at.getTime() - shownAt.getTime();
       const result = gradeAnswer(concept.foreign, input, elapsedMs);
       setChecked({ result, at });
+      // Once answered, a hint still to come would only talk over the feedback or the next word.
+      stopHint();
       if (result.grade === Rating.Good || result.grade === Rating.Easy) playCorrect();
       // In translation, the learner hears the foreign word once they've typed it.
       if (!dictation) playWord();
@@ -197,7 +202,7 @@ export function ExerciseScreen({
                 grade={checked.result.grade}
                 input={input}
                 answer={concept.foreign}
-                meaning={concept.local}
+                meaning={concept.local ?? concept.spokenHint}
               />
               <p className="-mb-2 font-semibold">Now type the answer to continue:</p>
               <div className="relative">
@@ -285,7 +290,7 @@ export function ExerciseScreen({
                 grade={checked.result.grade}
                 input={input}
                 answer={concept.foreign}
-                meaning={concept.local}
+                meaning={concept.local ?? concept.spokenHint}
               />
               <Button type="submit" variant="cta" className="h-13 rounded-2xl text-lg">
                 Continue <ArrowRight className="size-5" />
@@ -358,8 +363,8 @@ interface FeedbackProps {
   grade: Grade;
   input: string;
   answer: string;
-  /** The local word, shown with the result. */
-  meaning: string;
+  /** The local word, or else the spoken hint, shown with the result. */
+  meaning?: string;
 }
 
 /** The result as an icon, the answer to compare after a mistake, and the word's meaning. */
@@ -391,18 +396,20 @@ function Feedback({ grade, input, answer, meaning }: FeedbackProps) {
 
       <div className="flex min-w-0 flex-col gap-1">
         {wrong && <AnswerComparison input={input} answer={answer} shake={grade === Rating.Again} />}
-        <p
-          className={cn(
-            'flex items-center gap-2 font-display font-bold break-words',
-            wrong ? 'text-lg text-muted-foreground' : 'text-2xl',
-          )}
-        >
-          <span aria-hidden className="shrink-0 leading-none">
-            🇵🇱
-          </span>
-          <span className="sr-only">means</span>
-          <span className="min-w-0">{meaning}</span>
-        </p>
+        {meaning && (
+          <p
+            className={cn(
+              'flex items-center gap-2 font-display font-bold break-words',
+              wrong ? 'text-lg text-muted-foreground' : 'text-2xl',
+            )}
+          >
+            <span aria-hidden className="shrink-0 leading-none">
+              🇵🇱
+            </span>
+            <span className="sr-only">means</span>
+            <span className="min-w-0">{meaning}</span>
+          </p>
+        )}
       </div>
     </div>
   );

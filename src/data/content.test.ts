@@ -105,6 +105,57 @@ concepts:
   expect(decks.map((deck) => deck.kind)).toEqual(['unit']);
 });
 
+test('the bundled Polish words are practised with dictation only, with hints for homophones', () => {
+  const polish = content.subjects.find((subject) => subject.id === 'polish');
+  expect(polish?.exerciseTypes).toEqual(['dictation']);
+  const concept = (id: string) => content.concepts.find((concept) => concept.id === id);
+  expect(concept('polish/morze')).toMatchObject({
+    foreign: 'morze',
+    spokenHint: 'zbiornik słonej wody',
+  });
+  expect(concept('polish/moze')).toMatchObject({ foreign: 'może', spokenHint: 'przypuszczenie' });
+  // The popular words are all among the 400, so practising them counts in both.
+  const deck = (id: string) => content.decks.find((deck) => deck.id === id)!;
+  const all = deck('polish/400-trudnych-slow').conceptIds;
+  expect(
+    deck('polish/100-popularnych-trudnych-slow').conceptIds.filter((id) => !all.includes(id)),
+  ).toEqual([]);
+});
+
+test('a subject practises every exercise type unless it lists some, easiest first', () => {
+  const exerciseTypes = (listed: string) =>
+    buildContent({ './german/subject.yaml': subject + listed }).subjects[0].exerciseTypes;
+  expect(exerciseTypes('')).toEqual(['dictation', 'translation']);
+  expect(exerciseTypes('exerciseTypes: [translation, dictation]\n')).toEqual([
+    'dictation',
+    'translation',
+  ]);
+  expect(exerciseTypes('exerciseTypes: [dictation]\n')).toEqual(['dictation']);
+  expect(() => exerciseTypes('exerciseTypes: []\n')).toThrow(/subject\.yaml/);
+  expect(() => exerciseTypes('exerciseTypes: [flashcard]\n')).toThrow(/subject\.yaml/);
+});
+
+test('words of a subject without translation need no local word, and keep a spoken hint', () => {
+  const { concepts } = buildContent({
+    './polish/subject.yaml':
+      'id: polish\nname: Polish\nforeignLanguage: pl-PL\nexerciseTypes: [dictation]\n',
+    './polish/decks/a.yaml': `
+id: a
+name: A
+concepts:
+  - { id: morze, foreign: morze, spokenHint: zbiornik słonej wody }
+`,
+  });
+  expect(concepts).toEqual([
+    {
+      id: 'polish/morze',
+      subjectId: 'polish',
+      foreign: 'morze',
+      spokenHint: 'zbiornik słonej wody',
+    },
+  ]);
+});
+
 test('rejects invalid content', () => {
   const deck = (concepts: string, id = 'd') => `id: ${id}\nname: D\nconcepts:\n${concepts}`;
   const build = (decks: Record<string, string>) =>
@@ -113,6 +164,15 @@ test('rejects invalid content', () => {
   expect(() => build({ './german/decks/a.yaml': deck('  - { id: a, local: x }\n') })).toThrow(
     /a\.yaml/,
   );
+  expect(() => build({ './german/decks/a.yaml': deck('  - { id: a, foreign: y }\n') })).toThrow(
+    'a.yaml: concept "a" needs a local word for translation',
+  );
+  expect(() =>
+    build({
+      './german/decks/a.yaml': deck('  - { id: a, local: x, foreign: y, spokenHint: p }\n'),
+      './german/decks/b.yaml': deck('  - { id: a, local: x, foreign: y, spokenHint: q }\n', 'e'),
+    }),
+  ).toThrow('b.yaml: concept "a" is defined differently in another deck');
   expect(() =>
     build({
       './german/decks/a.yaml': deck('  - { id: a, local: x, foreign: y }\n'),

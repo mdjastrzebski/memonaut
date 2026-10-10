@@ -291,7 +291,7 @@ function WordRow({ session, card, now, style }: WordRowProps) {
       </span>
       <Icon aria-label={label} className="size-4 shrink-0 text-muted-foreground" />
       <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">
-        <span className="text-sm text-muted-foreground">{concept.local}</span>
+        {concept.local && <span className="text-sm text-muted-foreground">{concept.local}</span>}
         <span
           className={cn(
             'font-display text-lg leading-tight font-bold break-words',
@@ -365,7 +365,8 @@ function SessionSrsTables({ session, now }: { session: Session; now: Date }) {
               return (
                 <TableRow key={card.id} className="tabular-nums">
                   <TableCell>
-                    {concept.local} → <span className="font-medium">{concept.foreign}</span> ·{' '}
+                    {concept.local && `${concept.local} → `}
+                    <span className="font-medium">{concept.foreign}</span> ·{' '}
                     {EXERCISES[card.exerciseType].label}
                   </TableCell>
                   <TableCell>
@@ -421,7 +422,7 @@ function SessionSrsTables({ session, now }: { session: Session; now: Date }) {
                     +{formatDuration(log.review.getTime() - session.startedAt.getTime())}
                   </TableCell>
                   <TableCell>
-                    {concept.local} · {EXERCISES[card.exerciseType].label}
+                    {concept.local ?? concept.foreign} · {EXERCISES[card.exerciseType].label}
                   </TableCell>
                   <TableCell className={GRADE_STYLES[review.rating].text}>
                     {GRADE_STYLES[review.rating].mark} {review.input}

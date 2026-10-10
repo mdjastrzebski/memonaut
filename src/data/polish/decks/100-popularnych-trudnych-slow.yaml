@@ -1,0 +1,103 @@
+id: 100-popularnych-trudnych-slow
+name: 100 popularnych trudnych słów
+concepts:
+  - { id: ja-bede, foreign: ja będę }
+  - { id: bohater, foreign: bohater }
+  - { id: borowka, foreign: borówka }
+  - { id: burza, foreign: burza }
+  - { id: chleb, foreign: chleb }
+  - { id: chmura, foreign: chmura }
+  - { id: chodnik, foreign: chodnik }
+  - { id: choinka, foreign: choinka }
+  - { id: chomik, foreign: chomik }
+  - { id: corka, foreign: córka }
+  - { id: ja-czuje, foreign: ja czuję }
+  - { id: druzyna, foreign: drużyna }
+  - { id: drzewo, foreign: drzewo }
+  - { id: drzwi, foreign: drzwi }
+  - { id: duch, foreign: duch }
+  - { id: dziewiec, foreign: dziewięć }
+  - { id: dzieciol, foreign: dzięcioł }
+  - { id: ja-dziekuje, foreign: ja dziękuję }
+  - { id: ges, foreign: gęś }
+  - { id: ja-gotuje, foreign: ja gotuję }
+  - { id: gora, foreign: góra }
+  - { id: grzeczny, foreign: grzeczny }
+  - { id: grzyby, foreign: grzyby }
+  - { id: halas, foreign: hałas }
+  - { id: hamak, foreign: hamak }
+  - { id: harcerz, foreign: harcerz }
+  - { id: helikopter, foreign: helikopter }
+  - { id: herbata, foreign: herbata }
+  - { id: hipopotam, foreign: hipopotam }
+  - { id: historia, foreign: historia }
+  - { id: hokej, foreign: hokej }
+  - { id: hulajnoga, foreign: hulajnoga }
+  - { id: humor, foreign: humor }
+  - { id: hustawka, foreign: huśtawka }
+  - { id: ja-ide, foreign: ja idę }
+  - { id: jarzyny, foreign: jarzyny }
+  - { id: jezyk, foreign: język }
+  - { id: kaluza, foreign: kałuża }
+  - { id: kolezanka, foreign: koleżanka }
+  - { id: kolko, foreign: kółko }
+  - { id: krol, foreign: król }
+  - { id: krolik, foreign: królik }
+  - { id: krolowa, foreign: królowa }
+  - { id: krotki, foreign: krótki }
+  - { id: krzeslo, foreign: krzesło }
+  - { id: krzyzowka, foreign: krzyżówka }
+  - { id: ksiazka, foreign: książka }
+  - { id: ksiezyc, foreign: księżyc }
+  - { id: ktory, foreign: który }
+  - { id: kuchnia, foreign: kuchnia }
+  - { id: lekarz, foreign: lekarz }
+  - { id: lodowka, foreign: lodówka }
+  - { id: ja-maluje, foreign: ja maluję }
+  - { id: marchewka, foreign: marchewka }
+  - { id: marzenie, foreign: marzenie }
+  - { id: maka, foreign: mąka }
+  - { id: mieso, foreign: mięso }
+  - { id: moj, foreign: mój }
+  - { id: mrowka, foreign: mrówka }
+  - { id: mucha, foreign: mucha }
+  - { id: ogorek, foreign: ogórek }
+  - { id: olowek, foreign: ołówek }
+  - { id: orzel, foreign: orzeł }
+  - { id: pajak, foreign: pająk }
+  - { id: pedzel, foreign: pędzel }
+  - { id: piec, foreign: pięć }
+  - { id: piornik, foreign: piórnik }
+  - { id: podroz, foreign: podróż }
+  - { id: podworko, foreign: podwórko }
+  - { id: porzadek, foreign: porządek }
+  - { id: ja-pracuje, foreign: ja pracuję }
+  - { id: ja-probuje, foreign: ja próbuję }
+  - { id: przedszkole, foreign: przedszkole }
+  - { id: przyroda, foreign: przyroda }
+  - { id: reka, foreign: ręka }
+  - { id: rowerzysta, foreign: rowerzysta }
+  - { id: roza, foreign: róża }
+  - { id: ja-rysuje, foreign: ja rysuję }
+  - { id: rzeka, foreign: rzeka }
+  - { id: rzezucha, foreign: rzeżucha }
+  - { id: samochod, foreign: samochód }
+  - { id: slonce, foreign: słońce }
+  - { id: stol, foreign: stół }
+  - { id: strazak, foreign: strażak }
+  - { id: talerz, foreign: talerz }
+  - { id: usmiech, foreign: uśmiech }
+  - { id: warzywa, foreign: warzywa }
+  - { id: waz, foreign: wąż }
+  - { id: wezel, foreign: węzeł }
+  - { id: wiewiorka, foreign: wiewiórka }
+  - { id: wozek, foreign: wózek }
+  - { id: wrobel, foreign: wróbel }
+  - { id: wrzesien, foreign: wrzesień }
+  - { id: wstazka, foreign: wstążka }
+  - { id: wybrzeze, foreign: wybrzeże }
+  - { id: zajac, foreign: zając }
+  - { id: zeby, foreign: zęby }
+  - { id: zwierze, foreign: zwierzę }
+  - { id: zolty, foreign: żółty }
+  - { id: zolw, foreign: żółw }
