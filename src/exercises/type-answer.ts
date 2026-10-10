@@ -35,7 +35,7 @@ export function getFastLimitMs(answer: string): number {
 }
 
 /**
- * Rates a typed answer automatically:
+ * Rates a typed answer automatically, after tidying up both answers with `normalizeAnswer`:
  * - Easy: exact and typed within the fast limit
  * - Good: exact
  * - Hard: exact after forgiving any combination of wrong capitalization, missing umlauts or ß
@@ -48,8 +48,8 @@ export function getFastLimitMs(answer: string): number {
 export function gradeAnswer(expected: string, input: string, elapsedMs: number): AnswerResult {
   const result = (grade: Grade, issues: AnswerIssue[] = []) => ({ grade, issues, elapsedMs });
 
-  const target = normalizeSpacing(expected);
-  const given = normalizeSpacing(input);
+  const target = normalizeAnswer(expected);
+  const given = normalizeAnswer(input);
   if (given === target) {
     return result(elapsedMs <= getFastLimitMs(expected) ? Rating.Easy : Rating.Good);
   }
@@ -69,6 +69,28 @@ export function gradeAnswer(expected: string, input: string, elapsedMs: number):
 
 export function normalizeSpacing(value: string): string {
   return value.trim().replace(/\s+/g, ' ');
+}
+
+/**
+ * Tidies up differences that aren't mistakes, so they don't count against the answer: spacing,
+ * curly quotes from phone keyboards and a missing or extra ".", "?" or "!" at the end.
+ * "Wie geht’s dir ?" → "wie geht's dir" (keeping case).
+ */
+export function normalizeAnswer(value: string): string {
+  return splitEndPunctuation(normalizePunctuation(value))[0];
+}
+
+/** Straightens curly quotes and fixes spacing around punctuation: "noch einmal ,bitte" → "noch einmal, bitte". */
+export function normalizePunctuation(value: string): string {
+  return normalizeSpacing(value.replace(/[‘’‚‛ʼ`´]/g, "'").replace(/[“”„‟]/g, '"'))
+    .replace(/ (?=[,.!?;:])/g, '')
+    .replace(/,(?=\p{L})/gu, ', ');
+}
+
+/** "Ist alles klar?" → ["Ist alles klar", "?"]. */
+export function splitEndPunctuation(value: string): [text: string, punctuation: string] {
+  const [, text, punctuation] = /^(.*?)\s*([.?!]*)$/su.exec(value)!;
+  return [text, punctuation];
 }
 
 /** Edit distance when "u", "ue" and "ü" (and "ss" and "ß") count as the same. */

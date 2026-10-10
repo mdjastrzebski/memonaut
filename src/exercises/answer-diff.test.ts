@@ -2,12 +2,12 @@ import { describe, expect, test } from 'vitest';
 
 import { diffAnswer, type DiffPart } from './answer-diff';
 
-/** Compact notation: "=d" match, "~D/d" minor, "!z/d" wrong, "+t" extra, "-n" missing. */
+/** Compact notation: "=d" match ("=/?" for forgiven punctuation), "~D/d" minor, "!z/d" wrong, "+t" extra, "-n" missing. */
 function notation(parts: DiffPart[] | undefined) {
   return parts?.map(({ kind, typed, expected }) => {
     switch (kind) {
       case 'match':
-        return `=${typed}`;
+        return typed === expected ? `=${typed}` : `=${typed}/${expected}`;
       case 'minor':
         return `~${typed}/${expected}`;
       case 'wrong':
@@ -33,6 +33,9 @@ describe('small differences are diffed letter by letter', () => {
     ['sieben', 'sibem', ['=s', '=i', '-e', '=b', '=e', '!m/n']],
     ['fünf', 'FUENF', ['~F/f', '~UE/ü', '~N/n', '~F/f']],
     ['guten Tag', ' guten  tag ', ['=g', '=u', '=t', '=e', '=n', '= ', '~t/T', '=a', '=g']],
+    ['es?', 'Es', ['~E/e', '=s', '=/?']],
+    ['es', 'Es!', ['~E/e', '=s', '=!/']],
+    ["es's?", 'Es’s?', ['~E/e', '=s', "='", '=s', '=?']],
   ])('%s ← %s', (expected, input, parts) => {
     expect(notation(diffAnswer(expected, input))).toEqual(parts);
   });

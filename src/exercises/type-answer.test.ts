@@ -19,6 +19,18 @@ describe('exact answers', () => {
     expect(gradeAnswer('guten Tag', '  guten   Tag ', SLOW).grade).toBe(Rating.Good);
   });
 
+  test.each([
+    ["what's your name?", 'what’s your name?'],
+    ["wie geht's dir?", 'wie geht´s dir?'],
+    ["what's your name?", "what's your name"],
+    ['Ist alles klar?', 'Ist alles klar ?'],
+    ['Ist alles klar?', 'Ist alles klar?!'],
+    ['drei', 'drei.'],
+    ['noch einmal, bitte', 'noch einmal ,bitte'],
+  ])('forgives punctuation: %s ← %s', (expected, input) => {
+    expect(gradeAnswer(expected, input, SLOW)).toMatchObject({ grade: Rating.Good, issues: [] });
+  });
+
   test('fast limit grows with answer length', () => {
     expect(getFastLimitMs('sieben')).toBeGreaterThan(getFastLimitMs('eins'));
     const limit = getFastLimitMs('sieben');
@@ -52,6 +64,8 @@ describe('almost correct answers are Hard', () => {
     ['fünf', 'funff', ['diacritics', 'typo']],
     ['fünf', 'fuemf', ['diacritics', 'typo']],
     ['fünf', 'Funff', ['case', 'diacritics', 'typo']],
+    // Punctuation is forgiven on top.
+    ["what's your name?", 'What’s your name', ['case']],
   ])('%s ← %s', (expected, input, issues) => {
     const result = gradeAnswer(expected, input, 0);
     expect(result.grade).toBe(Rating.Hard);
