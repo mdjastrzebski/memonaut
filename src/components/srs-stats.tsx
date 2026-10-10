@@ -70,14 +70,16 @@ export function CardStats({ card, now }: CardStatsProps) {
   ];
 
   return (
-    <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+    <dl className="grid grid-cols-3 gap-x-4 gap-y-3 sm:grid-cols-5">
       {rows.map(([label, value, help]) => (
-        <div key={label} className="col-span-2 grid grid-cols-subgrid items-baseline">
-          <dt className="font-medium">{label}</dt>
-          <dd>
-            <span className="tabular-nums">{value}</span>
-            <span className="block text-xs text-muted-foreground">{help}</span>
-          </dd>
+        <div key={label} className="flex flex-col gap-0.5">
+          <dt
+            title={help}
+            className="w-fit cursor-help underline decoration-dotted underline-offset-2"
+          >
+            {label}
+          </dt>
+          <dd className="font-medium text-foreground tabular-nums">{value}</dd>
         </div>
       ))}
     </dl>
@@ -96,7 +98,7 @@ export function RatingPreview({ card, now, available = GRADES }: RatingPreviewPr
   const preview = previewReview(card, now);
 
   return (
-    <Table>
+    <Table className="text-xs">
       <TableHeader>
         <TableRow>
           <TableHead>Rating</TableHead>

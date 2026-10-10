@@ -14,7 +14,7 @@ test('practises a word and shows SRS stats', async () => {
   const user = userEvent.setup();
   render(<App />);
 
-  expect(screen.getByText('Card memory state')).toBeInTheDocument();
+  expect(screen.getByRole('region', { name: 'SRS details' })).toBeInTheDocument();
   expect(screen.getByText('Reviews: 0')).toBeInTheDocument();
 
   await user.type(
