@@ -35,7 +35,14 @@ const polish = content.subjects.find((subject) => subject.id === 'polish')!;
 
 function renderExercise(conceptId: string) {
   const session = createSession({
-    deck: { id: 'd', subjectId: 'polish', kind: 'unit', name: 'D', conceptIds: [conceptId] },
+    deck: {
+      id: 'd',
+      subjectId: 'polish',
+      kind: 'unit',
+      name: 'D',
+      conceptIds: [conceptId],
+      strictSpelling: true,
+    },
     concepts: content.concepts,
     exerciseTypes: polish.exerciseTypes,
   });
@@ -66,6 +73,14 @@ test('dictation reads a hint after a homophone, and shows it only after checking
 
   await user.type(screen.getByRole('textbox', { name: 'Answer' }), 'morze{Enter}');
   expect(screen.getByRole('status')).toHaveTextContent('zbiornik słonej wody');
+});
+
+test('strict spelling rates a homophone as wrong, not almost right', async () => {
+  const user = userEvent.setup();
+  renderExercise('polish/morze');
+
+  await user.type(screen.getByRole('textbox', { name: 'Answer' }), 'może{Enter}');
+  expect(screen.getByRole('status')).toHaveTextContent('Again');
 });
 
 test('a word without a local word or hint shows only the result after checking', async () => {

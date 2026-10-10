@@ -1,5 +1,7 @@
 id: 400-trudnych-slow
 name: 400 trudnych słów
+# Spelling practice: a missing Polish letter or a letter off is wrong, not almost right.
+strictSpelling: true
 concepts:
   - { id: baltyk, foreign: Bałtyk }
   - { id: bak, foreign: bąk }

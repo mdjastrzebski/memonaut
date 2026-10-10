@@ -25,6 +25,11 @@ export interface Deck {
   kind: DeckKind;
   name: string;
   conceptIds: string[];
+  /**
+   * Rates answers strictly, as spelling practice should: only wrong capitalization is forgiven, not
+   * missing diacritics (e.g. "zolw" for "żółw") or a letter off ("gura" for "góra").
+   */
+  strictSpelling?: boolean;
 }
 
 /** One piece of knowledge, e.g. a word. It can be in any number of Decks within its Subject. */

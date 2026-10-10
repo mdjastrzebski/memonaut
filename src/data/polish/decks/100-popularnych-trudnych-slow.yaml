@@ -1,5 +1,7 @@
 id: 100-popularnych-trudnych-slow
 name: 100 popularnych trudnych słów
+# Spelling practice: a missing Polish letter or a letter off is wrong, not almost right.
+strictSpelling: true
 concepts:
   - { id: ja-bede, foreign: ja będę }
   - { id: bohater, foreign: bohater }

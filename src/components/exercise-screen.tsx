@@ -141,7 +141,9 @@ export function ExerciseScreen({
       if (input.trim() === '') return;
       const at = new Date();
       const elapsedMs = at.getTime() - shownAt.getTime();
-      const result = gradeAnswer(concept.foreign, input, elapsedMs);
+      const result = gradeAnswer(concept.foreign, input, elapsedMs, {
+        strict: session.deck.strictSpelling,
+      });
       setChecked({ result, at });
       // Once answered, a hint still to come would only talk over the feedback or the next word.
       stopHint();
@@ -332,9 +334,12 @@ export function ExerciseScreen({
         <div>
           <h3 className="font-medium text-foreground">Rating preview</h3>
           <p>
-            Rated automatically: exact within {formatSeconds(fastLimitMs)} → Easy · exact → Good ·
-            wrong case, missing umlaut or one letter off → Hard · otherwise → Again. Cards due
-            within {formatDuration(LEARN_AHEAD_MS)} come back in this session.
+            Rated automatically: exact within {formatSeconds(fastLimitMs)} → Easy · exact → Good ·{' '}
+            {session.deck.strictSpelling
+              ? 'wrong case'
+              : 'wrong case, missing umlaut or one letter off'}{' '}
+            → Hard · otherwise → Again. Cards due within {formatDuration(LEARN_AHEAD_MS)} come back
+            in this session.
           </p>
           <RatingPreview card={card.srs} now={now} highlight={grade} />
         </div>

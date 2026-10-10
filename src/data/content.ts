@@ -20,6 +20,11 @@ const subjectSchema = z.strictObject({
     .transform((listed) => EXERCISE_TYPES.filter((type) => listed.includes(type))),
 });
 
+const flag = z
+  .enum(['true', 'false'])
+  .default('false')
+  .transform((value) => value === 'true');
+
 const conceptSchema = z.strictObject({
   id,
   local: z.string().min(1).optional(),
@@ -27,20 +32,19 @@ const conceptSchema = z.strictObject({
   hint: z.string().optional(),
   spokenHint: z.string().min(1).optional(),
   /** Puts the Concept in the Subject's core Deck. */
-  core: z
-    .enum(['true', 'false'])
-    .default('false')
-    .transform((value) => value === 'true'),
+  core: flag,
 });
 
 const deckSchema = z.strictObject({
   id,
   name: z.string(),
+  strictSpelling: flag,
   concepts: z.array(conceptSchema),
 });
 
-/** Concepts only in the core Deck; every one of them is core. */
+/** Concepts only in the core Deck; every one of them is core. Its options apply to the core Deck. */
 const coreSchema = z.strictObject({
+  strictSpelling: flag,
   concepts: z.array(conceptSchema.omit({ core: true })),
 });
 
@@ -84,6 +88,7 @@ export function buildContent(files: Record<string, string>): Content {
     const concepts = new Map<string, Concept>();
     const deckIds = new Set<string>([CORE_DECK.id]);
     const coreIds = new Set<string>();
+    let coreStrictSpelling = false;
 
     const addConcept = (path: string, fields: Omit<Concept, 'subjectId'>) => {
       if (fields.local === undefined && subject.exerciseTypes.includes('translation')) {
@@ -101,7 +106,9 @@ export function buildContent(files: Record<string, string>): Content {
     const corePath = `./${dir}/core.yaml`;
     if (corePath in files) {
       const listed = new Set<string>();
-      for (const fields of read(corePath, files[corePath], coreSchema).concepts) {
+      const core = read(corePath, files[corePath], coreSchema);
+      coreStrictSpelling = core.strictSpelling;
+      for (const fields of core.concepts) {
         checkUnique(listed, fields.id, `${corePath}: concept listed twice`);
         addConcept(corePath, fields);
         coreIds.add(fields.id);
@@ -125,6 +132,7 @@ export function buildContent(files: Record<string, string>): Content {
         kind: 'unit',
         name: deck.name,
         conceptIds: deck.concepts.map((concept) => prefix(concept.id)),
+        ...(deck.strictSpelling && { strictSpelling: true }),
       });
     }
 
@@ -136,6 +144,7 @@ export function buildContent(files: Record<string, string>): Content {
         kind: 'core',
         name: CORE_DECK.name,
         conceptIds: [...coreIds].map(prefix),
+        ...(coreStrictSpelling && { strictSpelling: true }),
       });
     }
   }

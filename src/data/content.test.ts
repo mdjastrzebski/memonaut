@@ -122,6 +122,33 @@ test('the bundled Polish words are practised with dictation only, with hints for
   ).toEqual([]);
 });
 
+test('a deck can rate spelling strictly, and core.yaml sets it for the core deck', () => {
+  const { decks } = buildContent({
+    './german/subject.yaml': subject,
+    './german/core.yaml': 'strictSpelling: true\nconcepts:\n  - { id: a, local: x, foreign: y }\n',
+    './german/decks/strict.yaml': `
+id: strict
+name: Strict
+strictSpelling: true
+concepts:
+  - { id: b, local: x, foreign: z }
+`,
+    './german/decks/relaxed.yaml': `
+id: relaxed
+name: Relaxed
+concepts:
+  - { id: c, local: x, foreign: w }
+`,
+  });
+  const strictSpelling = (id: string) => decks.find((deck) => deck.id === id)?.strictSpelling;
+  expect(strictSpelling('german/core')).toBe(true);
+  expect(strictSpelling('german/strict')).toBe(true);
+  expect(strictSpelling('german/relaxed')).toBeUndefined();
+  expect(
+    content.decks.filter((deck) => deck.subjectId === 'polish').map((deck) => deck.strictSpelling),
+  ).toEqual([true, true]);
+});
+
 test('a subject practises every exercise type unless it lists some, easiest first', () => {
   const exerciseTypes = (listed: string) =>
     buildContent({ './german/subject.yaml': subject + listed }).subjects[0].exerciseTypes;
