@@ -4,9 +4,9 @@ import { Rating, type Grade } from '@/srs/scheduler';
  * An exact answer typed within `FAST_BASE_MS + FAST_PER_CHAR_MS × answer length` is rated Easy,
  * plus `FAST_PER_SPECIAL_CHAR_MS` for each special character, which is slower to type.
  */
-const FAST_BASE_MS = 2500;
-const FAST_PER_CHAR_MS = 500;
-const FAST_PER_SPECIAL_CHAR_MS = 1500;
+const FAST_BASE_MS = 4000;
+const FAST_PER_CHAR_MS = 1000;
+const FAST_PER_SPECIAL_CHAR_MS = 2500;
 
 /** A forgiven mistake in an almost-correct answer. */
 export type AnswerIssue = 'case' | 'diacritics' | 'typo';

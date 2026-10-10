@@ -317,16 +317,15 @@ export function ExerciseScreen({
   );
 }
 
-/** A bar that drains while an exact answer would still be rated Easy. */
+/** A faint line that drains while an exact answer would still be rated Easy. */
 function FastBonus({ durationMs }: { durationMs: number }) {
   const duration = `${durationMs}ms`;
   return (
-    <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-      <Zap className="size-3.5 fill-rocket text-rocket" />
-      <span>Fast bonus</span>
-      <div className="h-2.5 flex-1 overflow-hidden rounded-full border-2 border-foreground/80 bg-background">
+    <div aria-hidden className="flex items-center gap-1.5 opacity-40">
+      <Zap className="size-3 text-muted-foreground" />
+      <div className="h-1 flex-1 overflow-hidden rounded-full bg-foreground/10">
         <div
-          className="h-full origin-left animate-drain rounded-full bg-rocket"
+          className="h-full origin-left animate-drain rounded-full bg-muted-foreground"
           style={{ 'animationDuration': duration, '--drain-ms': duration } as CSSProperties}
         />
       </div>
