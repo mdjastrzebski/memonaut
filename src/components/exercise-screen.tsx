@@ -1,5 +1,6 @@
-import { useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 
+import { SpecialCharacters } from '@/components/special-characters';
 import { CardStats, RatingPreview, StateBadge } from '@/components/srs-stats';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +15,9 @@ interface ExerciseScreenProps {
   session: Session;
   onReview: (review: { input: string; correct: boolean; rating: Grade; now: Date }) => void;
   onEnd: () => void;
+  specialCharacters?: string[];
+  showSpecialCharacters: boolean;
+  onToggleSpecialCharacters: () => void;
 }
 
 interface Checked {
@@ -21,10 +25,27 @@ interface Checked {
   at: Date;
 }
 
-export function ExerciseScreen({ session, onReview, onEnd }: ExerciseScreenProps) {
+export function ExerciseScreen({
+  session,
+  onReview,
+  onEnd,
+  specialCharacters = [],
+  showSpecialCharacters,
+  onToggleSpecialCharacters,
+}: ExerciseScreenProps) {
   const [shownAt] = useState(() => new Date());
   const [input, setInput] = useState('');
   const [checked, setChecked] = useState<Checked | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const pendingCaret = useRef<number | null>(null);
+
+  // Restore the caret after inserting a special character.
+  useLayoutEffect(() => {
+    if (pendingCaret.current !== null) {
+      inputRef.current?.setSelectionRange(pendingCaret.current, pendingCaret.current);
+      pendingCaret.current = null;
+    }
+  }, [input]);
 
   const card = getCurrentCard(session);
   if (!card) return null;
@@ -53,6 +74,15 @@ export function ExerciseScreen({ session, onReview, onEnd }: ExerciseScreenProps
     }
   };
 
+  const insertCharacter = (character: string) => {
+    const element = inputRef.current;
+    const start = element?.selectionStart ?? input.length;
+    const end = element?.selectionEnd ?? input.length;
+    pendingCaret.current = start + character.length;
+    setInput(input.slice(0, start) + character + input.slice(end));
+    element?.focus();
+  };
+
   const handleKeyDown = (event: KeyboardEvent) => {
     if (!checked) return;
     const grade = Number(event.key) as Grade;
@@ -76,6 +106,7 @@ export function ExerciseScreen({ session, onReview, onEnd }: ExerciseScreenProps
           <form onSubmit={handleSubmit} className="mx-auto flex max-w-md flex-col gap-4">
             <div className="flex gap-2">
               <Input
+                ref={inputRef}
                 autoFocus
                 aria-label="Answer"
                 autoComplete="off"
@@ -91,12 +122,30 @@ export function ExerciseScreen({ session, onReview, onEnd }: ExerciseScreenProps
                   checked?.correct === false && 'border-destructive',
                 )}
               />
+              {!checked && specialCharacters.length > 0 && (
+                <Button
+                  type="button"
+                  variant={showSpecialCharacters ? 'secondary' : 'outline'}
+                  size="lg"
+                  className="h-12"
+                  aria-label="Show special characters"
+                  aria-pressed={showSpecialCharacters}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={onToggleSpecialCharacters}
+                >
+                  äöü
+                </Button>
+              )}
               {!checked && (
                 <Button type="submit" size="lg" className="h-12 px-5">
                   Check
                 </Button>
               )}
             </div>
+
+            {!checked && showSpecialCharacters && specialCharacters.length > 0 && (
+              <SpecialCharacters characters={specialCharacters} onInsert={insertCharacter} />
+            )}
 
             {checked && (
               <>

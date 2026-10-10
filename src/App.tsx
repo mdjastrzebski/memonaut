@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import { ExerciseScreen } from '@/components/exercise-screen';
 import { SummaryScreen } from '@/components/summary-screen';
-import { germanNumberConcepts, germanNumbersDeck } from '@/data/german-numbers';
+import { german, germanNumberConcepts, germanNumbersDeck } from '@/data/german-numbers';
 import { createSession, getCurrentCard, submitReview } from '@/session/session';
 
 function startSession() {
@@ -12,6 +12,7 @@ function startSession() {
 export default function App() {
   const [session, setSession] = useState(startSession);
   const [ended, setEnded] = useState(false);
+  const [showSpecialCharacters, setShowSpecialCharacters] = useState(false);
 
   const finished = ended || !getCurrentCard(session);
 
@@ -38,6 +39,9 @@ export default function App() {
           session={session}
           onReview={(review) => setSession((current) => submitReview(current, review))}
           onEnd={() => setEnded(true)}
+          specialCharacters={german.specialCharacters}
+          showSpecialCharacters={showSpecialCharacters}
+          onToggleSpecialCharacters={() => setShowSpecialCharacters((show) => !show)}
         />
       )}
     </main>

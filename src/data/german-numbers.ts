@@ -1,6 +1,10 @@
 import type { Concept, Deck, Subject } from '@/domain/types';
 
-export const german: Subject = { id: 'german', name: 'German' };
+export const german: Subject = {
+  id: 'german',
+  name: 'German',
+  specialCharacters: ['ä', 'ö', 'ü', 'ß', 'Ä', 'Ö', 'Ü', 'ẞ'],
+};
 
 const numbers: [hint: string, prompt: string, answer: string][] = [
   ['0', 'zero', 'null'],

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, test } from 'vitest';
 
@@ -44,4 +44,22 @@ test('ending the session shows results', async () => {
   await user.click(screen.getByRole('button', { name: 'End session' }));
   expect(screen.getByText(/Session results/)).toBeInTheDocument();
   expect(screen.getByText('Review log')).toBeInTheDocument();
+});
+
+test('special characters keyboard inserts at the caret', async () => {
+  const user = userEvent.setup();
+  render(<App />);
+
+  expect(screen.queryByRole('group', { name: 'Special characters' })).not.toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: 'Show special characters' }));
+  const keyboard = screen.getByRole('group', { name: 'Special characters' });
+
+  const input = screen.getByRole('textbox', { name: 'Answer' });
+  await user.type(input, 'fnf');
+  await user.keyboard('{ArrowLeft}{ArrowLeft}');
+  await user.click(within(keyboard).getByRole('button', { name: 'ü' }));
+  await user.keyboard('x');
+
+  expect(input).toHaveValue('füxnf');
+  expect(input).toHaveFocus();
 });

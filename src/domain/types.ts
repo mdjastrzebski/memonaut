@@ -4,6 +4,8 @@ import type { Card as FsrsCard, Grade, ReviewLog } from 'ts-fsrs';
 export interface Subject {
   id: string;
   name: string;
+  /** Characters offered on the on-screen keyboard, e.g. German umlauts. */
+  specialCharacters?: string[];
 }
 
 export type DeckKind = 'unit' | 'core';
