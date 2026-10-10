@@ -18,6 +18,9 @@ const buttonVariants = cva(
         destructive:
           'bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40',
         link: 'text-primary underline-offset-4 hover:underline',
+        cta: 'border-2 border-foreground bg-rocket font-display font-bold text-foreground shadow-sticker hover:-translate-y-px hover:bg-[color-mix(in_oklch,var(--color-rocket),white_12%)] active:not-aria-[haspopup]:translate-y-[3px] active:shadow-sticker-sm',
+        sticker:
+          'border-2 border-foreground bg-card text-foreground shadow-sticker-sm hover:-translate-y-px hover:bg-secondary active:not-aria-[haspopup]:translate-y-[2px] active:shadow-none aria-pressed:bg-almost',
       },
       size: {
         'default':

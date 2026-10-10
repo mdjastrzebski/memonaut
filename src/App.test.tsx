@@ -6,7 +6,7 @@ import App from './App';
 import { germanNumberConcepts } from './data/german-numbers';
 
 function currentConcept() {
-  const prompt = screen.getByText('Type in German').nextElementSibling?.textContent;
+  const prompt = screen.getByRole('heading', { level: 2 }).textContent;
   return germanNumberConcepts.find((concept) => concept.prompt === prompt)!;
 }
 
@@ -14,7 +14,7 @@ test('rates a fast exact answer as Easy and continues on Enter', async () => {
   const user = userEvent.setup();
   render(<App />);
 
-  expect(screen.getByText('Reviews: 0')).toBeInTheDocument();
+  expect(screen.getByText(/0 answers/)).toBeInTheDocument();
 
   const input = screen.getByRole('textbox', { name: 'Answer' });
   await user.type(input, `${currentConcept().answer}{Enter}`);
@@ -22,7 +22,7 @@ test('rates a fast exact answer as Easy and continues on Enter', async () => {
   expect(screen.getByRole('status')).toHaveTextContent('Rated Easy');
 
   await user.keyboard('{Enter}');
-  expect(screen.getByText('Reviews: 1')).toBeInTheDocument();
+  expect(screen.getByText(/1 answer$/)).toBeInTheDocument();
 });
 
 test('rates an answer with wrong capitalization as Hard', async () => {
@@ -70,17 +70,24 @@ test('SRS details start collapsed and stay expanded across exercises', async () 
   await user.type(input, 'falsch{Enter}');
   await user.keyboard('{Enter}');
 
-  expect(screen.getByText('Reviews: 1')).toBeInTheDocument();
+  expect(screen.getByText(/1 answer$/)).toBeInTheDocument();
   expect(toggle()).toHaveAttribute('aria-expanded', 'true');
   expect(screen.getByText('Rating preview')).toBeInTheDocument();
 });
 
-test('ending the session shows results', async () => {
+test('ending the session shows results with SRS details collapsed', async () => {
   const user = userEvent.setup();
   render(<App />);
 
+  await user.type(screen.getByRole('textbox', { name: 'Answer' }), 'falsch{Enter}');
+  await user.keyboard('{Enter}');
   await user.click(screen.getByRole('button', { name: 'End session' }));
+
   expect(screen.getByText(/Session results/)).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Keep practising' })).toBeInTheDocument();
+  expect(screen.queryByText('Review log')).not.toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: 'SRS details' }));
   expect(screen.getByText('Review log')).toBeInTheDocument();
 });
 

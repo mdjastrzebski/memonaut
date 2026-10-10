@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react';
+import { ChevronDown, Telescope } from 'lucide-react';
+import { useId, type ReactNode } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import {
@@ -22,6 +23,46 @@ import {
   type FsrsCard,
   type Grade,
 } from '@/srs/scheduler';
+
+interface SrsDetailsProps {
+  open: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}
+
+/** Collapsible panel with the scheduler's view, for the curious. */
+export function SrsDetails({ open, onToggle, children }: SrsDetailsProps) {
+  const contentId = useId();
+  return (
+    <section
+      aria-label="SRS details"
+      className="rounded-2xl border-2 border-dashed border-foreground/25 bg-card/60 text-xs text-muted-foreground backdrop-blur-sm"
+    >
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={contentId}
+        // Keep focus in the answer input so Enter still checks and continues.
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={onToggle}
+        className="flex w-full items-center gap-2 rounded-2xl px-4 py-3 text-left font-medium hover:text-foreground"
+      >
+        <Telescope className="size-4" />
+        <span className="font-display text-sm">SRS details</span>
+        <span aria-hidden className="hidden sm:inline">
+          · how the scheduler sees your cards
+        </span>
+        <ChevronDown className={cn('ml-auto size-4 transition-transform', !open && '-rotate-90')} />
+      </button>
+
+      {open && (
+        <div id={contentId} className="flex animate-rise flex-col gap-5 px-4 pb-4">
+          {children}
+        </div>
+      )}
+    </section>
+  );
+}
 
 export function StateBadge({ state }: { state: State }) {
   const variant =

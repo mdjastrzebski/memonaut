@@ -17,8 +17,8 @@ export function SpecialCharacters({ characters, onInsert }: SpecialCharactersPro
         <Button
           key={character}
           type="button"
-          variant="outline"
-          className="size-10 text-lg"
+          variant="sticker"
+          className="size-11 rounded-xl font-display text-lg"
           // Keep focus (and the caret) in the answer input.
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => onInsert(character)}

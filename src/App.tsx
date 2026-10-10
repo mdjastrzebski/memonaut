@@ -21,11 +21,14 @@ export default function App() {
   return (
     <TooltipProvider>
       <main className="mx-auto flex min-h-svh max-w-6xl flex-col gap-6 p-4 sm:p-6">
-        <header>
-          <h1 className="text-2xl font-bold tracking-tight">Memonaut</h1>
-          <p className="text-sm text-muted-foreground">
-            Demo session · nothing is saved, reloading starts over.
-          </p>
+        <header className="flex items-center gap-3">
+          <Logo />
+          <div>
+            <h1 className="font-display text-2xl font-extrabold tracking-tight">Memonaut</h1>
+            <p className="text-xs text-muted-foreground">
+              Demo session · nothing is saved, reloading starts over.
+            </p>
+          </div>
         </header>
 
         {finished ? (
@@ -35,6 +38,8 @@ export default function App() {
               setSession(startSession());
               setEnded(false);
             }}
+            showSrsDetails={showSrsDetails}
+            onToggleSrsDetails={() => setShowSrsDetails((show) => !show)}
           />
         ) : (
           <ExerciseScreen
@@ -51,5 +56,28 @@ export default function App() {
         )}
       </main>
     </TooltipProvider>
+  );
+}
+
+/** A ringed planet with a moon in orbit. */
+function Logo() {
+  return (
+    <svg viewBox="0 0 48 48" className="size-11 shrink-0" aria-hidden>
+      <g className="origin-center animate-orbit">
+        <circle cx="24" cy="4" r="3.5" className="fill-almost stroke-foreground" strokeWidth="2" />
+      </g>
+      <circle cx="24" cy="24" r="12" className="fill-rocket stroke-foreground" strokeWidth="2.5" />
+      <ellipse
+        cx="24"
+        cy="24"
+        rx="20"
+        ry="6"
+        transform="rotate(-20 24 24)"
+        fill="none"
+        className="stroke-foreground"
+        strokeWidth="2.5"
+        strokeDasharray="40 8"
+      />
+    </svg>
   );
 }

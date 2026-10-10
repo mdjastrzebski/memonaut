@@ -1,0 +1,44 @@
+import { Rating, State, type Grade } from '@/srs/scheduler';
+
+/** How each rating looks to the learner. */
+export const GRADE_STYLES: Record<
+  Grade,
+  { mark: string; text: string; fill: string; tint: string; border: string }
+> = {
+  [Rating.Again]: {
+    mark: '✗',
+    text: 'text-wrong-ink',
+    fill: 'bg-wrong',
+    tint: 'bg-wrong/15',
+    border: 'border-wrong',
+  },
+  [Rating.Hard]: {
+    mark: '≈',
+    text: 'text-almost-ink',
+    fill: 'bg-almost',
+    tint: 'bg-almost/25',
+    border: 'border-almost',
+  },
+  [Rating.Good]: {
+    mark: '✓',
+    text: 'text-correct-ink',
+    fill: 'bg-correct',
+    tint: 'bg-correct/20',
+    border: 'border-correct',
+  },
+  [Rating.Easy]: {
+    mark: '✓',
+    text: 'text-correct-ink',
+    fill: 'bg-correct',
+    tint: 'bg-correct/20',
+    border: 'border-correct',
+  },
+};
+
+export type Progress = 'new' | 'learning' | 'learned';
+
+/** The learner-facing view of an FSRS state. */
+export function getProgress(state: State): Progress {
+  if (state === State.New) return 'new';
+  return state === State.Review ? 'learned' : 'learning';
+}
