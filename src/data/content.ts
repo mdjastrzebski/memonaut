@@ -18,17 +18,20 @@ const conceptSchema = z.strictObject({
   local: z.string().min(1),
   foreign: z.string().min(1),
   hint: z.string().optional(),
+  /** Puts the Concept in the Subject's core Deck. */
+  core: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
 });
 
 const deckSchema = z.strictObject({
   id,
-  kind: z.enum(['unit', 'core']),
   name: z.string(),
-  /** Concepts this Deck introduces. */
-  concepts: z.array(conceptSchema).default([]),
-  /** Ids of Concepts introduced by other Decks of the same Subject. */
-  include: z.array(id).default([]),
+  concepts: z.array(conceptSchema),
 });
+
+const CORE_DECK = { id: 'core', name: 'Essentials' };
 
 export interface Content {
   subjects: Subject[];
@@ -38,7 +41,10 @@ export interface Content {
 
 /**
  * Builds Subjects, Decks and Concepts from YAML sources keyed by path:
- * `./<subject>/subject.yaml` and `./<subject>/decks/<deck>.yaml`.
+ * `./<subject>/subject.yaml` and `./<subject>/decks/<deck>.yaml`, each a unit Deck.
+ *
+ * A Concept may appear in several units, defined the same way in each. Concepts marked `core` in
+ * any unit make up the Subject's core Deck, in the order they first appear.
  *
  * Ids in the files are unique within a Subject; the built ids are prefixed with the Subject id,
  * e.g. `german/number-3`.
@@ -58,45 +64,55 @@ export function buildContent(files: Record<string, string>): Content {
     }
     content.subjects.push(subject);
 
+    const prefix = (conceptId: string) => `${subject.id}/${conceptId}`;
     const deckPaths = Object.keys(files).filter((path) => path.startsWith(`./${dir}/decks/`));
-    const decks = deckPaths.map((path) => ({ path, deck: read(path, files[path], deckSchema) }));
-    const conceptIds = new Set<string>();
-    const deckIds = new Set<string>();
+    const concepts = new Map<string, Concept>();
+    const deckIds = new Set<string>([CORE_DECK.id]);
+    const coreIds = new Set<string>();
 
-    for (const { path, deck } of decks) {
+    for (const path of deckPaths) {
+      const deck = read(path, files[path], deckSchema);
       checkUnique(deckIds, deck.id, `${path}: duplicate deck id`);
-      for (const concept of deck.concepts) {
-        checkUnique(conceptIds, concept.id, `${path}: duplicate concept id`);
-        content.concepts.push({
-          ...concept,
-          id: `${subject.id}/${concept.id}`,
-          subjectId: subject.id,
-        });
-      }
-    }
-
-    for (const { path, deck } of decks) {
-      for (const included of deck.include) {
-        if (!conceptIds.has(included)) {
-          throw new Error(`${path}: included concept "${included}" is not defined in any deck`);
+      const listed = new Set<string>();
+      for (const { core, ...fields } of deck.concepts) {
+        checkUnique(listed, fields.id, `${path}: concept listed twice`);
+        const concept = { ...fields, id: prefix(fields.id), subjectId: subject.id };
+        const existing = concepts.get(fields.id);
+        if (!existing) {
+          concepts.set(fields.id, concept);
+        } else if (!isSameConcept(existing, concept)) {
+          throw new Error(`${path}: concept "${fields.id}" is defined differently in another deck`);
+        }
+        if (core) {
+          coreIds.add(fields.id);
         }
       }
-      const ids = [...deck.concepts.map((concept) => concept.id), ...deck.include];
-      const listed = new Set<string>();
-      for (const conceptId of ids) {
-        checkUnique(listed, conceptId, `${path}: concept listed twice`);
-      }
       content.decks.push({
-        id: `${subject.id}/${deck.id}`,
+        id: prefix(deck.id),
         subjectId: subject.id,
-        kind: deck.kind,
+        kind: 'unit',
         name: deck.name,
-        conceptIds: ids.map((conceptId) => `${subject.id}/${conceptId}`),
+        conceptIds: deck.concepts.map((concept) => prefix(concept.id)),
+      });
+    }
+
+    content.concepts.push(...concepts.values());
+    if (coreIds.size > 0) {
+      content.decks.push({
+        id: prefix(CORE_DECK.id),
+        subjectId: subject.id,
+        kind: 'core',
+        name: CORE_DECK.name,
+        conceptIds: [...coreIds].map(prefix),
       });
     }
   }
 
   return content;
+}
+
+function isSameConcept(a: Concept, b: Concept): boolean {
+  return a.local === b.local && a.foreign === b.foreign && a.hint === b.hint;
 }
 
 function read<T>(path: string, source: string, schema: z.ZodType<T>): T {

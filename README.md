@@ -50,18 +50,16 @@ Learning content lives in YAML files under `src/data/`, one folder per Subject. 
 ```yaml
 # src/data/german/decks/numbers-0-10.yaml
 id: numbers-0-10
-kind: unit
 name: Numbers 0–10
 concepts:
-  - { id: number-3, local: trzy, foreign: drei, hint: 3 }
+  - { id: number-3, local: trzy, foreign: drei, hint: 3, core: true }
 ```
 
-A Concept is defined once, in the Deck that introduces it. Other Decks of the same Subject, such as the core Deck, list it under `include: [number-3]`. Ids must stay the same once learners have progress, since learning state is keyed by them. Every value is read as a string, so `null` or `0` need no quotes.
+Each file under `decks/` is a unit Deck. A Concept can appear in several units of the same Subject, but must be defined the same way in each. The Subject's core Deck is built from every Concept marked `core: true` in at least one unit, listed once, in the order they first appear. Ids must stay the same once learners have progress, since learning state is keyed by them. Every value is read as a string, so `null` or `0` need no quotes.
 
 ## Open questions
 
 - Can a Concept exist in no Deck at all, e.g. after its unit is removed, while keeping its review history?
-- Is there exactly one core Deck per Subject, or can there be several?
 - Where is data stored: only in the browser, or synced through a backend?
 
 ## Development
