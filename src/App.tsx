@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
+import { AppMenu } from '@/components/app-menu';
 import { ExerciseScreen } from '@/components/exercise-screen';
-import { SessionMenu } from '@/components/session-menu';
 import { SessionProgress } from '@/components/session-progress';
 import { loadSetupChoice, saveSetupChoice, type SessionSize } from '@/components/setup-choice';
 import { SetupScreen } from '@/components/setup-screen';
@@ -107,7 +107,7 @@ export default function App() {
           {exercising && session && <SessionProgress session={session} />}
           <div className="ml-auto flex items-center gap-2">
             <ThemeToggle />
-            {exercising && <SessionMenu onEnd={() => setEnded(true)} />}
+            <AppMenu onEnd={exercising ? () => setEnded(true) : undefined} />
           </div>
         </header>
 

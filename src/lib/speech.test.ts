@@ -1,6 +1,13 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
-import { HINT_DELAY_MS, speak, stopHint } from './speech';
+import {
+  getVoiceStatus,
+  HINT_DELAY_MS,
+  removeElevenLabsKey,
+  saveElevenLabsKey,
+  speak,
+  stopHint,
+} from './speech';
 
 interface FakeUtterance {
   text: string;
@@ -9,6 +16,8 @@ interface FakeUtterance {
 
 const queue: FakeUtterance[] = [];
 const spoken: string[] = [];
+const played: { src: string; onended: (() => void) | null }[] = [];
+const fetchMock = vi.fn<typeof fetch>();
 
 /** Finishes reading the first word in the queue. */
 function finishReading() {
@@ -18,6 +27,8 @@ function finishReading() {
 beforeEach(() => {
   queue.length = 0;
   spoken.length = 0;
+  played.length = 0;
+  fetchMock.mockReset();
   vi.stubGlobal(
     'SpeechSynthesisUtterance',
     class {
@@ -38,13 +49,37 @@ beforeEach(() => {
       spoken.push(utterance.text);
     },
   });
+  vi.stubGlobal(
+    'Audio',
+    class {
+      onended: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      src: string;
+      constructor(src: string) {
+        this.src = src;
+      }
+      play() {
+        played.push(this);
+        return Promise.resolve();
+      }
+      pause() {}
+    },
+  );
+  vi.stubGlobal('fetch', fetchMock);
+  URL.createObjectURL = () => `blob:audio-${fetchMock.mock.calls.length}`;
+  vi.spyOn(console, 'warn').mockImplementation(() => {});
 });
 
 afterEach(() => {
   stopHint();
   vi.useRealTimers();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
+
+function audioResponse() {
+  return new Response('audio', { headers: { 'Content-Type': 'audio/mpeg' } });
+}
 
 test('does not queue a word again while it is still being read', () => {
   speak('drei', 'de-DE');
@@ -95,4 +130,87 @@ test('skips the hint once another word is queued or the hint is stopped', () => 
   stopHint();
   vi.runAllTimers();
   expect(spoken).toEqual(['morze']);
+});
+
+test('uses the browser voice until an ElevenLabs key is saved', () => {
+  expect(getVoiceStatus()).toBe('off');
+  saveElevenLabsKey('  key-1  ');
+  expect(getVoiceStatus()).toBe('on');
+  removeElevenLabsKey();
+  expect(getVoiceStatus()).toBe('off');
+});
+
+test('reads words with ElevenLabs in the German voice and reuses the audio', async () => {
+  saveElevenLabsKey('key-2');
+  fetchMock.mockResolvedValue(audioResponse());
+
+  speak('Hund', 'de-DE');
+  await vi.waitFor(() => expect(played).toHaveLength(1));
+
+  const [url, init] = fetchMock.mock.calls[0];
+  expect(url).toBe('https://api.elevenlabs.io/v1/text-to-speech/TX3LPaxmHKxFdv7VOQHJ');
+  expect(init?.headers).toMatchObject({ 'xi-api-key': 'key-2' });
+  expect(JSON.parse(init?.body as string)).toMatchObject({
+    text: 'Hund',
+    language_code: 'de',
+    previous_text: 'Das nächste Wort ist auf Deutsch.',
+  });
+
+  // A replay while the word is still playing is ignored, one after it reuses the audio.
+  speak('Hund', 'de-DE');
+  played[0].onended?.();
+  speak('Hund', 'de-DE');
+  await vi.waitFor(() => expect(played).toHaveLength(2));
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+  expect(spoken).toEqual([]);
+});
+
+test('falls back to the browser voice when ElevenLabs is unreachable', async () => {
+  saveElevenLabsKey('key-3');
+  fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
+
+  speak('Katze', 'de-DE');
+  await vi.waitFor(() => expect(spoken).toEqual(['Katze']));
+  expect(getVoiceStatus()).toBe('on');
+});
+
+test('pauses ElevenLabs when the key is rejected, until a key is saved again', async () => {
+  saveElevenLabsKey('key-4');
+  fetchMock.mockResolvedValue(new Response('Unauthorized', { status: 401 }));
+
+  speak('Maus', 'de-DE');
+  await vi.waitFor(() => expect(spoken).toEqual(['Maus']));
+  expect(getVoiceStatus()).toBe('paused');
+
+  speak('Vogel', 'de-DE');
+  expect(spoken).toEqual(['Maus', 'Vogel']);
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+
+  saveElevenLabsKey('key-4');
+  expect(getVoiceStatus()).toBe('on');
+});
+
+test('pauses ElevenLabs when the credits run out', async () => {
+  saveElevenLabsKey('key-5');
+  fetchMock.mockResolvedValue(
+    new Response('{"detail":{"status":"quota_exceeded"}}', { status: 400 }),
+  );
+
+  speak('Fisch', 'de-DE');
+  await vi.waitFor(() => expect(getVoiceStatus()).toBe('paused'));
+});
+
+test('reads the hint with ElevenLabs too, a moment after the word', async () => {
+  saveElevenLabsKey('key-7');
+  fetchMock.mockImplementation(async () => audioResponse());
+
+  speak('morze', 'pl-PL', 'zbiornik słonej wody');
+  await vi.waitFor(() => expect(played).toHaveLength(1));
+  played[0].onended?.();
+
+  await vi.waitFor(() => expect(played).toHaveLength(2), { timeout: HINT_DELAY_MS + 1000 });
+  expect(JSON.parse(fetchMock.mock.calls[1][1]?.body as string)).toMatchObject({
+    text: 'zbiornik słonej wody',
+  });
+  expect(spoken).toEqual([]);
 });
