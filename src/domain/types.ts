@@ -61,8 +61,9 @@ export interface Concept {
    */
   spokenHint?: string;
   /**
-   * Optional name of a set of like Concepts within the Subject, e.g. "weekday" or "month". In
-   * multiple choice, the others of its group are offered first as wrong options.
+   * Optional name of a set of like Concepts within the Subject, e.g. "weekday", or "number/small"
+   * within the wider "number". In multiple choice, the others of its group are offered first as
+   * wrong options, then those of each wider group.
    */
   group?: string;
 }

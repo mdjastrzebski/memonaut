@@ -31,10 +31,17 @@ interface PickChoicesOptions {
   random?: () => number;
 }
 
+/** A group and the wider groups it's in, narrowest first, e.g. "number/small", then "number". */
+function getGroupTiers(group: string | undefined): string[] {
+  const parts = group?.split('/') ?? [];
+  return parts.map((_, index) => parts.slice(0, parts.length - index).join('/'));
+}
+
 /**
  * The options for a multiple-choice exercise, in random order: the answer's word on `side`, and
  * the same word of other Concepts as wrong options. Those of the answer's group come first, e.g.
- * other days for "Monday", then the rest; each from the Deck first, then the Subject.
+ * other days for "Monday", then those of each wider group, e.g. any "number/…" for one in
+ * "number/small", then the rest; each from the Deck first, then the Subject.
  *
  * A Concept sharing the answer's local or foreign word is left out, as it would be right too, e.g.
  * "big" and "large" both for "duży".
@@ -56,11 +63,13 @@ export function pickChoices(
     key(concept.local) !== key(answer.local) &&
     key(concept.foreign) !== key(answer.foreign);
 
-  const inGroup = (concept: Concept) =>
-    answer.group !== undefined && concept.group === answer.group;
+  const inGroup = (group: string) => (concept: Concept) =>
+    concept.group === group || concept.group?.startsWith(`${group}/`) === true;
   const candidates = [
-    deckConcepts.filter(inGroup),
-    subjectConcepts.filter(inGroup),
+    ...getGroupTiers(answer.group).flatMap((group) => [
+      deckConcepts.filter(inGroup(group)),
+      subjectConcepts.filter(inGroup(group)),
+    ]),
     deckConcepts,
     subjectConcepts,
   ].flatMap((concepts) => shuffle(concepts, random));

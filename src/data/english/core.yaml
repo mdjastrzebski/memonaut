@@ -26,41 +26,41 @@ concepts:
   - { id: no, local: nie, foreign: no }
   - { id: how-are-you, local: jak się masz?, foreign: how are you? }
   - { id: whats-your-name, local: jak masz na imię?, foreign: what's your name? }
-  - { id: number-0, local: zero, foreign: zero, hint: 0, group: number-small }
-  - { id: number-1, local: jeden, foreign: one, hint: 1, group: number-small }
-  - { id: number-2, local: dwa, foreign: two, hint: 2, group: number-small }
-  - { id: number-3, local: trzy, foreign: three, hint: 3, group: number-small }
-  - { id: number-4, local: cztery, foreign: four, hint: 4, group: number-small }
-  - { id: number-5, local: pięć, foreign: five, hint: 5, group: number-small }
-  - { id: number-6, local: sześć, foreign: six, hint: 6, group: number-small }
-  - { id: number-7, local: siedem, foreign: seven, hint: 7, group: number-small }
-  - { id: number-8, local: osiem, foreign: eight, hint: 8, group: number-small }
-  - { id: number-9, local: dziewięć, foreign: nine, hint: 9, group: number-small }
-  - { id: number-10, local: dziesięć, foreign: ten, hint: 10, group: number-small }
-  - { id: number-11, local: jedenaście, foreign: eleven, hint: 11, group: number-teens }
-  - { id: number-12, local: dwanaście, foreign: twelve, hint: 12, group: number-teens }
-  - { id: number-13, local: trzynaście, foreign: thirteen, hint: 13, group: number-teens }
-  - { id: number-14, local: czternaście, foreign: fourteen, hint: 14, group: number-teens }
-  - { id: number-15, local: piętnaście, foreign: fifteen, hint: 15, group: number-teens }
-  - { id: number-16, local: szesnaście, foreign: sixteen, hint: 16, group: number-teens }
-  - { id: number-17, local: siedemnaście, foreign: seventeen, hint: 17, group: number-teens }
-  - { id: number-18, local: osiemnaście, foreign: eighteen, hint: 18, group: number-teens }
-  - { id: number-19, local: dziewiętnaście, foreign: nineteen, hint: 19, group: number-teens }
-  - { id: number-20, local: dwadzieścia, foreign: twenty, hint: 20, group: number-teens }
-  - { id: number-30, local: trzydzieści, foreign: thirty, hint: 30, group: number-10x }
-  - { id: number-40, local: czterdzieści, foreign: forty, hint: 40, group: number-10x }
-  - { id: number-50, local: pięćdziesiąt, foreign: fifty, hint: 50, group: number-10x }
-  - { id: number-60, local: sześćdziesiąt, foreign: sixty, hint: 60, group: number-10x }
-  - { id: number-70, local: siedemdziesiąt, foreign: seventy, hint: 70, group: number-10x }
-  - { id: number-80, local: osiemdziesiąt, foreign: eighty, hint: 80, group: number-10x }
-  - { id: number-90, local: dziewięćdziesiąt, foreign: ninety, hint: 90, group: number-10x }
-  - { id: number-100, local: sto, foreign: one hundred, hint: 100, group: number-10x }
-  - { id: number-1000, local: tysiąc, foreign: one thousand, hint: 1000, group: number-large }
-  - { id: number-2000, local: dwa tysiące, foreign: two thousand, hint: 2000, group: number-large }
+  - { id: number-0, local: zero, foreign: zero, hint: 0, group: number/small }
+  - { id: number-1, local: jeden, foreign: one, hint: 1, group: number/small }
+  - { id: number-2, local: dwa, foreign: two, hint: 2, group: number/small }
+  - { id: number-3, local: trzy, foreign: three, hint: 3, group: number/small }
+  - { id: number-4, local: cztery, foreign: four, hint: 4, group: number/small }
+  - { id: number-5, local: pięć, foreign: five, hint: 5, group: number/small }
+  - { id: number-6, local: sześć, foreign: six, hint: 6, group: number/small }
+  - { id: number-7, local: siedem, foreign: seven, hint: 7, group: number/small }
+  - { id: number-8, local: osiem, foreign: eight, hint: 8, group: number/small }
+  - { id: number-9, local: dziewięć, foreign: nine, hint: 9, group: number/small }
+  - { id: number-10, local: dziesięć, foreign: ten, hint: 10, group: number/small }
+  - { id: number-11, local: jedenaście, foreign: eleven, hint: 11, group: number/teens }
+  - { id: number-12, local: dwanaście, foreign: twelve, hint: 12, group: number/teens }
+  - { id: number-13, local: trzynaście, foreign: thirteen, hint: 13, group: number/teens }
+  - { id: number-14, local: czternaście, foreign: fourteen, hint: 14, group: number/teens }
+  - { id: number-15, local: piętnaście, foreign: fifteen, hint: 15, group: number/teens }
+  - { id: number-16, local: szesnaście, foreign: sixteen, hint: 16, group: number/teens }
+  - { id: number-17, local: siedemnaście, foreign: seventeen, hint: 17, group: number/teens }
+  - { id: number-18, local: osiemnaście, foreign: eighteen, hint: 18, group: number/teens }
+  - { id: number-19, local: dziewiętnaście, foreign: nineteen, hint: 19, group: number/teens }
+  - { id: number-20, local: dwadzieścia, foreign: twenty, hint: 20, group: number/teens }
+  - { id: number-30, local: trzydzieści, foreign: thirty, hint: 30, group: number/10x }
+  - { id: number-40, local: czterdzieści, foreign: forty, hint: 40, group: number/10x }
+  - { id: number-50, local: pięćdziesiąt, foreign: fifty, hint: 50, group: number/10x }
+  - { id: number-60, local: sześćdziesiąt, foreign: sixty, hint: 60, group: number/10x }
+  - { id: number-70, local: siedemdziesiąt, foreign: seventy, hint: 70, group: number/10x }
+  - { id: number-80, local: osiemdziesiąt, foreign: eighty, hint: 80, group: number/10x }
+  - { id: number-90, local: dziewięćdziesiąt, foreign: ninety, hint: 90, group: number/10x }
+  - { id: number-100, local: sto, foreign: one hundred, hint: 100, group: number/10x }
+  - { id: number-1000, local: tysiąc, foreign: one thousand, hint: 1000, group: number/large }
+  - { id: number-2000, local: dwa tysiące, foreign: two thousand, hint: 2000, group: number/large }
   - {
       id: number-1000000,
       local: milion,
       foreign: one million,
       hint: 1 000 000,
-      group: number-large,
+      group: number/large,
     }

@@ -82,6 +82,33 @@ test('offers others of the group first, from the subject too, then fills up from
   expect(options).toContain('Sunday');
 });
 
+test('fills up from the wider group before the rest of the deck', () => {
+  const number = (id: string, group: string) => ({ ...concept(id, id, id), group });
+  const one = number('one', 'number/small');
+  const two = number('two', 'number/small');
+  const twelve = number('twelve', 'number/teens');
+  const thirty = number('thirty', 'number/tens/round');
+  const options = pickChoices(one, {
+    side: 'foreign',
+    deckConcepts: [one, two, hund, zwei, drei, vier],
+    subjectConcepts: [twelve, thirty],
+  });
+  expect(options.toSorted()).toEqual(['one', 'thirty', 'twelve', 'two']);
+});
+
+test('a wider group is one followed by a slash, not any group starting the same', () => {
+  const one = { ...concept('one', 'jeden', 'one'), group: 'number/small' };
+  const dozen = { ...concept('dozen', 'tuzin', 'dozen'), group: 'numbers' };
+  const twelve = { ...concept('twelve', 'dwanaście', 'twelve'), group: 'number/teens' };
+  const options = pickChoices(one, {
+    side: 'foreign',
+    deckConcepts: [one, dozen],
+    subjectConcepts: [twelve],
+    count: 2,
+  });
+  expect(options.toSorted()).toEqual(['one', 'twelve']);
+});
+
 test('shuffles the options', () => {
   const pick = (random: () => number) =>
     pickChoices(eins, {

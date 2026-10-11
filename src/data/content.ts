@@ -6,6 +6,14 @@ import { EXERCISE_TYPES } from '@/session/session';
 
 const id = z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'Use lowercase letters, digits and dashes');
 
+/** Narrower groups follow a slash, e.g. "number/small" within "number". */
+const group = z
+  .string()
+  .regex(
+    /^[a-z0-9]+(-[a-z0-9]+)*(\/[a-z0-9]+(-[a-z0-9]+)*)*$/,
+    'Use lowercase letters, digits and dashes, with slashes between groups',
+  );
+
 /** Kept in order from easiest whatever the order listed. */
 const exerciseTypes = z
   .array(z.enum(EXERCISE_TYPES))
@@ -35,7 +43,7 @@ const conceptSchema = z.strictObject({
   hint: z.string().optional(),
   spokenHint: z.string().min(1).optional(),
   /** Groups like Concepts of the Subject, e.g. "weekday", for multiple choice. */
-  group: id.optional(),
+  group: group.optional(),
   /** Puts the Concept in the Subject's core Deck. */
   core: flag,
 });
