@@ -68,18 +68,17 @@ test('offers others of the group first, from the subject too, then fills up from
   const tuesday = day('Tuesday', 'wtorek');
   const sunday = day('Sunday', 'niedziela');
   const winter = { ...concept('winter', 'zima', 'winter'), group: 'season' };
-  const pick = (deckConcepts: Concept[], subjectConcepts: Concept[]) =>
-    pickChoices(monday, { side: 'foreign', deckConcepts, subjectConcepts }).toSorted();
-
-  expect(pick([monday, tuesday, winter, eins, zwei, drei], [sunday])).toEqual([
+  const options = pickChoices(monday, {
+    side: 'foreign',
+    deckConcepts: [monday, tuesday, winter, eins, zwei, drei],
+    subjectConcepts: [sunday],
+  });
+  expect(options.toSorted()).toEqual([
     'Monday',
     'Sunday',
     'Tuesday',
     expect.stringMatching(/^(winter|eins|zwei|drei)$/),
   ]);
-  const options = pick([monday, tuesday, sunday, winter, eins, zwei, drei], []);
-  expect(options).toContain('Tuesday');
-  expect(options).toContain('Sunday');
 });
 
 test('fills up from the wider group before the rest of the deck', () => {

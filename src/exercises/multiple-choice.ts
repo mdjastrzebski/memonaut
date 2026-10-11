@@ -31,10 +31,10 @@ interface PickChoicesOptions {
   random?: () => number;
 }
 
-/** A group and the wider groups it's in, narrowest first, e.g. "number/small", then "number". */
-function getGroupTiers(group: string | undefined): string[] {
+/** Prefixes of a group and of each wider one it's in, narrowest first: "number/small/", "number/". */
+function getGroupPrefixes(group: string | undefined): string[] {
   const parts = group?.split('/') ?? [];
-  return parts.map((_, index) => parts.slice(0, parts.length - index).join('/'));
+  return parts.map((_, index) => `${parts.slice(0, parts.length - index).join('/')}/`);
 }
 
 /**
@@ -63,12 +63,12 @@ export function pickChoices(
     key(concept.local) !== key(answer.local) &&
     key(concept.foreign) !== key(answer.foreign);
 
-  const inGroup = (group: string) => (concept: Concept) =>
-    concept.group === group || concept.group?.startsWith(`${group}/`) === true;
+  const inGroup = (prefix: string) => (concept: Concept) =>
+    `${concept.group ?? ''}/`.startsWith(prefix);
   const candidates = [
-    ...getGroupTiers(answer.group).flatMap((group) => [
-      deckConcepts.filter(inGroup(group)),
-      subjectConcepts.filter(inGroup(group)),
+    ...getGroupPrefixes(answer.group).flatMap((prefix) => [
+      deckConcepts.filter(inGroup(prefix)),
+      subjectConcepts.filter(inGroup(prefix)),
     ]),
     deckConcepts,
     subjectConcepts,
