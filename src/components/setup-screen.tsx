@@ -114,12 +114,7 @@ export function SetupScreen({
           </div>
         </ChoiceGroup>
 
-        <SessionSizePicker
-          value={sessionSize}
-          onChange={onSessionSizeChange}
-          wordCount={deck.conceptIds.length}
-          exerciseCount={deck.exerciseTypes.length}
-        />
+        <SessionSizePicker value={sessionSize} onChange={onSessionSizeChange} />
       </div>
 
       <DeckOverview
@@ -537,21 +532,16 @@ function describeCard(srs: FsrsCard | undefined, now: Date): string {
 interface SessionSizePickerProps {
   value: SessionSize;
   onChange: (size: SessionSize) => void;
-  /** Words in the selected set. */
-  wordCount: number;
-  /** Exercises per word. */
-  exerciseCount: number;
 }
 
-/** Segmented buttons for the most words to practise in one session. */
-function SessionSizePicker({ value, onChange, wordCount, exerciseCount }: SessionSizePickerProps) {
-  const words = Math.min(value ?? Infinity, wordCount);
+/** Segmented buttons for the most exercises to practise in one session. */
+function SessionSizePicker({ value, onChange }: SessionSizePickerProps) {
   return (
-    <ChoiceGroup legend="Words per session">
+    <ChoiceGroup legend="Exercises per session">
       <div className="grid max-w-md grid-cols-4 gap-1 rounded-2xl border-2 border-line bg-card p-1 shadow-sticker-sm">
         {SESSION_SIZES.map((size) => (
           <label
-            key={size ?? 'all'}
+            key={size}
             className="cursor-pointer rounded-xl py-2.5 text-center font-display font-bold transition-colors hover:bg-muted has-checked:bg-highlight has-checked:hover:bg-highlight has-focus-visible:ring-3 has-focus-visible:ring-ring/50"
           >
             <input
@@ -561,13 +551,10 @@ function SessionSizePicker({ value, onChange, wordCount, exerciseCount }: Sessio
               onChange={() => onChange(size)}
               className="sr-only"
             />
-            {size ?? 'No limit'}
+            {size}
           </label>
         ))}
       </div>
-      <p className="text-sm text-muted-foreground">
-        {plural(words, 'word')} · {words * exerciseCount} exercises
-      </p>
     </ChoiceGroup>
   );
 }

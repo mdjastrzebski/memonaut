@@ -49,7 +49,7 @@ export default function App() {
         deck,
         concepts: content.concepts,
         cards: allCards,
-        maxConcepts: sessionSize ?? undefined,
+        maxCards: sessionSize,
       }),
     );
     setEnded(false);

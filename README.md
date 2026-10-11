@@ -50,6 +50,18 @@ Exercise Types are ordered from easiest, and a session queues every Card of one 
 
 In multiple choice, the wrong options are other words of the Deck, or of the Subject when the Deck has too few. A word that would be right too, e.g. "large" for _duży_ when the answer is "big", is never offered. A right pick is rated Good and a wrong one Again, never Easy, since picking a word is easier than recalling it. Options can be picked with keys 1–4.
 
+A Concept unlocks Exercise Types one at a time, in its Deck's order: a new Concept starts with the first one, and the next one unlocks once the previous Card graduates to Review. Cards already started stay in play. A Concept practises one Exercise Type per study day where it can: once one of its Cards was reviewed today, its other Cards wait. A study day starts at 4 AM local time, like Anki's, so late-evening study counts as one day.
+
+A session holds up to a chosen number of Cards (10, 20, 50 or 100), filled in this order:
+
+1. due Cards, most overdue first; of a Concept's due Cards, the one most likely forgotten, the easier type on a tie
+2. the next unlocked Exercise Type of a started Concept, easiest type first, then in Deck order
+3. new Concepts, with their first Exercise Type, in Deck order; with `shuffleNew: true` (also settable in `core.yaml`) in random order instead
+4. Cards held back for today: due ones, then unlocked ones
+5. Cards not yet due, reviewed ahead, soonest due first
+
+"Due today" on the setup screen counts the words with a Card from steps 1 and 2 before the next study day starts.
+
 A Subject can practise only some Exercise Types, and a Deck only some of its Subject's. Polish spelling (ortografia) uses only `dictation`: its words have nothing to translate. The English and German core sets leave out multiple choice, which is for meeting words in units. In dictation, words that sound the same, such as _morze_ and _może_, are told apart by a spoken hint read aloud after the word, e.g. "zbiornik słonej wody".
 
 Words are read aloud by the browser's voice, which varies a lot by device. Optionally, a parent can add their own ElevenLabs API key under "TTS" in the menu. The key is kept in this browser only (`memonaut:elevenlabs-key`). Audio is cached for the page's lifetime and turned up to the loudness of browser voices, any failure falls back to the browser's voice, and a rejected key or running out of credits pauses ElevenLabs until a key is saved again.
@@ -84,7 +96,7 @@ concepts:
 
 `hint` is shown on screen in translation and translation choice only, since it could give the meaning away in the others; `spokenHint` is read aloud in dictation and must be in the language being learned. `local` may be left out only in a Subject with only `dictation`.
 
-Answers are rated automatically. By default an almost-correct answer (wrong capitalization, a missing umlaut or one letter off) is rated Hard. A Deck with `strictSpelling: true`, like the Polish spelling sets, forgives only wrong capitalization, so _zolw_ for _żółw_ or _może_ for _morze_ is wrong. For the core Deck, set it in `core.yaml`. A session brings back a started Concept only with its due Cards and fills the room left with new Concepts, introduced in Deck order; with `shuffleNew: true` (also settable in `core.yaml`) it picks them in random order instead. A Subject's `trickySpellings`, e.g. `[ó, u, rz, ż, ch, h]` for Polish, are marked in a right answer, to remind which spellings it got right.
+Answers are rated automatically. By default an almost-correct answer (wrong capitalization, a missing umlaut or one letter off) is rated Hard. A Deck with `strictSpelling: true`, like the Polish spelling sets, forgives only wrong capitalization, so _zolw_ for _żółw_ or _może_ for _morze_ is wrong. For the core Deck, set it in `core.yaml`. A Subject's `trickySpellings`, e.g. `[ó, u, rz, ż, ch, h]` for Polish, are marked in a right answer, to remind which spellings it got right.
 
 Each file under `decks/` is a unit Deck. A Concept can appear in several units of the same Subject, but must be defined the same way in each. The Subject's core Deck is built from the Concepts in an optional `core.yaml` next to `subject.yaml` (a `concepts:` list, without `core:` flags; it is not a unit, so it isn't offered on its own), followed by every Concept marked `core: true` in at least one unit, each listed once, in the order they first appear. Ids must stay the same once learners have progress, since learning state is keyed by them. Every value is read as a string, so `null` or `0` need no quotes.
 

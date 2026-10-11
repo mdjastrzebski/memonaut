@@ -1,12 +1,18 @@
 import { expect, test } from 'vitest';
 
-import type { Card, Concept, Deck } from '@/domain/types';
-import { Rating, reviewSrsCard, State, type Grade } from '@/srs/scheduler';
+import type { Card, Concept, Deck, ExerciseType } from '@/domain/types';
+import {
+  createSrsCard,
+  Rating,
+  reviewSrsCard,
+  State,
+  type FsrsCard,
+  type Grade,
+} from '@/srs/scheduler';
 
 import {
   countDueToday,
   createSession,
-  getConceptCards,
   getCurrentCard,
   getSessionProgress,
   submitReview,
@@ -36,15 +42,33 @@ function create() {
   });
 }
 
-test('creates one new card per concept and exercise type', () => {
+/** A Card answered Easy at `at`, so it graduated to Review, with any SRS state overridden. */
+function reviewed(id: string, at: Date, srs: Partial<FsrsCard> = {}): Card {
+  const [conceptId, exerciseType] = id.split(':') as [string, ExerciseType];
+  const { card } = reviewSrsCard(createSrsCard(at), Rating.Easy, at);
+  return { id, conceptId, exerciseType, srs: { ...card, ...srs } };
+}
+
+function byId(...cards: Card[]): Record<string, Card> {
+  return Object.fromEntries(cards.map((card) => [card.id, card]));
+}
+
+/** The ids of the Cards a session picks, grouped by Exercise Type. */
+function pick(cards: Record<string, Card>, now: Date, maxCards?: number, sessionDeck = deck) {
+  return Object.keys(createSession({ deck: sessionDeck, concepts, cards, maxCards, now }).cards);
+}
+
+const nextDay = (date: Date) => new Date(date.getTime() + 24 * 60 * 60_000);
+
+test('starts a new concept with its first exercise type only', () => {
   const session = createSession({ deck, concepts, now: start });
-  expect(Object.keys(session.cards)).toEqual([
-    'one:dictation',
-    'two:dictation',
-    'one:translation',
-    'two:translation',
-  ]);
+  expect(Object.keys(session.concepts)).toEqual(['one', 'two']);
+  expect(Object.keys(session.cards)).toEqual(['one:dictation', 'two:dictation']);
   expect(Object.values(session.cards).every((card) => card.srs.state === State.New)).toBe(true);
+});
+
+test('practises at most the given number of cards', () => {
+  expect(pick({}, start, 1)).toEqual(['one:dictation']);
 });
 
 test('keeps the review state of cards practised in an earlier session', () => {
@@ -59,83 +83,78 @@ test('keeps the review state of cards practised in an earlier session', () => {
 
   const session = createSession({ deck, concepts, cards: earlier.cards, now: minutes(30) });
   expect(session.cards[practised]).toBe(earlier.cards[practised]);
-  expect(session.cards['one:dictation'].srs.state).toBe(State.New);
 });
 
-test('practises at most the given number of concepts, with all their exercises', () => {
-  const session = createSession({ deck, concepts, maxConcepts: 1, now: start });
-  expect(Object.keys(session.concepts)).toEqual(['one']);
-  expect(session.queue.toSorted()).toEqual(['one:dictation', 'one:translation']);
-});
-
-test('picks half-practised concepts first, then new ones, then learned ones not yet due', () => {
-  const { cards } = createSession({ deck, concepts, now: start });
-  const practise = (id: string) => ({
-    ...cards[id],
-    srs: reviewSrsCard(cards[id].srs, Rating.Easy, start).card,
+test('unlocks the next exercise type once the previous card graduates', () => {
+  // Still learning: translation stays locked.
+  const learning = byId({
+    ...reviewed('one:dictation', start),
+    srs: reviewSrsCard(createSrsCard(start), Rating.Good, start).card,
   });
-  const pick = (practised: Record<string, Card>) =>
-    Object.keys(
-      createSession({ deck, concepts, cards: practised, maxConcepts: 1, now: minutes(30) })
-        .concepts,
-    );
+  expect(pick(learning, nextDay(start))).toEqual(['one:dictation', 'two:dictation']);
 
-  // "two" was heard but not yet translated; its one Card leaves room for the new "one".
-  expect(pick({ 'two:dictation': practise('two:dictation') })).toEqual(['two', 'one']);
-  // "two" is learned and not due for days, so the new "one" comes first.
-  expect(
-    pick({
-      'two:dictation': practise('two:dictation'),
-      'two:translation': practise('two:translation'),
-    }),
-  ).toEqual(['one']);
+  // Graduated: on the next day, translation comes before the new word.
+  const graduated = byId(reviewed('one:dictation', start));
+  expect(pick(graduated, nextDay(start), 1)).toEqual(['one:translation']);
 });
 
-test('practises only the due exercises of a started concept, filling the rest with new ones', () => {
-  const three: Concept = { id: 'three', subjectId: 'german', local: 'trzy', foreign: 'drei' };
-  const { cards } = createSession({ deck, concepts, now: start });
-  const reviewed = (id: string, due: Date): Card => ({
-    ...cards[id],
-    srs: { ...reviewSrsCard(cards[id].srs, Rating.Good, start).card, due },
-  });
-  const practised = Object.fromEntries(
-    [
-      // Only dictation is due.
-      reviewed('one:dictation', minutes(30)),
-      reviewed('one:translation', minutes(60 * 24 * 5)),
-    ].map((card) => [card.id, card]),
+test('holds back other exercise types of a word practised today, using them only to fill room', () => {
+  const cards = byId(reviewed('one:dictation', start));
+  // New words come first.
+  expect(pick(cards, minutes(30), 1)).toEqual(['two:dictation']);
+  // With room left, the held-back translation joins.
+  expect(pick(cards, minutes(30), 2)).toEqual(['two:dictation', 'one:translation']);
+});
+
+test('a study day starts at 4 AM local time', () => {
+  const lateEvening = new Date(2026, 0, 1, 23, 30);
+  const cards = byId(reviewed('one:dictation', lateEvening));
+  // Past midnight is still the same study day, so the new word comes first.
+  expect(pick(cards, new Date(2026, 0, 2, 0, 15), 1)).toEqual(['two:dictation']);
+  expect(pick(cards, new Date(2026, 0, 2, 4, 15), 1)).toEqual(['one:translation']);
+});
+
+test('practises the due type most likely forgotten, holding the other back', () => {
+  const lastWeek = new Date(start.getTime() - 7 * 24 * 60 * 60_000);
+  const cards = byId(
+    reviewed('one:dictation', lastWeek, { stability: 30, due: start }),
+    reviewed('one:translation', lastWeek, { stability: 3, due: start }),
   );
+  expect(pick(cards, start, 1)).toEqual(['one:translation']);
+  // The new word comes before the held-back dictation.
+  expect(pick(cards, start, 2)).toEqual(['two:dictation', 'one:translation']);
+  expect(pick(cards, start, 3)).toEqual(['two:dictation', 'one:dictation', 'one:translation']);
+});
 
-  const session = createSession({
-    deck: { ...deck, conceptIds: ['one', 'two', 'three'] },
-    concepts: [...concepts, three],
-    cards: practised,
-    maxConcepts: 2,
-    now: minutes(60),
-  });
-  // 2 Concepts make room for 4 Cards: "one" brings 1, so 2 new Concepts join it.
-  expect(Object.keys(session.concepts)).toEqual(['one', 'two', 'three']);
-  expect(Object.keys(session.cards)).toEqual([
-    'one:dictation',
-    'two:dictation',
-    'three:dictation',
-    'two:translation',
-    'three:translation',
-  ]);
+test('keeps every exercise type already started, picking due ones first', () => {
+  const lastWeek = new Date(start.getTime() - 7 * 24 * 60 * 60_000);
+  // Started before exercise types were unlocked one at a time.
+  const cards = byId(
+    reviewed('two:dictation', lastWeek, { due: nextDay(start) }),
+    reviewed('two:translation', lastWeek, { due: start }),
+  );
+  expect(pick(cards, start, 1)).toEqual(['two:translation']);
 });
 
 test('picks new concepts in deck order, or shuffled for a deck with shuffleNew', () => {
-  const pick = (deck: Deck) =>
+  const pickNew = (deck: Deck) =>
     Object.keys(
-      createSession({ deck, concepts, maxConcepts: 1, now: start, random: () => 0 }).concepts,
+      createSession({ deck, concepts, maxCards: 1, now: start, random: () => 0 }).concepts,
     );
-  expect(pick(deck)).toEqual(['one']);
-  expect(pick({ ...deck, shuffleNew: true })).toEqual(['two']);
+  expect(pickNew(deck)).toEqual(['one']);
+  expect(pickNew({ ...deck, shuffleNew: true })).toEqual(['two']);
 });
 
-test('queues every dictation card before the translation cards', () => {
+test('reviews ahead with the room left, queuing every dictation before the translations', () => {
+  const cards = byId(reviewed('one:dictation', start), reviewed('two:dictation', start));
   for (const value of [0, 0.5, 0.99]) {
-    const session = createSession({ deck, concepts, now: start, random: () => value });
+    const session = createSession({
+      deck,
+      concepts,
+      cards,
+      now: nextDay(start),
+      random: () => value,
+    });
     expect(session.queue.map((id) => session.cards[id].exerciseType)).toEqual([
       'dictation',
       'dictation',
@@ -217,31 +236,27 @@ test('progress counts answered cards half and finished cards fully', () => {
   expect(getSessionProgress(session)).toBe(0.75);
 });
 
-test('counts words due by the end of the day, or with an exercise not practised yet', () => {
-  const morning = new Date(2026, 0, 1, 8);
-  const reviewed = (conceptId: string, exerciseType: Card['exerciseType'], due: Date): Card => ({
-    ...getConceptCards(conceptId, {}, morning).find((card) => card.exerciseType === exerciseType)!,
-    srs: {
-      ...reviewSrsCard(getConceptCards(conceptId, {}, morning)[0].srs, Rating.Good, morning).card,
-      due,
-    },
-  });
-  const cards = Object.fromEntries(
-    [
-      // Due tonight, local time.
-      reviewed('one', 'dictation', new Date(2026, 0, 1, 23)),
-      reviewed('one', 'translation', new Date(2026, 0, 5)),
-      // Translation not practised yet.
-      reviewed('two', 'dictation', new Date(2026, 0, 5)),
-      // Not due until tomorrow.
-      reviewed('three', 'dictation', new Date(2026, 0, 2, 0, 30)),
-      reviewed('three', 'translation', new Date(2026, 0, 5)),
-    ].map((card) => [card.id, card]),
+test('counts words due before the next study day, or with an exercise type unlocked', () => {
+  const yesterday = new Date(2026, 0, 1, 8);
+  const morning = new Date(2026, 0, 2, 8);
+  const cards = byId(
+    // Due tonight.
+    reviewed('one:dictation', yesterday, { due: new Date(2026, 0, 2, 23) }),
+    reviewed('one:translation', yesterday, { due: new Date(2026, 0, 6) }),
+    // Translation unlocked.
+    reviewed('two:dictation', yesterday, { due: new Date(2026, 0, 6) }),
+    // Due after midnight, still before the next study day starts at 4 AM.
+    reviewed('three:dictation', yesterday, { due: new Date(2026, 0, 3, 3) }),
+    reviewed('three:translation', yesterday, { due: new Date(2026, 0, 6) }),
+    // Due after the next study day starts.
+    reviewed('four:dictation', yesterday, { due: new Date(2026, 0, 3, 5) }),
+    reviewed('four:translation', yesterday, { due: new Date(2026, 0, 6) }),
+    // Practised today, so its unlocked translation waits until tomorrow.
+    reviewed('five:dictation', new Date(2026, 0, 2, 7)),
   );
+  const conceptIds = ['one', 'two', 'three', 'four', 'five', 'six'];
 
-  expect(
-    countDueToday(['one', 'two', 'three', 'four'], cards, morning, ['dictation', 'translation']),
-  ).toBe(2);
-  // Without translation exercises, a word practised only in dictation isn't due.
-  expect(countDueToday(['one', 'two', 'three', 'four'], cards, morning, ['dictation'])).toBe(1);
+  expect(countDueToday(conceptIds, cards, morning, ['dictation', 'translation'])).toBe(3);
+  // Without translation exercises, nothing gets unlocked.
+  expect(countDueToday(conceptIds, cards, morning, ['dictation'])).toBe(2);
 });

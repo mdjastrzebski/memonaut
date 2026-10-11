@@ -2,10 +2,10 @@ import type { Content } from '@/data/content';
 import { getSubjectDecks } from '@/data/decks';
 import type { Deck } from '@/domain/types';
 
-/** How many words a session practises at most; null means every word in the set. */
-export type SessionSize = number | null;
+/** How many exercises (Cards) a session practises at most. */
+export type SessionSize = number;
 
-export const SESSION_SIZES: SessionSize[] = [5, 10, 20, null];
+export const SESSION_SIZES: SessionSize[] = [10, 20, 50, 100];
 const DEFAULT_SESSION_SIZE: SessionSize = 10;
 
 const STORAGE_KEY = 'memonaut:setup';
