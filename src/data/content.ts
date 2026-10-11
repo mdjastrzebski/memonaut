@@ -40,12 +40,14 @@ const deckSchema = z.strictObject({
   id,
   name: z.string(),
   strictSpelling: flag,
+  shuffleNew: flag,
   concepts: z.array(conceptSchema),
 });
 
 /** Concepts only in the core Deck; every one of them is core. Its options apply to the core Deck. */
 const coreSchema = z.strictObject({
   strictSpelling: flag,
+  shuffleNew: flag,
   concepts: z.array(conceptSchema.omit({ core: true })),
 });
 
@@ -90,6 +92,7 @@ export function buildContent(files: Record<string, string>): Content {
     const deckIds = new Set<string>([CORE_DECK.id]);
     const coreIds = new Set<string>();
     let coreStrictSpelling = false;
+    let coreShuffleNew = false;
 
     const addConcept = (path: string, fields: Omit<Concept, 'subjectId'>) => {
       if (fields.local === undefined && subject.exerciseTypes.includes('translation')) {
@@ -109,6 +112,7 @@ export function buildContent(files: Record<string, string>): Content {
       const listed = new Set<string>();
       const core = read(corePath, files[corePath], coreSchema);
       coreStrictSpelling = core.strictSpelling;
+      coreShuffleNew = core.shuffleNew;
       for (const fields of core.concepts) {
         checkUnique(listed, fields.id, `${corePath}: concept listed twice`);
         addConcept(corePath, fields);
@@ -134,6 +138,7 @@ export function buildContent(files: Record<string, string>): Content {
         name: deck.name,
         conceptIds: deck.concepts.map((concept) => prefix(concept.id)),
         ...(deck.strictSpelling && { strictSpelling: true }),
+        ...(deck.shuffleNew && { shuffleNew: true }),
       });
     }
 
@@ -146,6 +151,7 @@ export function buildContent(files: Record<string, string>): Content {
         name: CORE_DECK.name,
         conceptIds: [...coreIds].map(prefix),
         ...(coreStrictSpelling && { strictSpelling: true }),
+        ...(coreShuffleNew && { shuffleNew: true }),
       });
     }
   }

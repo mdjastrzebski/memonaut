@@ -44,13 +44,14 @@ export function createSession({
   now = new Date(),
   random = Math.random,
 }: CreateSessionOptions): Session {
+  const items = concepts
+    .filter((concept) => deck.conceptIds.includes(concept.id))
+    .map((concept) => ({
+      concept,
+      cards: getConceptCards(concept.id, previous, now, exerciseTypes),
+    }));
   const deckConcepts = pickConcepts(
-    concepts
-      .filter((concept) => deck.conceptIds.includes(concept.id))
-      .map((concept) => ({
-        concept,
-        cards: getConceptCards(concept.id, previous, now, exerciseTypes),
-      })),
+    deck.shuffleNew ? shuffle(items, random) : items,
     maxConcepts,
     now,
   );
@@ -81,7 +82,7 @@ interface ConceptCards {
  * Picks up to `max` Concepts to practise, in this order:
  * 1. started ones that are due, or whose other exercises haven't been practised yet, most overdue
  *    first
- * 2. new ones, in Deck order
+ * 2. new ones, in the order given (Deck order, or shuffled for a Deck with `shuffleNew`)
  * 3. the rest, soonest due first
  */
 function pickConcepts(items: ConceptCards[], max: number, now: Date): ConceptCards[] {
@@ -92,7 +93,7 @@ function pickConcepts(items: ConceptCards[], max: number, now: Date): ConceptCar
     return isConceptDue(cards, now) ? [0, due] : [2, due];
   };
   const ranked = items.map((item) => ({ item, rank: rank(item) }));
-  // Array sort is stable, so new Concepts keep their Deck order.
+  // Array sort is stable, so new Concepts keep the order given.
   ranked.sort((a, b) => a.rank[0] - b.rank[0] || a.rank[1] - b.rank[1]);
   return ranked.slice(0, max).map(({ item }) => item);
 }

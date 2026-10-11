@@ -91,6 +91,15 @@ test('picks half-practised concepts first, then new ones, then learned ones not 
   ).toEqual(['one']);
 });
 
+test('picks new concepts in deck order, or shuffled for a deck with shuffleNew', () => {
+  const pick = (deck: Deck) =>
+    Object.keys(
+      createSession({ deck, concepts, maxConcepts: 1, now: start, random: () => 0 }).concepts,
+    );
+  expect(pick(deck)).toEqual(['one']);
+  expect(pick({ ...deck, shuffleNew: true })).toEqual(['two']);
+});
+
 test('queues every dictation card before the translation cards', () => {
   for (const value of [0, 0.5, 0.99]) {
     const session = createSession({ deck, concepts, now: start, random: () => value });
