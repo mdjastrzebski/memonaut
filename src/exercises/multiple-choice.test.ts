@@ -62,6 +62,26 @@ test('leaves out concepts that would be right too, and repeated words', () => {
   expect(options.toSorted()).toEqual(['big', 'small']);
 });
 
+test('offers others of the group first, from the subject too, then fills up from the deck', () => {
+  const day = (id: string, local: string) => ({ ...concept(id, local, id), group: 'weekday' });
+  const monday = day('Monday', 'poniedziałek');
+  const tuesday = day('Tuesday', 'wtorek');
+  const sunday = day('Sunday', 'niedziela');
+  const winter = { ...concept('winter', 'zima', 'winter'), group: 'season' };
+  const pick = (deckConcepts: Concept[], subjectConcepts: Concept[]) =>
+    pickChoices(monday, { side: 'foreign', deckConcepts, subjectConcepts }).toSorted();
+
+  expect(pick([monday, tuesday, winter, eins, zwei, drei], [sunday])).toEqual([
+    'Monday',
+    'Sunday',
+    'Tuesday',
+    expect.stringMatching(/^(winter|eins|zwei|drei)$/),
+  ]);
+  const options = pick([monday, tuesday, sunday, winter, eins, zwei, drei], []);
+  expect(options).toContain('Tuesday');
+  expect(options).toContain('Sunday');
+});
+
 test('shuffles the options', () => {
   const pick = (random: () => number) =>
     pickChoices(eins, {

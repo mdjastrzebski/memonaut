@@ -33,7 +33,8 @@ interface PickChoicesOptions {
 
 /**
  * The options for a multiple-choice exercise, in random order: the answer's word on `side`, and
- * the same word of other Concepts as wrong options, from the Deck first, then the Subject.
+ * the same word of other Concepts as wrong options. Those of the answer's group come first, e.g.
+ * other days for "Monday", then the rest; each from the Deck first, then the Subject.
  *
  * A Concept sharing the answer's local or foreign word is left out, as it would be right too, e.g.
  * "big" and "large" both for "duży".
@@ -55,8 +56,17 @@ export function pickChoices(
     key(concept.local) !== key(answer.local) &&
     key(concept.foreign) !== key(answer.foreign);
 
+  const inGroup = (concept: Concept) =>
+    answer.group !== undefined && concept.group === answer.group;
+  const candidates = [
+    deckConcepts.filter(inGroup),
+    subjectConcepts.filter(inGroup),
+    deckConcepts,
+    subjectConcepts,
+  ].flatMap((concepts) => shuffle(concepts, random));
+
   const options = [answer[side]!];
-  for (const concept of [...shuffle(deckConcepts, random), ...shuffle(subjectConcepts, random)]) {
+  for (const concept of candidates) {
     if (options.length >= count) break;
     if (!isWrong(concept) || taken.has(key(concept[side]))) continue;
     taken.add(key(concept[side]));

@@ -106,6 +106,13 @@ concepts:
   expect(decks.map((deck) => deck.kind)).toEqual(['unit']);
 });
 
+test('the bundled days, months and seasons are grouped', () => {
+  const group = (id: string) => content.concepts.find((concept) => concept.id === id)?.group;
+  expect(group('english/monday')).toBe('weekday');
+  expect(group('english/may')).toBe('month');
+  expect(group('english/winter')).toBe('season');
+});
+
 test('the bundled Polish words are practised with dictation only, with hints for homophones', () => {
   const polish = content.subjects.find((subject) => subject.id === 'polish');
   expect(polish?.exerciseTypes).toEqual(['dictation']);
@@ -293,6 +300,15 @@ test('rejects invalid content', () => {
       './german/decks/b.yaml': deck('  - { id: a, local: x, foreign: z }\n', 'e'),
     }),
   ).toThrow('b.yaml: concept "a" is defined differently in another deck');
+  expect(() =>
+    build({
+      './german/decks/a.yaml': deck('  - { id: a, local: x, foreign: y, group: weekday }\n'),
+      './german/decks/b.yaml': deck('  - { id: a, local: x, foreign: y }\n', 'e'),
+    }),
+  ).toThrow('b.yaml: concept "a" is defined differently in another deck');
+  expect(() =>
+    build({ './german/decks/a.yaml': deck('  - { id: a, local: x, foreign: y, group: Day }\n') }),
+  ).toThrow(/a\.yaml/);
   expect(() =>
     build({
       './german/decks/a.yaml': deck(

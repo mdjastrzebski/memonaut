@@ -48,7 +48,7 @@ Exercise Types are ordered from easiest, and a session queues every Card of one 
 3. `translation-choice`: see the local word, pick the foreign one from a few options
 4. `translation`: see the local word, type the foreign one
 
-In multiple choice, the wrong options are other words of the Deck, or of the Subject when the Deck has too few. A word that would be right too, e.g. "large" for _duży_ when the answer is "big", is never offered. A right pick is rated Good and a wrong one Again, never Easy, since picking a word is easier than recalling it. Options can be picked with keys 1–4.
+In multiple choice, the wrong options are other words of the Deck, or of the Subject when the Deck has too few. A word with a `group` gets the others of its group first, from the Deck or the Subject, so _Monday_ comes with other days rather than _dog_. A word that would be right too, e.g. "large" for _duży_ when the answer is "big", is never offered. A right pick is rated Good and a wrong one Again, never Easy, since picking a word is easier than recalling it. Options can be picked with keys 1–4.
 
 A Concept unlocks Exercise Types one at a time, in its Deck's order: a new Concept starts with the first one, and the next one unlocks once the previous Card graduates to Review. Cards already started stay in play. A Concept practises one Exercise Type per study day where it can: once one of its Cards was reviewed today, its other Cards wait. A study day starts at 4 AM local time, like Anki's, so late-evening study counts as one day.
 
@@ -75,7 +75,7 @@ Learning content lives in YAML files under `src/data/`, one folder per Subject. 
 id: kapitel-0
 name: Kapitel 0
 concepts:
-  - { id: number-3, local: trzy, foreign: drei, hint: 3, core: true }
+  - { id: number-3, local: trzy, foreign: drei, hint: 3, group: number-small, core: true }
 ```
 
 ```yaml
@@ -94,7 +94,7 @@ concepts:
   - { id: morze, foreign: morze, spokenHint: zbiornik słonej wody }
 ```
 
-`hint` is shown on screen in translation and translation choice only, since it could give the meaning away in the others; `spokenHint` is read aloud in dictation and must be in the language being learned. `local` may be left out only in a Subject with only `dictation`.
+`hint` is shown on screen in translation and translation choice only, since it could give the meaning away in the others; `spokenHint` is read aloud in dictation and must be in the language being learned. `local` may be left out only in a Subject with only `dictation`. `group` names a set of like words within the Subject, such as `weekday`, `month`, `season` or `number-teens`, used for the wrong options in multiple choice; leave out near-synonyms, which would be right too.
 
 Answers are rated automatically. By default an almost-correct answer (wrong capitalization, a missing umlaut or one letter off) is rated Hard. A Deck with `strictSpelling: true`, like the Polish spelling sets, forgives only wrong capitalization, so _zolw_ for _żółw_ or _może_ for _morze_ is wrong. For the core Deck, set it in `core.yaml`. A Subject's `trickySpellings`, e.g. `[ó, u, rz, ż, ch, h]` for Polish, are marked in a right answer, to remind which spellings it got right.
 

@@ -60,6 +60,11 @@ export interface Concept {
    * apart words that sound the same, e.g. "zbiornik słonej wody" for "morze" (not "może").
    */
   spokenHint?: string;
+  /**
+   * Optional name of a set of like Concepts within the Subject, e.g. "weekday" or "month". In
+   * multiple choice, the others of its group are offered first as wrong options.
+   */
+  group?: string;
 }
 
 /**
