@@ -2,7 +2,7 @@
 
 Memonaut is a learning web app for school kids, built on spaced repetition. It helps a learner keep what they learn in school subjects, such as English, German, Polish or Przyroda, by scheduling each piece of knowledge for review just before it would be forgotten.
 
-> **Status:** early prototype. The concepts below are settled. Pick a subject (German, English or Polish spelling) and its core set or a unit, then study it: dictation then translation, FSRS scheduling. Each Card's review state is saved in the browser after every answer; the setup screen shows how many words are due today.
+> **Status:** early prototype. The concepts below are settled. Pick a subject (German, English or Polish spelling) and its core set or a unit, then study it: multiple choice, dictation and translation, FSRS scheduling. Each Card's review state is saved in the browser after every answer; the setup screen shows how many words are due today.
 
 ## Goals
 
@@ -41,9 +41,16 @@ Because review state lives on Cards rather than on Decks, studying a unit deck a
 
 Cards of the same Concept are siblings. A study session should avoid showing two siblings close together, so that one exercise doesn't give away the answer to another.
 
-Exercise Types are ordered from easiest: a session queues every `dictation` Card (hear the foreign word, type how it's spelled) before any `translation` Card (see the local word, type the foreign one). This also keeps siblings apart.
+Exercise Types are ordered from easiest, and a session queues every Card of one type before any Card of the next. This also keeps siblings apart:
 
-A Subject can practise only some Exercise Types. Polish spelling (ortografia) uses only `dictation`: its words have nothing to translate. In dictation, words that sound the same, such as _morze_ and _może_, are told apart by a spoken hint read aloud after the word, e.g. "zbiornik słonej wody".
+1. `recognition-choice`: see and hear the foreign word, pick its meaning from a few local words
+2. `dictation`: hear the foreign word, type how it's spelled
+3. `translation-choice`: see the local word, pick the foreign one from a few options
+4. `translation`: see the local word, type the foreign one
+
+In multiple choice, the wrong options are other words of the Deck, or of the Subject when the Deck has too few. A word that would be right too, e.g. "large" for _duży_ when the answer is "big", is never offered. A right pick is rated Good and a wrong one Again, never Easy, since picking a word is easier than recalling it. Options can be picked with keys 1–4.
+
+A Subject can practise only some Exercise Types, and a Deck only some of its Subject's. Polish spelling (ortografia) uses only `dictation`: its words have nothing to translate. The English and German core sets leave out multiple choice, which is for meeting words in units. In dictation, words that sound the same, such as _morze_ and _może_, are told apart by a spoken hint read aloud after the word, e.g. "zbiornik słonej wody".
 
 Words are read aloud by the browser's voice, which varies a lot by device. Optionally, a parent can add their own ElevenLabs API key under "TTS" in the menu. The key is kept in this browser only (`memonaut:elevenlabs-key`). Audio is cached for the page's lifetime and turned up to the loudness of browser voices, any failure falls back to the browser's voice, and a rejected key or running out of credits pauses ElevenLabs until a key is saved again.
 
@@ -64,7 +71,7 @@ concepts:
 id: polish
 name: Polish
 foreignLanguage: pl-PL
-exerciseTypes: [dictation] # every Exercise Type if left out
+exerciseTypes: [dictation] # every Exercise Type if left out; a Deck or core.yaml can list fewer
 
 # src/data/polish/decks/trudne-slowka.yaml
 id: trudne-slowka
@@ -75,9 +82,9 @@ concepts:
   - { id: morze, foreign: morze, spokenHint: zbiornik słonej wody }
 ```
 
-`hint` is shown on screen in translation only, since it could give the meaning away in dictation; `spokenHint` is read aloud in dictation and must be in the language being learned. `local` may be left out only in a Subject without `translation`.
+`hint` is shown on screen in translation and translation choice only, since it could give the meaning away in the others; `spokenHint` is read aloud in dictation and must be in the language being learned. `local` may be left out only in a Subject with only `dictation`.
 
-Answers are rated automatically. By default an almost-correct answer (wrong capitalization, a missing umlaut or one letter off) is rated Hard. A Deck with `strictSpelling: true`, like the Polish spelling sets, forgives only wrong capitalization, so _zolw_ for _żółw_ or _może_ for _morze_ is wrong. For the core Deck, set it in `core.yaml`. A session introduces new Concepts in Deck order; with `shuffleNew: true` (also settable in `core.yaml`) it picks them in random order instead. A Subject's `trickySpellings`, e.g. `[ó, u, rz, ż, ch, h]` for Polish, are marked in a right answer, to remind which spellings it got right.
+Answers are rated automatically. By default an almost-correct answer (wrong capitalization, a missing umlaut or one letter off) is rated Hard. A Deck with `strictSpelling: true`, like the Polish spelling sets, forgives only wrong capitalization, so _zolw_ for _żółw_ or _może_ for _morze_ is wrong. For the core Deck, set it in `core.yaml`. A session brings back a started Concept only with its due Cards and fills the room left with new Concepts, introduced in Deck order; with `shuffleNew: true` (also settable in `core.yaml`) it picks them in random order instead. A Subject's `trickySpellings`, e.g. `[ó, u, rz, ż, ch, h]` for Polish, are marked in a right answer, to remind which spellings it got right.
 
 Each file under `decks/` is a unit Deck. A Concept can appear in several units of the same Subject, but must be defined the same way in each. The Subject's core Deck is built from the Concepts in an optional `core.yaml` next to `subject.yaml` (a `concepts:` list, without `core:` flags; it is not a unit, so it isn't offered on its own), followed by every Concept marked `core: true` in at least one unit, each listed once, in the order they first appear. Ids must stay the same once learners have progress, since learning state is keyed by them. Every value is read as a string, so `null` or `0` need no quotes.
 

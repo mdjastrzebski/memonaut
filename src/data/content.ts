@@ -1,10 +1,16 @@
 import { parse } from 'yaml';
 import { z } from 'zod';
 
-import type { Concept, Deck, Subject } from '@/domain/types';
+import type { Concept, Deck, ExerciseType, Subject } from '@/domain/types';
 import { EXERCISE_TYPES } from '@/session/session';
 
 const id = z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'Use lowercase letters, digits and dashes');
+
+/** Kept in order from easiest whatever the order listed. */
+const exerciseTypes = z
+  .array(z.enum(EXERCISE_TYPES))
+  .min(1)
+  .transform((listed) => EXERCISE_TYPES.filter((type) => listed.includes(type)));
 
 const subjectSchema = z.strictObject({
   id,
@@ -13,12 +19,8 @@ const subjectSchema = z.strictObject({
   foreignLanguage: z.string(),
   specialCharacters: z.array(z.string()).optional(),
   trickySpellings: z.array(z.string().min(1)).optional(),
-  /** Every Exercise Type if left out; kept in order from easiest whatever the order listed. */
-  exerciseTypes: z
-    .array(z.enum(EXERCISE_TYPES))
-    .min(1)
-    .default(EXERCISE_TYPES)
-    .transform((listed) => EXERCISE_TYPES.filter((type) => listed.includes(type))),
+  /** Every Exercise Type if left out. */
+  exerciseTypes: exerciseTypes.default(EXERCISE_TYPES),
 });
 
 const flag = z
@@ -41,6 +43,8 @@ const deckSchema = z.strictObject({
   name: z.string(),
   strictSpelling: flag,
   shuffleNew: flag,
+  /** The Subject's if left out. */
+  exerciseTypes: exerciseTypes.optional(),
   concepts: z.array(conceptSchema),
 });
 
@@ -48,6 +52,7 @@ const deckSchema = z.strictObject({
 const coreSchema = z.strictObject({
   strictSpelling: flag,
   shuffleNew: flag,
+  exerciseTypes: exerciseTypes.optional(),
   concepts: z.array(conceptSchema.omit({ core: true })),
 });
 
@@ -93,10 +98,20 @@ export function buildContent(files: Record<string, string>): Content {
     const coreIds = new Set<string>();
     let coreStrictSpelling = false;
     let coreShuffleNew = false;
+    let coreExerciseTypes = subject.exerciseTypes;
+
+    const getExerciseTypes = (path: string, listed?: ExerciseType[]) => {
+      const extra = listed?.find((type) => !subject.exerciseTypes.includes(type));
+      if (extra) {
+        throw new Error(`${path}: exercise type "${extra}" is not one of the subject's`);
+      }
+      return listed ?? subject.exerciseTypes;
+    };
 
     const addConcept = (path: string, fields: Omit<Concept, 'subjectId'>) => {
-      if (fields.local === undefined && subject.exerciseTypes.includes('translation')) {
-        throw new Error(`${path}: concept "${fields.id}" needs a local word for translation`);
+      const needingLocal = subject.exerciseTypes.find((type) => type !== 'dictation');
+      if (fields.local === undefined && needingLocal) {
+        throw new Error(`${path}: concept "${fields.id}" needs a local word for ${needingLocal}`);
       }
       const concept = { ...fields, id: prefix(fields.id), subjectId: subject.id };
       const existing = concepts.get(fields.id);
@@ -113,6 +128,7 @@ export function buildContent(files: Record<string, string>): Content {
       const core = read(corePath, files[corePath], coreSchema);
       coreStrictSpelling = core.strictSpelling;
       coreShuffleNew = core.shuffleNew;
+      coreExerciseTypes = getExerciseTypes(corePath, core.exerciseTypes);
       for (const fields of core.concepts) {
         checkUnique(listed, fields.id, `${corePath}: concept listed twice`);
         addConcept(corePath, fields);
@@ -139,6 +155,7 @@ export function buildContent(files: Record<string, string>): Content {
         conceptIds: deck.concepts.map((concept) => prefix(concept.id)),
         ...(deck.strictSpelling && { strictSpelling: true }),
         ...(deck.shuffleNew && { shuffleNew: true }),
+        exerciseTypes: getExerciseTypes(path, deck.exerciseTypes),
       });
     }
 
@@ -152,6 +169,7 @@ export function buildContent(files: Record<string, string>): Content {
         conceptIds: [...coreIds].map(prefix),
         ...(coreStrictSpelling && { strictSpelling: true }),
         ...(coreShuffleNew && { shuffleNew: true }),
+        exerciseTypes: coreExerciseTypes,
       });
     }
   }

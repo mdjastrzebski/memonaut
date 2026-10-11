@@ -42,15 +42,16 @@ function renderExercise(conceptId: string) {
       name: 'D',
       conceptIds: [conceptId],
       strictSpelling: true,
+      exerciseTypes: polish.exerciseTypes,
     },
     concepts: content.concepts,
-    exerciseTypes: polish.exerciseTypes,
   });
   render(
     <ExerciseScreen
       session={session}
       onReview={() => {}}
       subject={polish}
+      subjectConcepts={[]}
       showSpecialCharacters={false}
       onToggleSpecialCharacters={() => {}}
       showSrsDetails={false}

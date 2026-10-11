@@ -1,4 +1,4 @@
-import { ArrowRight, Check, RotateCcw, Target, Volume2, Zap, type LucideIcon } from 'lucide-react';
+import { ArrowRight, Volume2, Zap } from 'lucide-react';
 import {
   useEffect,
   useLayoutEffect,
@@ -9,12 +9,15 @@ import {
 } from 'react';
 
 import { AnswerComparison } from '@/components/answer-comparison';
-import { GRADE_STYLES } from '@/components/grades';
+import { Burst } from '@/components/burst';
+import { ChoiceExercise } from '@/components/choice-exercise';
+import { GRADE_ICONS, GRADE_STYLES } from '@/components/grades';
 import { SpecialCharacters } from '@/components/special-characters';
 import { CardStats, RatingPreview, SrsDetails, StateBadge } from '@/components/srs-stats';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import type { Subject } from '@/domain/types';
+import type { Concept, Subject } from '@/domain/types';
+import { getChoiceSide } from '@/exercises/multiple-choice';
 import { splitTrickySpellings } from '@/exercises/tricky-spellings';
 import { getFastLimitMs, gradeAnswer, type AnswerResult } from '@/exercises/type-answer';
 import { formatDuration, formatSeconds } from '@/lib/format';
@@ -29,18 +32,13 @@ import {
 } from '@/session/session';
 import { previewReview, Rating, ratingName, type Grade } from '@/srs/scheduler';
 
-const GRADE_ICONS: Record<Grade, LucideIcon> = {
-  [Rating.Again]: RotateCcw,
-  [Rating.Hard]: Target,
-  [Rating.Good]: Check,
-  [Rating.Easy]: Zap,
-};
-
-interface ExerciseScreenProps {
+export interface ExerciseScreenProps {
   session: Session;
   onReview: (review: SubmitReviewInput) => void;
   /** Its language is used to read words aloud and its special characters are offered on screen. */
   subject: Subject;
+  /** Every Concept of the Subject, for wrong options in multiple choice. */
+  subjectConcepts: Concept[];
   showSpecialCharacters: boolean;
   onToggleSpecialCharacters: () => void;
   showSrsDetails: boolean;
@@ -55,7 +53,14 @@ interface Checked {
   at: Date;
 }
 
-export function ExerciseScreen({
+/** The current exercise: options to pick from in multiple choice, or else an answer to type. */
+export function ExerciseScreen(props: ExerciseScreenProps) {
+  const card = getCurrentCard(props.session);
+  const side = card && getChoiceSide(card.exerciseType);
+  return side ? <ChoiceExercise {...props} side={side} /> : <TypedExercise {...props} />;
+}
+
+function TypedExercise({
   session,
   onReview,
   subject,
@@ -467,23 +472,5 @@ function RetypeGuide({ answer, typed }: { answer: string; typed: string }) {
       ))}
       <span className="text-muted-foreground/50">{answer.slice(typed.length)}</span>
     </div>
-  );
-}
-
-/** Confetti dots flying out of the feedback icon. */
-function Burst() {
-  return (
-    <span aria-hidden className="pointer-events-none absolute inset-0 grid place-items-center">
-      {Array.from({ length: 8 }, (_, index) => (
-        <span
-          key={index}
-          className={cn(
-            'absolute size-2 animate-burst rounded-full',
-            index % 2 ? 'bg-rocket' : 'bg-almost',
-          )}
-          style={{ '--angle': `${index * 45}deg` } as CSSProperties}
-        />
-      ))}
-    </span>
   );
 }

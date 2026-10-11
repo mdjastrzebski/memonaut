@@ -22,15 +22,15 @@ const deck: Deck = {
   kind: 'unit',
   name: 'Numbers',
   conceptIds: ['one', 'two'],
+  exerciseTypes: ['dictation', 'translation'],
 };
 const start = new Date('2026-01-01T10:00:00Z');
 const minutes = (n: number) => new Date(start.getTime() + n * 60_000);
 
 function create() {
   return createSession({
-    deck,
+    deck: { ...deck, exerciseTypes: ['translation'] },
     concepts,
-    exerciseTypes: ['translation'],
     now: start,
     random: () => 0.99,
   });
@@ -80,8 +80,8 @@ test('picks half-practised concepts first, then new ones, then learned ones not 
         .concepts,
     );
 
-  // "two" was heard but not yet translated.
-  expect(pick({ 'two:dictation': practise('two:dictation') })).toEqual(['two']);
+  // "two" was heard but not yet translated; its one Card leaves room for the new "one".
+  expect(pick({ 'two:dictation': practise('two:dictation') })).toEqual(['two', 'one']);
   // "two" is learned and not due for days, so the new "one" comes first.
   expect(
     pick({
@@ -89,6 +89,39 @@ test('picks half-practised concepts first, then new ones, then learned ones not 
       'two:translation': practise('two:translation'),
     }),
   ).toEqual(['one']);
+});
+
+test('practises only the due exercises of a started concept, filling the rest with new ones', () => {
+  const three: Concept = { id: 'three', subjectId: 'german', local: 'trzy', foreign: 'drei' };
+  const { cards } = createSession({ deck, concepts, now: start });
+  const reviewed = (id: string, due: Date): Card => ({
+    ...cards[id],
+    srs: { ...reviewSrsCard(cards[id].srs, Rating.Good, start).card, due },
+  });
+  const practised = Object.fromEntries(
+    [
+      // Only dictation is due.
+      reviewed('one:dictation', minutes(30)),
+      reviewed('one:translation', minutes(60 * 24 * 5)),
+    ].map((card) => [card.id, card]),
+  );
+
+  const session = createSession({
+    deck: { ...deck, conceptIds: ['one', 'two', 'three'] },
+    concepts: [...concepts, three],
+    cards: practised,
+    maxConcepts: 2,
+    now: minutes(60),
+  });
+  // 2 Concepts make room for 4 Cards: "one" brings 1, so 2 new Concepts join it.
+  expect(Object.keys(session.concepts)).toEqual(['one', 'two', 'three']);
+  expect(Object.keys(session.cards)).toEqual([
+    'one:dictation',
+    'two:dictation',
+    'three:dictation',
+    'two:translation',
+    'three:translation',
+  ]);
 });
 
 test('picks new concepts in deck order, or shuffled for a deck with shuffleNew', () => {
@@ -206,7 +239,9 @@ test('counts words due by the end of the day, or with an exercise not practised 
     ].map((card) => [card.id, card]),
   );
 
-  expect(countDueToday(['one', 'two', 'three', 'four'], cards, morning)).toBe(2);
+  expect(
+    countDueToday(['one', 'two', 'three', 'four'], cards, morning, ['dictation', 'translation']),
+  ).toBe(2);
   // Without translation exercises, a word practised only in dictation isn't due.
   expect(countDueToday(['one', 'two', 'three', 'four'], cards, morning, ['dictation'])).toBe(1);
 });

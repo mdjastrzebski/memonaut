@@ -1,5 +1,6 @@
 import type { Card, Concept, Deck, ExerciseType, Review } from '@/domain/types';
 import type { AnswerIssue } from '@/exercises/type-answer';
+import { shuffle } from '@/lib/shuffle';
 import { createSrsCard, reviewSrsCard, State, type Grade } from '@/srs/scheduler';
 
 /**
@@ -8,8 +9,13 @@ import { createSrsCard, reviewSrsCard, State, type Grade } from '@/srs/scheduler
  */
 export const LEARN_AHEAD_MS = 20 * 60 * 1000;
 
-/** Every Exercise Type, easiest first. A session practises each Concept with all of them. */
-export const EXERCISE_TYPES: ExerciseType[] = ['dictation', 'translation'];
+/** Every Exercise Type, easiest first. A session practises a new Concept with all of them. */
+export const EXERCISE_TYPES: ExerciseType[] = [
+  'recognition-choice',
+  'dictation',
+  'translation-choice',
+  'translation',
+];
 
 /** One study sitting over a Deck. Lives in memory only. */
 export interface Session {
@@ -27,10 +33,11 @@ interface CreateSessionOptions {
   concepts: Concept[];
   /** Cards practised before, keyed by id. They keep their review state; the rest start new. */
   cards?: Record<string, Card>;
-  /** Practise at most this many Concepts, picked with `pickConcepts`. All of them if left out. */
+  /**
+   * Session size, as Concepts with all their exercises: at most `maxConcepts` × Exercise Types
+   * Cards, picked with `pickConcepts`. Everything if left out.
+   */
   maxConcepts?: number;
-  /** Easiest first: all Cards of one type are queued before any Card of the next. */
-  exerciseTypes?: ExerciseType[];
   now?: Date;
   random?: () => number;
 }
@@ -40,10 +47,11 @@ export function createSession({
   concepts,
   cards: previous = {},
   maxConcepts = Infinity,
-  exerciseTypes = EXERCISE_TYPES,
   now = new Date(),
   random = Math.random,
 }: CreateSessionOptions): Session {
+  // Easiest first: all Cards of one type are queued before any Card of the next.
+  const { exerciseTypes } = deck;
   const items = concepts
     .filter((concept) => deck.conceptIds.includes(concept.id))
     .map((concept) => ({
@@ -52,11 +60,13 @@ export function createSession({
     }));
   const deckConcepts = pickConcepts(
     deck.shuffleNew ? shuffle(items, random) : items,
-    maxConcepts,
+    maxConcepts * exerciseTypes.length,
     now,
   );
   // Grouped by Exercise Type so the queue below can keep them in order.
-  const cards = exerciseTypes.flatMap((_, index) => deckConcepts.map(({ cards }) => cards[index]));
+  const cards = exerciseTypes.flatMap((exerciseType) =>
+    deckConcepts.flatMap(({ cards }) => cards.filter((card) => card.exerciseType === exerciseType)),
+  );
 
   return {
     startedAt: now,
@@ -79,13 +89,14 @@ interface ConceptCards {
 }
 
 /**
- * Picks up to `max` Concepts to practise, in this order:
+ * Picks Concepts to practise until they bring at least `maxCards` Cards, in this order:
  * 1. started ones that are due, or whose other exercises haven't been practised yet, most overdue
- *    first
+ *    first, with only those Cards
  * 2. new ones, in the order given (Deck order, or shuffled for a Deck with `shuffleNew`)
  * 3. the rest, soonest due first
+ * So a Concept with only some exercises due leaves room for more new Concepts.
  */
-function pickConcepts(items: ConceptCards[], max: number, now: Date): ConceptCards[] {
+function pickConcepts(items: ConceptCards[], maxCards: number, now: Date): ConceptCards[] {
   const rank = ({ cards }: ConceptCards): [group: number, due: number] => {
     const started = cards.filter((card) => card.srs.state !== State.New);
     if (started.length === 0) return [1, 0];
@@ -95,7 +106,21 @@ function pickConcepts(items: ConceptCards[], max: number, now: Date): ConceptCar
   const ranked = items.map((item) => ({ item, rank: rank(item) }));
   // Array sort is stable, so new Concepts keep the order given.
   ranked.sort((a, b) => a.rank[0] - b.rank[0] || a.rank[1] - b.rank[1]);
-  return ranked.slice(0, max).map(({ item }) => item);
+
+  const picked: ConceptCards[] = [];
+  let cardCount = 0;
+  for (const { item, rank } of ranked) {
+    if (cardCount >= maxCards) break;
+    const cards = rank[0] === 0 ? item.cards.filter((card) => isCardDue(card, now)) : item.cards;
+    picked.push({ ...item, cards });
+    cardCount += cards.length;
+  }
+  return picked;
+}
+
+/** Whether a Card needs practice by `at`: it's due, or it hasn't been practised yet. */
+function isCardDue(card: Card, at: Date): boolean {
+  return card.srs.state === State.New || card.srs.due.getTime() <= at.getTime();
 }
 
 /** A Concept's Card for each Exercise Type: the one practised before, or a new one. */
@@ -118,9 +143,7 @@ export function getConceptCards(
 export function isConceptDue(cards: Card[], at: Date): boolean {
   const started = cards.filter((card) => card.srs.state !== State.New);
   if (started.length === 0) return false;
-  return (
-    started.length < cards.length || started.some((card) => card.srs.due.getTime() <= at.getTime())
-  );
+  return cards.some((card) => isCardDue(card, at));
 }
 
 /**
@@ -188,13 +211,4 @@ export function submitReview(session: Session, { now, ...answer }: SubmitReviewI
     queue: dueSoon ? [...rest, card.id] : rest,
     reviews: [...session.reviews, { cardId: card.id, ...answer, log, srsAfter }],
   };
-}
-
-function shuffle<T>(items: T[], random: () => number): T[] {
-  const result = [...items];
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(random() * (i + 1));
-    [result[i], result[j]] = [result[j], result[i]];
-  }
-  return result;
 }

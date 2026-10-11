@@ -1,3 +1,5 @@
+# Multiple choice only in units: the core set reviews words already met there.
+exerciseTypes: [dictation, translation]
 concepts:
   - { id: red, local: czerwony, foreign: red }
   - { id: blue, local: niebieski, foreign: blue }

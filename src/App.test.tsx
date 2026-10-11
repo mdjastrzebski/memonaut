@@ -411,7 +411,7 @@ test('picking a unit shows its stats and words, and starts a session of it', asy
   expect(within(selected).getByText('Words', { selector: 'dt' }).nextSibling).toHaveTextContent(
     String(size),
   );
-  expect(within(selected).getByText(`Exercises: ${size * 2}`)).toBeInTheDocument();
+  expect(within(selected).getByText(`Exercises: ${size * 4}`)).toBeInTheDocument();
 
   await user.click(within(selected).getByRole('button', { name: 'Words' }));
   const words = within(selected).getByRole('list', { name: 'Words in set' });
@@ -421,7 +421,53 @@ test('picking a unit shows its stats and words, and starts a session of it', asy
 
   await user.click(within(selected).getByRole('button', { name: 'Start session' }));
   expect(screen.getByRole('progressbar', { name: 'Kapitel 0 progress' })).toBeInTheDocument();
-  expect(screen.getByRole('textbox', { name: 'Answer' })).toBeInTheDocument();
+  // A unit starts with multiple choice.
+  expect(screen.getByRole('group', { name: 'Options' })).toBeInTheDocument();
+});
+
+test('a unit practises recognition choice, dictation, translation choice, then translation', async () => {
+  const user = userEvent.setup();
+  render(<App />);
+  await user.click(screen.getByRole('radio', { name: 'German' }));
+  await pickUnit(user, 'Kapitel 0');
+  await user.click(screen.getByRole('radio', { name: '5' }));
+  await user.click(screen.getByRole('button', { name: 'Start session' }));
+  const concepts = content.concepts.filter((concept) => concept.subjectId === 'german');
+  const options = () =>
+    within(screen.getByRole('group', { name: 'Options' })).getAllByRole('button');
+
+  // Recognition: the German word is shown and read aloud; its meaning is picked with a number key.
+  for (let i = 0; i < 5; i++) {
+    expect(screen.getByText('What does it mean?')).toBeInTheDocument();
+    const foreign = screen.getByRole('heading', { level: 2 }).textContent;
+    expect(spoken.at(-1)).toBe(foreign);
+    const { local } = concepts.find((concept) => concept.foreign === foreign)!;
+    expect(options()).toHaveLength(4);
+    const index = options().findIndex((option) => option.textContent?.endsWith(local!));
+    await user.keyboard(String(index + 1));
+    expect(screen.getByRole('status')).toHaveTextContent('Good');
+    expect(screen.getByRole('status')).toHaveTextContent(`${foreign}=means${local}`);
+    await user.keyboard('{Enter}');
+  }
+
+  for (let i = 0; i < 5; i++) {
+    await user.type(screen.getByRole('textbox', { name: 'Answer' }), `${spoken.at(-1)}{Enter}`);
+    await user.keyboard('{Enter}');
+  }
+
+  // Translation choice: a wrong pick is rated Again, and the German word is read aloud.
+  expect(screen.getByText('Which word is it?')).toBeInTheDocument();
+  const local = screen.getByRole('heading', { level: 2 }).textContent;
+  const { foreign } = concepts.find((concept) => concept.local === local)!;
+  const wrong = options().find((option) => !option.textContent?.endsWith(foreign))!;
+  await user.click(wrong);
+  expect(screen.getByRole('status')).toHaveTextContent('Again');
+  expect(spoken.at(-1)).toBe(foreign);
+  // Picking again changes nothing.
+  await user.click(options().find((option) => option.textContent?.endsWith(foreign))!);
+  expect(screen.getByRole('status')).toHaveTextContent('Again');
+  await user.click(screen.getByRole('button', { name: /Continue/ }));
+  expect(screen.queryByRole('status')).not.toBeInTheDocument();
 });
 
 test('switching subject selects its core set and English has no special characters', async () => {
@@ -496,17 +542,17 @@ test('a session practises 10 words by default, or as many as chosen', async () =
   await user.click(screen.getByRole('radio', { name: 'German' }));
   await pickUnit(user, 'Kapitel 0');
   expect(screen.getByRole('radio', { name: '10' })).toBeChecked();
-  expect(screen.getByText(/10 words · 20 exercises/)).toBeInTheDocument();
+  expect(screen.getByText(/10 words · 40 exercises/)).toBeInTheDocument();
 
   await user.click(screen.getByRole('button', { name: 'Start session' }));
   await finishSession(user);
-  expect(sessionWords()).toHaveLength(20);
+  expect(sessionWords()).toHaveLength(40);
 
   await user.click(screen.getByRole('button', { name: 'Start a new session' }));
   await user.click(screen.getByRole('radio', { name: '5' }));
   await user.click(screen.getByRole('button', { name: 'Start session' }));
   await finishSession(user);
-  expect(sessionWords()).toHaveLength(10);
+  expect(sessionWords()).toHaveLength(20);
 });
 
 test('Polish practises spelling with dictation only', async () => {

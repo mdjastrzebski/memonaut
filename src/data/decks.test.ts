@@ -5,7 +5,7 @@ import type { Deck } from '@/domain/types';
 import { getSubjectDecks } from './decks';
 
 function deck(id: string, kind: Deck['kind'], conceptIds: string[], subjectId = 'german'): Deck {
-  return { id, subjectId, kind, name: id, conceptIds };
+  return { id, subjectId, kind, name: id, conceptIds, exerciseTypes: ['dictation'] };
 }
 
 const animals = deck('animals', 'unit', ['hund', 'katze', 'maus']);

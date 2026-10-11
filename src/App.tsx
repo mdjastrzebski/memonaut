@@ -50,7 +50,6 @@ export default function App() {
         concepts: content.concepts,
         cards: allCards,
         maxConcepts: sessionSize ?? undefined,
-        exerciseTypes: subject.exerciseTypes,
       }),
     );
     setEnded(false);
@@ -136,6 +135,7 @@ export default function App() {
             session={session}
             onReview={review}
             subject={subject}
+            subjectConcepts={content.concepts.filter((concept) => concept.subjectId === subject.id)}
             showSpecialCharacters={showSpecialCharacters}
             onToggleSpecialCharacters={() => setShowSpecialCharacters((show) => !show)}
             showSrsDetails={showSrsDetails}

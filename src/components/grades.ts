@@ -1,4 +1,14 @@
+import { Check, RotateCcw, Target, Zap, type LucideIcon } from 'lucide-react';
+
 import { Rating, State, type Grade } from '@/srs/scheduler';
+
+/** The icon shown with each rating in an exercise's feedback. */
+export const GRADE_ICONS: Record<Grade, LucideIcon> = {
+  [Rating.Again]: RotateCcw,
+  [Rating.Hard]: Target,
+  [Rating.Good]: Check,
+  [Rating.Easy]: Zap,
+};
 
 /** How each rating looks to the learner. */
 export const GRADE_STYLES: Record<
