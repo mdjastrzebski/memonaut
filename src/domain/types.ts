@@ -32,6 +32,8 @@ export interface Deck {
    * missing diacritics (e.g. "zolw" for "żółw") or a letter off ("gura" for "góra").
    */
   strictSpelling?: boolean;
+  /** Introduces new Concepts in random order instead of Deck order. */
+  shuffleNew?: boolean;
 }
 
 /** One piece of knowledge, e.g. a word. It can be in any number of Decks within its Subject. */

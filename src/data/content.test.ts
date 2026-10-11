@@ -147,6 +147,33 @@ concepts:
   ).toEqual([true]);
 });
 
+test('a deck can shuffle new concepts, and core.yaml sets it for the core deck', () => {
+  const { decks } = buildContent({
+    './german/subject.yaml': subject,
+    './german/core.yaml': 'shuffleNew: true\nconcepts:\n  - { id: a, local: x, foreign: y }\n',
+    './german/decks/shuffled.yaml': `
+id: shuffled
+name: Shuffled
+shuffleNew: true
+concepts:
+  - { id: b, local: x, foreign: z }
+`,
+    './german/decks/ordered.yaml': `
+id: ordered
+name: Ordered
+concepts:
+  - { id: c, local: x, foreign: w }
+`,
+  });
+  const shuffleNew = (id: string) => decks.find((deck) => deck.id === id)?.shuffleNew;
+  expect(shuffleNew('german/core')).toBe(true);
+  expect(shuffleNew('german/shuffled')).toBe(true);
+  expect(shuffleNew('german/ordered')).toBeUndefined();
+  expect(
+    content.decks.filter((deck) => deck.subjectId === 'polish').map((deck) => deck.shuffleNew),
+  ).toEqual([true]);
+});
+
 test('a subject practises every exercise type unless it lists some, easiest first', () => {
   const exerciseTypes = (listed: string) =>
     buildContent({ './german/subject.yaml': subject + listed }).subjects[0].exerciseTypes;

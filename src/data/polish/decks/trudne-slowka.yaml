@@ -2,6 +2,8 @@ id: trudne-slowka
 name: Trudne słówka
 # Spelling practice: a missing Polish letter or a letter off is wrong, not almost right.
 strictSpelling: true
+# New words come in random order, not the order listed.
+shuffleNew: true
 concepts:
   - { id: baltyk, foreign: Bałtyk }
   - { id: bak, foreign: bąk }
