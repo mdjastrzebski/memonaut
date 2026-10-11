@@ -1,26 +1,26 @@
 id: days-months-seasons
 name: Days, months and seasons
 concepts:
-  - { id: monday, local: poniedziałek, foreign: Monday, core: true }
-  - { id: tuesday, local: wtorek, foreign: Tuesday, core: true }
-  - { id: wednesday, local: środa, foreign: Wednesday, core: true }
-  - { id: thursday, local: czwartek, foreign: Thursday, core: true }
-  - { id: friday, local: piątek, foreign: Friday, core: true }
-  - { id: saturday, local: sobota, foreign: Saturday, core: true }
-  - { id: sunday, local: niedziela, foreign: Sunday, core: true }
-  - { id: january, local: styczeń, foreign: January, core: true }
-  - { id: february, local: luty, foreign: February, core: true }
-  - { id: march, local: marzec, foreign: March, core: true }
-  - { id: april, local: kwiecień, foreign: April, core: true }
-  - { id: may, local: maj, foreign: May, core: true }
-  - { id: june, local: czerwiec, foreign: June, core: true }
-  - { id: july, local: lipiec, foreign: July, core: true }
-  - { id: august, local: sierpień, foreign: August, core: true }
-  - { id: september, local: wrzesień, foreign: September, core: true }
-  - { id: october, local: październik, foreign: October, core: true }
-  - { id: november, local: listopad, foreign: November, core: true }
-  - { id: december, local: grudzień, foreign: December, core: true }
-  - { id: spring, local: wiosna, foreign: spring, core: true }
-  - { id: summer, local: lato, foreign: summer, core: true }
-  - { id: autumn, local: jesień, foreign: autumn, core: true }
-  - { id: winter, local: zima, foreign: winter, core: true }
+  - { id: monday, local: poniedziałek, foreign: Monday, group: weekday, core: true }
+  - { id: tuesday, local: wtorek, foreign: Tuesday, group: weekday, core: true }
+  - { id: wednesday, local: środa, foreign: Wednesday, group: weekday, core: true }
+  - { id: thursday, local: czwartek, foreign: Thursday, group: weekday, core: true }
+  - { id: friday, local: piątek, foreign: Friday, group: weekday, core: true }
+  - { id: saturday, local: sobota, foreign: Saturday, group: weekday, core: true }
+  - { id: sunday, local: niedziela, foreign: Sunday, group: weekday, core: true }
+  - { id: january, local: styczeń, foreign: January, group: month, core: true }
+  - { id: february, local: luty, foreign: February, group: month, core: true }
+  - { id: march, local: marzec, foreign: March, group: month, core: true }
+  - { id: april, local: kwiecień, foreign: April, group: month, core: true }
+  - { id: may, local: maj, foreign: May, group: month, core: true }
+  - { id: june, local: czerwiec, foreign: June, group: month, core: true }
+  - { id: july, local: lipiec, foreign: July, group: month, core: true }
+  - { id: august, local: sierpień, foreign: August, group: month, core: true }
+  - { id: september, local: wrzesień, foreign: September, group: month, core: true }
+  - { id: october, local: październik, foreign: October, group: month, core: true }
+  - { id: november, local: listopad, foreign: November, group: month, core: true }
+  - { id: december, local: grudzień, foreign: December, group: month, core: true }
+  - { id: spring, local: wiosna, foreign: spring, group: season, core: true }
+  - { id: summer, local: lato, foreign: summer, group: season, core: true }
+  - { id: autumn, local: jesień, foreign: autumn, group: season, core: true }
+  - { id: winter, local: zima, foreign: winter, group: season, core: true }

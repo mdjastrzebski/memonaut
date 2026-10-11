@@ -12,7 +12,10 @@ export interface Subject {
   foreignLanguage: string;
   /** Characters offered on the on-screen keyboard, e.g. German umlauts. */
   specialCharacters?: string[];
-  /** How its Concepts are practised, easiest first, e.g. only dictation for Polish spelling. */
+  /**
+   * How its Concepts can be practised, easiest first, e.g. only dictation for Polish spelling. Its
+   * Decks use all of them unless they list fewer.
+   */
   exerciseTypes: ExerciseType[];
   /** Spellings marked in a right answer, to remind which ones it got right, e.g. Polish "rz". */
   trickySpellings?: string[];
@@ -34,6 +37,8 @@ export interface Deck {
   strictSpelling?: boolean;
   /** Introduces new Concepts in random order instead of Deck order. */
   shuffleNew?: boolean;
+  /** How its Concepts are practised, easiest first: some or all of its Subject's. */
+  exerciseTypes: ExerciseType[];
 }
 
 /** One piece of knowledge, e.g. a word. It can be in any number of Decks within its Subject. */
@@ -55,14 +60,26 @@ export interface Concept {
    * apart words that sound the same, e.g. "zbiornik słonej wody" for "morze" (not "może").
    */
   spokenHint?: string;
+  /**
+   * Optional name of a set of like Concepts within the Subject, e.g. "weekday", or "number/small"
+   * within the wider "number". In multiple choice, the others of its group are offered first as
+   * wrong options, then those of each wider group.
+   */
+  group?: string;
 }
 
 /**
  * A way to practise a Concept:
+ * - recognition-choice: see and hear the foreign word and pick the local one from a few options
  * - dictation: hear the foreign word and type how it's spelled
+ * - translation-choice: see the local word and pick the foreign one from a few options
  * - translation: see the local word and type the foreign one
  */
-export type ExerciseType = 'dictation' | 'translation';
+export type ExerciseType =
+  | 'recognition-choice'
+  | 'dictation'
+  | 'translation-choice'
+  | 'translation';
 
 /** One Concept practised with one Exercise Type. It holds its own FSRS review state. */
 export interface Card {

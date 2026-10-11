@@ -52,6 +52,7 @@ concepts:
     kind: 'core',
     name: 'Essentials',
     conceptIds: ['german/der-hund', 'german/die-katze'],
+    exerciseTypes: ['recognition-choice', 'dictation', 'translation-choice', 'translation'],
   });
   expect(decks.find((deck) => deck.id === 'german/pets')?.conceptIds).toEqual([
     'german/die-katze',
@@ -103,6 +104,12 @@ concepts:
 `,
   });
   expect(decks.map((deck) => deck.kind)).toEqual(['unit']);
+});
+
+test('the bundled words are grouped', () => {
+  const group = (id: string) => content.concepts.find((concept) => concept.id === id)?.group;
+  expect(group('english/monday')).toBe('weekday');
+  expect(group('german/number-3')).toBe('number/small');
 });
 
 test('the bundled Polish words are practised with dictation only, with hints for homophones', () => {
@@ -177,7 +184,12 @@ concepts:
 test('a subject practises every exercise type unless it lists some, easiest first', () => {
   const exerciseTypes = (listed: string) =>
     buildContent({ './german/subject.yaml': subject + listed }).subjects[0].exerciseTypes;
-  expect(exerciseTypes('')).toEqual(['dictation', 'translation']);
+  expect(exerciseTypes('')).toEqual([
+    'recognition-choice',
+    'dictation',
+    'translation-choice',
+    'translation',
+  ]);
   expect(exerciseTypes('exerciseTypes: [translation, dictation]\n')).toEqual([
     'dictation',
     'translation',
@@ -185,6 +197,62 @@ test('a subject practises every exercise type unless it lists some, easiest firs
   expect(exerciseTypes('exerciseTypes: [dictation]\n')).toEqual(['dictation']);
   expect(() => exerciseTypes('exerciseTypes: []\n')).toThrow(/subject\.yaml/);
   expect(() => exerciseTypes('exerciseTypes: [flashcard]\n')).toThrow(/subject\.yaml/);
+});
+
+test('a deck can practise fewer exercise types than its subject, and core.yaml sets them for the core deck', () => {
+  const { decks } = buildContent({
+    './german/subject.yaml': subject,
+    './german/core.yaml':
+      'exerciseTypes: [translation, dictation]\nconcepts:\n  - { id: a, local: x, foreign: y }\n',
+    './german/decks/typed.yaml': `
+id: typed
+name: Typed
+exerciseTypes: [dictation]
+concepts:
+  - { id: b, local: x, foreign: z }
+`,
+    './german/decks/all.yaml': `
+id: all
+name: All
+concepts:
+  - { id: c, local: x, foreign: w }
+`,
+  });
+  const exerciseTypes = (id: string) => decks.find((deck) => deck.id === id)?.exerciseTypes;
+  expect(exerciseTypes('german/core')).toEqual(['dictation', 'translation']);
+  expect(exerciseTypes('german/typed')).toEqual(['dictation']);
+  expect(exerciseTypes('german/all')).toEqual([
+    'recognition-choice',
+    'dictation',
+    'translation-choice',
+    'translation',
+  ]);
+
+  expect(() =>
+    buildContent({
+      './polish/subject.yaml':
+        'id: polish\nname: Polish\nforeignLanguage: pl-PL\nexerciseTypes: [dictation]\n',
+      './polish/decks/a.yaml':
+        'id: a\nname: A\nexerciseTypes: [recognition-choice]\nconcepts:\n  - { id: b, foreign: z }\n',
+    }),
+  ).toThrow(/a\.yaml: exercise type "recognition-choice" is not one of the subject's/);
+});
+
+test('the bundled English and German units practise multiple choice, but not their core sets', () => {
+  const exerciseTypes = (subjectId: string, kind: string) => [
+    ...new Set(
+      content.decks
+        .filter((deck) => deck.subjectId === subjectId && deck.kind === kind)
+        .map((deck) => deck.exerciseTypes.join()),
+    ),
+  ];
+  for (const subjectId of ['english', 'german']) {
+    expect(exerciseTypes(subjectId, 'unit')).toEqual([
+      'recognition-choice,dictation,translation-choice,translation',
+    ]);
+    expect(exerciseTypes(subjectId, 'core')).toEqual(['dictation,translation']);
+  }
+  expect(exerciseTypes('polish', 'unit')).toEqual(['dictation']);
 });
 
 test('words of a subject without translation need no local word, and keep a spoken hint', () => {
@@ -217,7 +285,7 @@ test('rejects invalid content', () => {
     /a\.yaml/,
   );
   expect(() => build({ './german/decks/a.yaml': deck('  - { id: a, foreign: y }\n') })).toThrow(
-    'a.yaml: concept "a" needs a local word for translation',
+    'a.yaml: concept "a" needs a local word for recognition-choice',
   );
   expect(() =>
     build({
@@ -231,6 +299,15 @@ test('rejects invalid content', () => {
       './german/decks/b.yaml': deck('  - { id: a, local: x, foreign: z }\n', 'e'),
     }),
   ).toThrow('b.yaml: concept "a" is defined differently in another deck');
+  expect(() =>
+    build({
+      './german/decks/a.yaml': deck('  - { id: a, local: x, foreign: y, group: weekday }\n'),
+      './german/decks/b.yaml': deck('  - { id: a, local: x, foreign: y }\n', 'e'),
+    }),
+  ).toThrow('b.yaml: concept "a" is defined differently in another deck');
+  expect(() =>
+    build({ './german/decks/a.yaml': deck('  - { id: a, local: x, foreign: y, group: day/ }\n') }),
+  ).toThrow(/a\.yaml/);
   expect(() =>
     build({
       './german/decks/a.yaml': deck(

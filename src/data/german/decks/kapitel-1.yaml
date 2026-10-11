@@ -1,46 +1,46 @@
 id: kapitel-1
 name: Kapitel 1
 concepts:
-  - { id: ich, local: ja, foreign: ich, core: true }
-  - { id: du, local: ty, foreign: du, core: true }
-  - { id: er, local: on, foreign: er, core: true }
-  - { id: sie, local: ona, foreign: sie, core: true }
-  - { id: ich-heisse, local: ja nazywam się, foreign: ich heiße, core: true }
-  - { id: du-heisst, local: ty nazywasz się, foreign: du heißt }
-  - { id: er-heisst, local: on nazywa się, foreign: er heißt }
-  - { id: sie-heisst, local: ona nazywa się, foreign: sie heißt }
-  - { id: ich-bin, local: ja jestem, foreign: ich bin, core: true }
-  - { id: du-bist, local: ty jesteś, foreign: du bist, core: true }
-  - { id: er-ist, local: on jest, foreign: er ist, core: true }
-  - { id: sie-ist, local: ona jest, foreign: sie ist, core: true }
+  - { id: ich, local: ja, foreign: ich, group: pronoun, core: true }
+  - { id: du, local: ty, foreign: du, group: pronoun, core: true }
+  - { id: er, local: on, foreign: er, group: pronoun, core: true }
+  - { id: sie, local: ona, foreign: sie, group: pronoun, core: true }
+  - { id: ich-heisse, local: ja nazywam się, foreign: ich heiße, group: heissen, core: true }
+  - { id: du-heisst, local: ty nazywasz się, foreign: du heißt, group: heissen }
+  - { id: er-heisst, local: on nazywa się, foreign: er heißt, group: heissen }
+  - { id: sie-heisst, local: ona nazywa się, foreign: sie heißt, group: heissen }
+  - { id: ich-bin, local: ja jestem, foreign: ich bin, group: sein, core: true }
+  - { id: du-bist, local: ty jesteś, foreign: du bist, group: sein, core: true }
+  - { id: er-ist, local: on jest, foreign: er ist, group: sein, core: true }
+  - { id: sie-ist, local: ona jest, foreign: sie ist, group: sein, core: true }
   - { id: ich-bin-da, local: jestem obecny, foreign: ich bin da }
-  - { id: number-0, local: zero, foreign: null, hint: 0 }
-  - { id: number-1, local: jeden, foreign: eins, hint: 1 }
-  - { id: number-2, local: dwa, foreign: zwei, hint: 2 }
-  - { id: number-3, local: trzy, foreign: drei, hint: 3 }
-  - { id: number-4, local: cztery, foreign: vier, hint: 4 }
-  - { id: number-5, local: pięć, foreign: fünf, hint: 5 }
-  - { id: number-6, local: sześć, foreign: sechs, hint: 6 }
-  - { id: number-7, local: siedem, foreign: sieben, hint: 7 }
-  - { id: number-8, local: osiem, foreign: acht, hint: 8 }
-  - { id: number-9, local: dziewięć, foreign: neun, hint: 9 }
-  - { id: number-10, local: dziesięć, foreign: zehn, hint: 10 }
-  - { id: number-11, local: jedenaście, foreign: elf, hint: 11 }
-  - { id: number-12, local: dwanaście, foreign: zwölf, hint: 12 }
-  - { id: number-13, local: trzynaście, foreign: dreizehn, hint: 13 }
-  - { id: number-14, local: czternaście, foreign: vierzehn, hint: 14 }
-  - { id: number-15, local: piętnaście, foreign: fünfzehn, hint: 15 }
-  - { id: number-16, local: szesnaście, foreign: sechzehn, hint: 16 }
-  - { id: number-17, local: siedemnaście, foreign: siebzehn, hint: 17 }
-  - { id: number-18, local: osiemnaście, foreign: achtzehn, hint: 18 }
-  - { id: number-19, local: dziewiętnaście, foreign: neunzehn, hint: 19 }
-  - { id: number-20, local: dwadzieścia, foreign: zwanzig, hint: 20 }
+  - { id: number-0, local: zero, foreign: null, hint: 0, group: number/small }
+  - { id: number-1, local: jeden, foreign: eins, hint: 1, group: number/small }
+  - { id: number-2, local: dwa, foreign: zwei, hint: 2, group: number/small }
+  - { id: number-3, local: trzy, foreign: drei, hint: 3, group: number/small }
+  - { id: number-4, local: cztery, foreign: vier, hint: 4, group: number/small }
+  - { id: number-5, local: pięć, foreign: fünf, hint: 5, group: number/small }
+  - { id: number-6, local: sześć, foreign: sechs, hint: 6, group: number/small }
+  - { id: number-7, local: siedem, foreign: sieben, hint: 7, group: number/small }
+  - { id: number-8, local: osiem, foreign: acht, hint: 8, group: number/small }
+  - { id: number-9, local: dziewięć, foreign: neun, hint: 9, group: number/small }
+  - { id: number-10, local: dziesięć, foreign: zehn, hint: 10, group: number/small }
+  - { id: number-11, local: jedenaście, foreign: elf, hint: 11, group: number/teens }
+  - { id: number-12, local: dwanaście, foreign: zwölf, hint: 12, group: number/teens }
+  - { id: number-13, local: trzynaście, foreign: dreizehn, hint: 13, group: number/teens }
+  - { id: number-14, local: czternaście, foreign: vierzehn, hint: 14, group: number/teens }
+  - { id: number-15, local: piętnaście, foreign: fünfzehn, hint: 15, group: number/teens }
+  - { id: number-16, local: szesnaście, foreign: sechzehn, hint: 16, group: number/teens }
+  - { id: number-17, local: siedemnaście, foreign: siebzehn, hint: 17, group: number/teens }
+  - { id: number-18, local: osiemnaście, foreign: achtzehn, hint: 18, group: number/teens }
+  - { id: number-19, local: dziewiętnaście, foreign: neunzehn, hint: 19, group: number/teens }
+  - { id: number-20, local: dwadzieścia, foreign: zwanzig, hint: 20, group: number/teens }
   - { id: noch-mal, local: jeszcze raz, foreign: noch mal }
-  - { id: sehr-gut, local: bardzo dobrze, foreign: sehr gut }
-  - { id: gut, local: dobrze, foreign: gut }
-  - { id: so-lala, local: tak sobie, foreign: so lala }
-  - { id: schlecht, local: źle, foreign: schlecht }
-  - { id: sehr-schlecht, local: bardzo źle, foreign: sehr schlecht }
+  - { id: sehr-gut, local: bardzo dobrze, foreign: sehr gut, group: mood }
+  - { id: gut, local: dobrze, foreign: gut, group: mood }
+  - { id: so-lala, local: tak sobie, foreign: so lala, group: mood }
+  - { id: schlecht, local: źle, foreign: schlecht, group: mood }
+  - { id: sehr-schlecht, local: bardzo źle, foreign: sehr schlecht, group: mood }
   - { id: hallo, local: cześć, foreign: hallo, core: true }
   - { id: entschuldigung, local: przepraszam, foreign: Entschuldigung, core: true }
   - { id: guten-morgen, local: dzień dobry (rano), foreign: Guten Morgen }

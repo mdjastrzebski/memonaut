@@ -96,7 +96,6 @@ export function SetupScreen({
                 key={option.id}
                 deck={option}
                 cards={cards}
-                exerciseTypes={subject.exerciseTypes}
                 now={now}
                 checked={option.id === deck.id}
                 onSelect={() => onSelectDeck(option)}
@@ -106,7 +105,6 @@ export function SetupScreen({
               <UnitTile
                 units={unitDecks}
                 cards={cards}
-                exerciseTypes={subject.exerciseTypes}
                 now={now}
                 unit={tileUnit}
                 checked={tileUnit === selectedUnit}
@@ -116,12 +114,7 @@ export function SetupScreen({
           </div>
         </ChoiceGroup>
 
-        <SessionSizePicker
-          value={sessionSize}
-          onChange={onSessionSizeChange}
-          wordCount={deck.conceptIds.length}
-          exerciseCount={subject.exerciseTypes.length}
-        />
+        <SessionSizePicker value={sessionSize} onChange={onSessionSizeChange} />
       </div>
 
       <DeckOverview
@@ -249,13 +242,12 @@ function SubjectTile({ subject, content, checked, onSelect, style }: SubjectTile
 interface CoreTileProps {
   deck: Deck;
   cards: Record<string, Card>;
-  exerciseTypes: ExerciseType[];
   now: Date;
   checked: boolean;
   onSelect: () => void;
 }
 
-function CoreTile({ deck, cards, exerciseTypes, now, checked, onSelect }: CoreTileProps) {
+function CoreTile({ deck, cards, now, checked, onSelect }: CoreTileProps) {
   return (
     <ChoiceTile
       name={deck.name}
@@ -272,7 +264,7 @@ function CoreTile({ deck, cards, exerciseTypes, now, checked, onSelect }: CoreTi
         <span aria-hidden className="flex h-11 items-center font-display text-lg font-bold">
           {deck.name}
         </span>
-        <DeckStats deck={deck} cards={cards} exerciseTypes={exerciseTypes} now={now} />
+        <DeckStats deck={deck} cards={cards} now={now} />
       </span>
     </ChoiceTile>
   );
@@ -281,7 +273,6 @@ function CoreTile({ deck, cards, exerciseTypes, now, checked, onSelect }: CoreTi
 interface UnitTileProps {
   units: Deck[];
   cards: Record<string, Card>;
-  exerciseTypes: ExerciseType[];
   now: Date;
   /** The unit on the tile: the selected one, or else the one last picked. */
   unit: Deck;
@@ -290,7 +281,7 @@ interface UnitTileProps {
 }
 
 /** A unit as a tile to select, with a select box to switch to another unit. */
-function UnitTile({ units, cards, exerciseTypes, now, unit, checked, onSelect }: UnitTileProps) {
+function UnitTile({ units, cards, now, unit, checked, onSelect }: UnitTileProps) {
   return (
     <ChoiceTile name={unit.name} group="deck" checked={checked} onSelect={() => onSelect(unit)}>
       <span className="flex min-w-0 flex-1 flex-col gap-1">
@@ -314,7 +305,7 @@ function UnitTile({ units, cards, exerciseTypes, now, unit, checked, onSelect }:
               onValueChange={(id) => onSelect(units.find((option) => option.id === id)!)}
             >
               {units.map((option) => {
-                const due = countDueToday(option.conceptIds, cards, now, exerciseTypes);
+                const due = countDueToday(option.conceptIds, cards, now, option.exerciseTypes);
                 return (
                   <DropdownMenuRadioItem
                     key={option.id}
@@ -332,7 +323,7 @@ function UnitTile({ units, cards, exerciseTypes, now, unit, checked, onSelect }:
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>
-        <DeckStats deck={unit} cards={cards} exerciseTypes={exerciseTypes} now={now} />
+        <DeckStats deck={unit} cards={cards} now={now} />
       </span>
     </ChoiceTile>
   );
@@ -341,20 +332,19 @@ function UnitTile({ units, cards, exerciseTypes, now, unit, checked, onSelect }:
 interface DeckStatsProps {
   deck: Deck;
   cards: Record<string, Card>;
-  exerciseTypes: ExerciseType[];
   now: Date;
 }
 
 /** A deck tile's rows below its name: words due today, word count and progress. */
-function DeckStats({ deck, cards, exerciseTypes, now }: DeckStatsProps) {
+function DeckStats({ deck, cards, now }: DeckStatsProps) {
   return (
     <>
-      <DueToday count={countDueToday(deck.conceptIds, cards, now, exerciseTypes)} />
+      <DueToday count={countDueToday(deck.conceptIds, cards, now, deck.exerciseTypes)} />
       <span className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm text-muted-foreground">
         {plural(deck.conceptIds.length, 'word')}
         <ProgressCounts
           progress={deck.conceptIds.map(
-            (conceptId) => getConceptStatus(conceptId, cards, exerciseTypes).progress,
+            (conceptId) => getConceptStatus(conceptId, cards, deck.exerciseTypes).progress,
           )}
         />
       </span>
@@ -374,7 +364,7 @@ interface DeckOverviewProps {
 /** What's in the selected Deck, how well each word is known, and the start button. */
 function DeckOverview({ content, cards, subject, deck, now, onStart }: DeckOverviewProps) {
   const concepts = content.concepts.filter((concept) => deck.conceptIds.includes(concept.id));
-  const { exerciseTypes } = subject;
+  const { exerciseTypes } = deck;
   const words = concepts.map((concept) => ({
     concept,
     ...getConceptStatus(concept.id, cards, exerciseTypes),
@@ -542,21 +532,16 @@ function describeCard(srs: FsrsCard | undefined, now: Date): string {
 interface SessionSizePickerProps {
   value: SessionSize;
   onChange: (size: SessionSize) => void;
-  /** Words in the selected set. */
-  wordCount: number;
-  /** Exercises per word. */
-  exerciseCount: number;
 }
 
-/** Segmented buttons for the most words to practise in one session. */
-function SessionSizePicker({ value, onChange, wordCount, exerciseCount }: SessionSizePickerProps) {
-  const words = Math.min(value ?? Infinity, wordCount);
+/** Segmented buttons for the most exercises to practise in one session. */
+function SessionSizePicker({ value, onChange }: SessionSizePickerProps) {
   return (
-    <ChoiceGroup legend="Words per session">
+    <ChoiceGroup legend="Exercises per session">
       <div className="grid max-w-md grid-cols-4 gap-1 rounded-2xl border-2 border-line bg-card p-1 shadow-sticker-sm">
         {SESSION_SIZES.map((size) => (
           <label
-            key={size ?? 'all'}
+            key={size}
             className="cursor-pointer rounded-xl py-2.5 text-center font-display font-bold transition-colors hover:bg-muted has-checked:bg-highlight has-checked:hover:bg-highlight has-focus-visible:ring-3 has-focus-visible:ring-ring/50"
           >
             <input
@@ -566,13 +551,10 @@ function SessionSizePicker({ value, onChange, wordCount, exerciseCount }: Sessio
               onChange={() => onChange(size)}
               className="sr-only"
             />
-            {size ?? 'No limit'}
+            {size}
           </label>
         ))}
       </div>
-      <p className="text-sm text-muted-foreground">
-        {plural(words, 'word')} · {words * exerciseCount} exercises
-      </p>
     </ChoiceGroup>
   );
 }
