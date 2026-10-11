@@ -1,4 +1,4 @@
-import type { Concept, ExerciseType } from '@/domain/types';
+import type { Concept } from '@/domain/types';
 import { shuffle } from '@/lib/shuffle';
 import { Rating } from '@/srs/scheduler';
 
@@ -6,17 +6,6 @@ import { normalizeAnswer, type AnswerResult } from './type-answer';
 
 /** Which word of a Concept is offered as an option. */
 export type ChoiceSide = 'local' | 'foreign';
-
-/** The multiple-choice Exercise Types and the word picked in each. */
-const CHOICE_SIDES: Partial<Record<ExerciseType, ChoiceSide>> = {
-  'recognition-choice': 'local',
-  'translation-choice': 'foreign',
-};
-
-/** The word picked in a multiple-choice Exercise Type; none for a typed one. */
-export function getChoiceSide(exerciseType: ExerciseType): ChoiceSide | undefined {
-  return CHOICE_SIDES[exerciseType];
-}
 
 /** How many options are offered, the right one included, when there are enough words. */
 export const CHOICE_COUNT = 4;
