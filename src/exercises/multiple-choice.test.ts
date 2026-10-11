@@ -3,7 +3,7 @@ import { expect, test } from 'vitest';
 import type { Concept } from '@/domain/types';
 import { Rating } from '@/srs/scheduler';
 
-import { getChoiceSide, gradeChoice, pickChoices } from './multiple-choice';
+import { FAST_CHOICE_MS, getChoiceSide, gradeChoice, pickChoices } from './multiple-choice';
 
 const concept = (id: string, local: string, foreign: string): Concept => ({
   id,
@@ -120,7 +120,13 @@ test('shuffles the options', () => {
 });
 
 test('rates a right pick Good and a wrong one Again', () => {
-  expect(gradeChoice('eins', 'eins', 500).grade).toBe(Rating.Good);
+  expect(gradeChoice('eins', 'eins', 5000).grade).toBe(Rating.Good);
+  expect(gradeChoice('eins', 'zwei', 5000).grade).toBe(Rating.Again);
+});
+
+test('rates a really fast right pick Easy, but never a wrong one', () => {
+  expect(gradeChoice('eins', 'eins', FAST_CHOICE_MS).grade).toBe(Rating.Easy);
+  expect(gradeChoice('eins', 'eins', FAST_CHOICE_MS + 1).grade).toBe(Rating.Good);
   expect(gradeChoice('eins', 'zwei', 500).grade).toBe(Rating.Again);
 });
 

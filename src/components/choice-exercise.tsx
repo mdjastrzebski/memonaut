@@ -3,10 +3,16 @@ import { useEffect, useRef, useState } from 'react';
 
 import { Burst } from '@/components/burst';
 import type { ExerciseScreenProps } from '@/components/exercise-screen';
+import { FastBonus } from '@/components/fast-bonus';
 import { GRADE_ICONS, GRADE_STYLES } from '@/components/grades';
 import { CardStats, RatingPreview, SrsDetails } from '@/components/srs-stats';
 import { Button } from '@/components/ui/button';
-import { gradeChoice, pickChoices, type ChoiceSide } from '@/exercises/multiple-choice';
+import {
+  FAST_CHOICE_MS,
+  gradeChoice,
+  pickChoices,
+  type ChoiceSide,
+} from '@/exercises/multiple-choice';
 import type { AnswerResult } from '@/exercises/type-answer';
 import { formatDuration, formatSeconds } from '@/lib/format';
 import { playCorrect } from '@/lib/sounds';
@@ -75,7 +81,7 @@ export function ChoiceExercise({
     const at = new Date();
     const result = gradeChoice(answer, option, at.getTime() - shownAt.getTime());
     setPicked({ option, result, at });
-    if (result.grade === Rating.Good) playCorrect();
+    if (result.grade !== Rating.Again) playCorrect();
     // In translation, the learner hears the foreign word once they've picked it.
     if (!recognition) playWord();
   };
@@ -181,6 +187,12 @@ export function ChoiceExercise({
           })}
         </div>
 
+        {!picked && (
+          <div className="relative mt-4">
+            <FastBonus durationMs={FAST_CHOICE_MS} />
+          </div>
+        )}
+
         {picked && grade !== undefined && (
           <div className="relative mt-4 flex flex-col gap-4">
             <ChoiceFeedback
@@ -221,9 +233,9 @@ export function ChoiceExercise({
         <div>
           <h3 className="font-medium text-foreground">Rating preview</h3>
           <p>
-            Rated automatically: right → Good · wrong → Again. Never Easy, since picking a word is
-            easier than recalling it. Cards due within {formatDuration(LEARN_AHEAD_MS)} come back in
-            this session.
+            Rated automatically: right within {formatSeconds(FAST_CHOICE_MS)} → Easy · right → Good
+            · wrong → Again. Cards due within {formatDuration(LEARN_AHEAD_MS)} come back in this
+            session.
           </p>
           <RatingPreview card={card.srs} now={now} highlight={grade} />
         </div>
@@ -243,7 +255,7 @@ interface ChoiceFeedbackProps {
 function ChoiceFeedback({ grade, foreign, local, onListen }: ChoiceFeedbackProps) {
   const style = GRADE_STYLES[grade];
   const Icon = GRADE_ICONS[grade];
-  const right = grade === Rating.Good;
+  const right = grade !== Rating.Again;
 
   return (
     <div

@@ -4,6 +4,7 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import App from './App';
 import { content } from './data/content';
+import { FAST_CHOICE_MS } from './exercises/multiple-choice';
 
 // jsdom has no speech synthesis; record what would be read aloud instead.
 const spoken: string[] = [];
@@ -452,7 +453,8 @@ test('a unit unlocks recognition choice, dictation, translation choice, then tra
   };
 
   // Recognition: the German word is shown and read aloud; its meaning is picked with a number key.
-  // A right pick is rated Good, so each word comes back once more before it graduates.
+  // A right pick is rated Good, so each word comes back once more before it graduates. Only the
+  // first is picked really fast: it's rated Easy and graduates at once.
   let recognitions = 0;
   while (screen.queryByText('What does it mean?')) {
     const foreign = screen.getByRole('heading', { level: 2 }).textContent;
@@ -460,13 +462,14 @@ test('a unit unlocks recognition choice, dictation, translation choice, then tra
     const { local } = concepts.find((concept) => concept.foreign === foreign)!;
     expect(options()).toHaveLength(4);
     const index = options().findIndex((option) => option.textContent?.endsWith(local!));
+    if (recognitions > 0) vi.setSystemTime(Date.now() + FAST_CHOICE_MS + 1000);
     await user.keyboard(String(index + 1));
-    expect(screen.getByRole('status')).toHaveTextContent('Good');
+    expect(screen.getByRole('status')).toHaveTextContent(recognitions === 0 ? 'Easy' : 'Good');
     expect(screen.getByRole('status')).toHaveTextContent(`${foreign}=means${local}`);
     await user.keyboard('{Enter}');
     recognitions++;
   }
-  expect(recognitions).toBe(20);
+  expect(recognitions).toBe(19);
 
   await startNewSession(new Date(2026, 0, 6, 10));
   for (let i = 0; i < 10; i++) {

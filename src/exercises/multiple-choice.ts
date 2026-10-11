@@ -21,6 +21,12 @@ export function getChoiceSide(exerciseType: ExerciseType): ChoiceSide | undefine
 /** How many options are offered, the right one included, when there are enough words. */
 export const CHOICE_COUNT = 4;
 
+/**
+ * A right pick within this time is rated Easy: the word was known at once, not found by ruling the
+ * other options out.
+ */
+export const FAST_CHOICE_MS = 3000;
+
 interface PickChoicesOptions {
   side: ChoiceSide;
   /** Other Concepts of the Deck, which make the best wrong options: same topic and level. */
@@ -84,10 +90,9 @@ export function pickChoices(
   return shuffle(options, random);
 }
 
-/**
- * Rates a picked option: Good if right, else Again. Never Easy, however fast, since picking the
- * word is easier than recalling it.
- */
+/** Rates a picked option: Easy if right within `FAST_CHOICE_MS`, Good if right later, else Again. */
 export function gradeChoice(answer: string, picked: string, elapsedMs: number): AnswerResult {
-  return { grade: picked === answer ? Rating.Good : Rating.Again, issues: [], elapsedMs };
+  const grade =
+    picked !== answer ? Rating.Again : elapsedMs <= FAST_CHOICE_MS ? Rating.Easy : Rating.Good;
+  return { grade, issues: [], elapsedMs };
 }
