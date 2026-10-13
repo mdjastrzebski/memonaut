@@ -5,70 +5,147 @@ strictSpelling: true
 shuffleNew: true
 concepts:
   # Dzielenie z resztą.
-  - { id: rem-29-6, local: 'Reszta z dzielenia 29 przez 6', foreign: '5' }
-  - { id: rem-45-8, local: 'Reszta z dzielenia 45 przez 8', foreign: '5' }
-  - { id: rem-52-9, local: 'Reszta z dzielenia 52 przez 9', foreign: '7' }
-  - { id: rem-74-9, local: 'Reszta z dzielenia 74 przez 9', foreign: '2' }
-  - { id: rem-47-6, local: 'Reszta z dzielenia 47 przez 6', foreign: '5' }
-  - { id: rem-59-8, local: 'Reszta z dzielenia 59 przez 8', foreign: '3' }
-  - { id: rem-40-10, local: 'Reszta z dzielenia 40 przez 10', foreign: '0' }
-  - { id: rem-100-7, local: 'Reszta z dzielenia 100 przez 7', foreign: '2' }
-  - { id: rem-max-7, local: 'Największa możliwa reszta z dzielenia przez 7', foreign: '6' }
-  - { id: rem-max-9, local: 'Największa możliwa reszta z dzielenia przez 9', foreign: '8' }
+  - {
+      id: rem-29-6,
+      local: 'Reszta z dzielenia 29 przez 6',
+      foreign: '5',
+      answerExplanation: '29 : 6 = 4 r 5',
+    }
+  - {
+      id: rem-45-8,
+      local: 'Reszta z dzielenia 45 przez 8',
+      foreign: '5',
+      answerExplanation: '45 : 8 = 5 r 5',
+    }
+  - {
+      id: rem-52-9,
+      local: 'Reszta z dzielenia 52 przez 9',
+      foreign: '7',
+      answerExplanation: '52 : 9 = 5 r 7',
+    }
+  - {
+      id: rem-74-9,
+      local: 'Reszta z dzielenia 74 przez 9',
+      foreign: '2',
+      answerExplanation: '74 : 9 = 8 r 2',
+    }
+  - {
+      id: rem-47-6,
+      local: 'Reszta z dzielenia 47 przez 6',
+      foreign: '5',
+      answerExplanation: '47 : 6 = 7 r 5',
+    }
+  - {
+      id: rem-59-8,
+      local: 'Reszta z dzielenia 59 przez 8',
+      foreign: '3',
+      answerExplanation: '59 : 8 = 7 r 3',
+    }
+  - {
+      id: rem-40-10,
+      local: 'Reszta z dzielenia 40 przez 10',
+      foreign: '0',
+      answerExplanation: '40 : 10 = 4 r 0',
+    }
+  - {
+      id: rem-100-7,
+      local: 'Reszta z dzielenia 100 przez 7',
+      foreign: '2',
+      answerExplanation: '100 : 7 = 14 r 2',
+    }
+  - {
+      id: rem-max-7,
+      local: 'Największa możliwa reszta z dzielenia przez 7',
+      foreign: '6',
+      answerExplanation: 'Reszta jest mniejsza od 7, więc najwyżej 6',
+    }
+  - {
+      id: rem-max-9,
+      local: 'Największa możliwa reszta z dzielenia przez 9',
+      foreign: '8',
+      answerExplanation: 'Reszta jest mniejsza od 9, więc najwyżej 8',
+    }
   # Zadania z treścią.
   - {
       id: word-candies,
       local: '25 cukierków dzielimy po równo między 4 dzieci. Ile cukierków zostanie?',
       foreign: '1',
+      answerExplanation: '25 : 4 = 6 r 1, zostanie 1 cukierek',
     }
-  - { id: word-teams, local: 'Ile pełnych drużyn po 6 osób utworzy 20 dzieci?', foreign: '3' }
+  - {
+      id: word-teams,
+      local: 'Ile pełnych drużyn po 6 osób utworzy 20 dzieci?',
+      foreign: '3',
+      answerExplanation: '20 : 6 = 3 r 2, czyli 3 pełne drużyny',
+    }
   - {
       id: word-boxes,
       local: 'W pudełku mieszczą się 4 jajka. Ile pudełek potrzeba na 18 jajek?',
       foreign: '5',
+      answerExplanation: '18 : 4 = 4 r 2, czyli potrzeba 5 pudełek',
     }
   # Kwadraty do 15² = 225.
-  - { id: square-0, local: '0² =', foreign: '0' }
-  - { id: square-1, local: '1² =', foreign: '1' }
-  - { id: square-2, local: '2² =', foreign: '4' }
-  - { id: square-3, local: '3² =', foreign: '9' }
-  - { id: square-4, local: '4² =', foreign: '16' }
-  - { id: square-5, local: '5² =', foreign: '25' }
-  - { id: square-6, local: '6² =', foreign: '36' }
-  - { id: square-7, local: '7² =', foreign: '49' }
-  - { id: square-8, local: '8² =', foreign: '64' }
-  - { id: square-9, local: '9² =', foreign: '81' }
-  - { id: square-10, local: '10² =', foreign: '100' }
-  - { id: square-11, local: '11² =', foreign: '121' }
-  - { id: square-12, local: '12² =', foreign: '144' }
-  - { id: square-13, local: '13² =', foreign: '169' }
-  - { id: square-14, local: '14² =', foreign: '196' }
-  - { id: square-15, local: '15² =', foreign: '225' }
+  - { id: square-0, local: '0² =', foreign: '0', answerExplanation: '0² = 0' }
+  - { id: square-1, local: '1² =', foreign: '1', answerExplanation: '1² = 1' }
+  - { id: square-2, local: '2² =', foreign: '4', answerExplanation: '2² = 4' }
+  - { id: square-3, local: '3² =', foreign: '9', answerExplanation: '3² = 9' }
+  - { id: square-4, local: '4² =', foreign: '16', answerExplanation: '4² = 16' }
+  - { id: square-5, local: '5² =', foreign: '25', answerExplanation: '5² = 25' }
+  - { id: square-6, local: '6² =', foreign: '36', answerExplanation: '6² = 36' }
+  - { id: square-7, local: '7² =', foreign: '49', answerExplanation: '7² = 49' }
+  - { id: square-8, local: '8² =', foreign: '64', answerExplanation: '8² = 64' }
+  - { id: square-9, local: '9² =', foreign: '81', answerExplanation: '9² = 81' }
+  - { id: square-10, local: '10² =', foreign: '100', answerExplanation: '10² = 100' }
+  - { id: square-11, local: '11² =', foreign: '121', answerExplanation: '11² = 121' }
+  - { id: square-12, local: '12² =', foreign: '144', answerExplanation: '12² = 144' }
+  - { id: square-13, local: '13² =', foreign: '169', answerExplanation: '13² = 169' }
+  - { id: square-14, local: '14² =', foreign: '196', answerExplanation: '14² = 196' }
+  - { id: square-15, local: '15² =', foreign: '225', answerExplanation: '15² = 225' }
   # Sześciany do 6³ = 216 oraz 10³.
-  - { id: cube-0, local: '0³ =', foreign: '0' }
-  - { id: cube-1, local: '1³ =', foreign: '1' }
-  - { id: cube-2, local: '2³ =', foreign: '8' }
-  - { id: cube-3, local: '3³ =', foreign: '27' }
-  - { id: cube-4, local: '4³ =', foreign: '64' }
-  - { id: cube-5, local: '5³ =', foreign: '125' }
-  - { id: cube-6, local: '6³ =', foreign: '216' }
-  - { id: cube-10, local: '10³ =', foreign: '1000' }
+  - { id: cube-0, local: '0³ =', foreign: '0', answerExplanation: '0³ = 0' }
+  - { id: cube-1, local: '1³ =', foreign: '1', answerExplanation: '1³ = 1' }
+  - { id: cube-2, local: '2³ =', foreign: '8', answerExplanation: '2³ = 8' }
+  - { id: cube-3, local: '3³ =', foreign: '27', answerExplanation: '3³ = 27' }
+  - { id: cube-4, local: '4³ =', foreign: '64', answerExplanation: '4³ = 64' }
+  - { id: cube-5, local: '5³ =', foreign: '125', answerExplanation: '5³ = 125' }
+  - { id: cube-6, local: '6³ =', foreign: '216', answerExplanation: '6³ = 216' }
+  - { id: cube-10, local: '10³ =', foreign: '1000', answerExplanation: '10³ = 1000' }
   # Jaka liczba podniesiona do potęgi daje wynik?
-  - { id: base-square-49, local: '_² = 49', foreign: '7' }
-  - { id: base-square-64, local: '_² = 64', foreign: '8' }
-  - { id: base-square-81, local: '_² = 81', foreign: '9' }
-  - { id: base-square-144, local: '_² = 144', foreign: '12' }
-  - { id: base-square-225, local: '_² = 225', foreign: '15' }
-  - { id: base-cube-8, local: '_³ = 8', foreign: '2' }
-  - { id: base-cube-27, local: '_³ = 27', foreign: '3' }
-  - { id: base-cube-125, local: '_³ = 125', foreign: '5' }
-  - { id: base-cube-1000, local: '_³ = 1000', foreign: '10' }
+  - { id: base-square-49, local: '_² = 49', foreign: '7', answerExplanation: '7² = 49' }
+  - { id: base-square-64, local: '_² = 64', foreign: '8', answerExplanation: '8² = 64' }
+  - { id: base-square-81, local: '_² = 81', foreign: '9', answerExplanation: '9² = 81' }
+  - { id: base-square-144, local: '_² = 144', foreign: '12', answerExplanation: '12² = 144' }
+  - { id: base-square-225, local: '_² = 225', foreign: '15', answerExplanation: '15² = 225' }
+  - { id: base-cube-8, local: '_³ = 8', foreign: '2', answerExplanation: '2³ = 8' }
+  - { id: base-cube-27, local: '_³ = 27', foreign: '3', answerExplanation: '3³ = 27' }
+  - { id: base-cube-125, local: '_³ = 125', foreign: '5', answerExplanation: '5³ = 125' }
+  - { id: base-cube-1000, local: '_³ = 1000', foreign: '10', answerExplanation: '10³ = 1000' }
   # Działania z potęgami: najpierw potęgowanie, potem mnożenie i dzielenie, na końcu dodawanie i odejmowanie.
-  - { id: mixed-3sq-plus-2cube, local: '3² + 2³ =', foreign: '17' }
-  - { id: mixed-5sq-minus-4sq, local: '5² − 4² =', foreign: '9' }
-  - { id: mixed-2-times-3sq, local: '2 · 3² =', foreign: '18' }
-  - { id: mixed-2-times-3-sq, local: '(2 · 3)² =', foreign: '36' }
-  - { id: mixed-10sq-minus-1cube, local: '10² − 1³ =', foreign: '99' }
-  - { id: mixed-1-plus-2-cube, local: '(1 + 2)³ =', foreign: '27' }
-  - { id: mixed-4sq-div-2, local: '4² : 2 =', foreign: '8' }
-  - { id: mixed-2cube-times-5, local: '2³ · 5 =', foreign: '40' }
+  - {
+      id: mixed-3sq-plus-2cube,
+      local: '3² + 2³ =',
+      foreign: '17',
+      answerExplanation: '3² + 2³ = 17',
+    }
+  - { id: mixed-5sq-minus-4sq, local: '5² − 4² =', foreign: '9', answerExplanation: '5² − 4² = 9' }
+  - { id: mixed-2-times-3sq, local: '2 · 3² =', foreign: '18', answerExplanation: '2 · 3² = 18' }
+  - {
+      id: mixed-2-times-3-sq,
+      local: '(2 · 3)² =',
+      foreign: '36',
+      answerExplanation: '(2 · 3)² = 36',
+    }
+  - {
+      id: mixed-10sq-minus-1cube,
+      local: '10² − 1³ =',
+      foreign: '99',
+      answerExplanation: '10² − 1³ = 99',
+    }
+  - {
+      id: mixed-1-plus-2-cube,
+      local: '(1 + 2)³ =',
+      foreign: '27',
+      answerExplanation: '(1 + 2)³ = 27',
+    }
+  - { id: mixed-4sq-div-2, local: '4² : 2 =', foreign: '8', answerExplanation: '4² : 2 = 8' }
+  - { id: mixed-2cube-times-5, local: '2³ · 5 =', foreign: '40', answerExplanation: '2³ · 5 = 40' }

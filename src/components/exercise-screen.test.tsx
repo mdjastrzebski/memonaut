@@ -120,3 +120,14 @@ test('math answers are not read aloud', async () => {
   expect(screen.getByRole('status')).toHaveTextContent('Easy');
   expect(utterances).toEqual([]);
 });
+
+test('an answer explanation is shown with the result instead of the local word', async () => {
+  const user = userEvent.setup();
+  const math = content.subjects.find((subject) => subject.id === 'math')!;
+  renderExercise('math/square-3', math);
+
+  await user.type(screen.getByRole('textbox', { name: 'Answer' }), '8{Enter}');
+  const status = screen.getByRole('status');
+  expect(status).toHaveTextContent('3² = 9');
+  expect(status).not.toHaveTextContent('means');
+});

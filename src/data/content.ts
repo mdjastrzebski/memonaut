@@ -44,6 +44,8 @@ const conceptSchema = z.strictObject({
   foreign: z.string().min(1),
   hint: z.string().optional(),
   spokenHint: z.string().min(1).optional(),
+  /** Shown with the result instead of the local word. */
+  answerExplanation: z.string().min(1).optional(),
   /** Groups like Concepts of the Subject, e.g. "weekday", for multiple choice. */
   group: group.optional(),
   /** Puts the Concept in the Subject's core Deck. */
@@ -201,6 +203,7 @@ function isSameConcept(a: Concept, b: Concept): boolean {
     a.foreign === b.foreign &&
     a.hint === b.hint &&
     a.spokenHint === b.spokenHint &&
+    a.answerExplanation === b.answerExplanation &&
     a.group === b.group
   );
 }

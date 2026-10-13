@@ -65,6 +65,8 @@ export interface Concept {
    * apart words that sound the same, e.g. "zbiornik słonej wody" for "morze" (not "może").
    */
   spokenHint?: string;
+  /** Optional answer shown with the result instead of the local word, e.g. "3² = 9" in math. */
+  answerExplanation?: string;
   /**
    * Optional name of a set of like Concepts within the Subject, e.g. "weekday", or "number/small"
    * within the wider "number". In multiple choice, the others of its group are offered first as

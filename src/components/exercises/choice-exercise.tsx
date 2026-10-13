@@ -145,12 +145,16 @@ export function ChoiceExercise({
           <div className="relative mt-4 flex flex-col gap-4">
             <FeedbackPanel grade={picked.result.grade}>
               <p className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 font-display text-xl font-bold break-words">
-                <span>{concept.foreign}</span>
-                <span aria-hidden className="text-muted-foreground">
-                  =
-                </span>
-                <span className="sr-only">means</span>
-                <span>{concept.local}</span>
+                {concept.answerExplanation ?? (
+                  <>
+                    <span>{concept.foreign}</span>
+                    <span aria-hidden className="text-muted-foreground">
+                      =
+                    </span>
+                    <span className="sr-only">means</span>
+                    <span>{concept.local}</span>
+                  </>
+                )}
               </p>
               {onListen && (
                 <Button

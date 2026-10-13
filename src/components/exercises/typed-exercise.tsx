@@ -133,6 +133,7 @@ export function TypedExercise({
       input={checked.input}
       answer={concept.foreign}
       meaning={concept.local ?? concept.spokenHint}
+      explanation={concept.answerExplanation}
       trickySpellings={subject.trickySpellings}
     />
   );
@@ -252,6 +253,8 @@ interface TypedFeedbackProps {
   answer: string;
   /** The local word, or else the spoken hint, shown with the result. */
   meaning?: string;
+  /** Shown instead of the meaning, e.g. "3² = 9". */
+  explanation?: string;
   /** Marked in a right answer. */
   trickySpellings?: string[];
 }
@@ -260,28 +263,37 @@ interface TypedFeedbackProps {
  * The result, with the answer to compare after a mistake or else with its tricky spellings marked,
  * and the word's meaning.
  */
-function TypedFeedback({ grade, input, answer, meaning, trickySpellings }: TypedFeedbackProps) {
+function TypedFeedback({
+  grade,
+  input,
+  answer,
+  meaning,
+  explanation,
+  trickySpellings,
+}: TypedFeedbackProps) {
   const wrong = grade === Rating.Hard || grade === Rating.Again;
   const spelled = !wrong && trickySpellings !== undefined;
+  const textSize = wrong || spelled ? 'text-lg text-muted-foreground' : 'text-2xl';
 
   return (
     <FeedbackPanel grade={grade}>
       <div className="flex min-w-0 flex-col gap-1">
         {wrong && <AnswerComparison input={input} answer={answer} shake={grade === Rating.Again} />}
         {spelled && <SpelledAnswer answer={answer} trickySpellings={trickySpellings} />}
-        {meaning && (
-          <p
-            className={cn(
-              'flex items-center gap-2 font-display font-bold break-words',
-              wrong || spelled ? 'text-lg text-muted-foreground' : 'text-2xl',
-            )}
-          >
-            <span aria-hidden className="shrink-0 leading-none">
-              🇵🇱
-            </span>
-            <span className="sr-only">means</span>
-            <span className="min-w-0">{meaning}</span>
-          </p>
+        {explanation ? (
+          <p className={cn('font-display font-bold break-words', textSize)}>{explanation}</p>
+        ) : (
+          meaning && (
+            <p
+              className={cn('flex items-center gap-2 font-display font-bold break-words', textSize)}
+            >
+              <span aria-hidden className="shrink-0 leading-none">
+                🇵🇱
+              </span>
+              <span className="sr-only">means</span>
+              <span className="min-w-0">{meaning}</span>
+            </p>
+          )
         )}
       </div>
     </FeedbackPanel>
