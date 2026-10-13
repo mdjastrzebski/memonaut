@@ -4,31 +4,17 @@ name: Dzielenie z resztą, kwadraty i sześciany
 strictSpelling: true
 shuffleNew: true
 concepts:
-  # Dzielenie z resztą: uzupełnij iloraz.
-  - { id: quotient-17-5, local: '17 : 5 = _ r 2', foreign: '3' }
-  - { id: quotient-23-4, local: '23 : 4 = _ r 3', foreign: '5' }
-  - { id: quotient-38-7, local: '38 : 7 = _ r 3', foreign: '5' }
-  - { id: quotient-50-8, local: '50 : 8 = _ r 2', foreign: '6' }
-  - { id: quotient-61-7, local: '61 : 7 = _ r 5', foreign: '8' }
-  - { id: quotient-85-6, local: '85 : 6 = _ r 1', foreign: '14' }
-  - { id: quotient-7-9, local: '7 : 9 = _ r 7', foreign: '0' }
-  # Uzupełnij resztę.
-  - { id: rem-29-6, local: '29 : 6 = 4 r _', foreign: '5' }
-  - { id: rem-45-8, local: '45 : 8 = 5 r _', foreign: '5' }
-  - { id: rem-52-9, local: '52 : 9 = 5 r _', foreign: '7' }
-  - { id: rem-74-9, local: '74 : 9 = 8 r _', foreign: '2' }
-  # Sama reszta.
+  # Dzielenie z resztą.
+  - { id: rem-29-6, local: 'Reszta z dzielenia 29 przez 6', foreign: '5' }
+  - { id: rem-45-8, local: 'Reszta z dzielenia 45 przez 8', foreign: '5' }
+  - { id: rem-52-9, local: 'Reszta z dzielenia 52 przez 9', foreign: '7' }
+  - { id: rem-74-9, local: 'Reszta z dzielenia 74 przez 9', foreign: '2' }
   - { id: rem-47-6, local: 'Reszta z dzielenia 47 przez 6', foreign: '5' }
   - { id: rem-59-8, local: 'Reszta z dzielenia 59 przez 8', foreign: '3' }
   - { id: rem-40-10, local: 'Reszta z dzielenia 40 przez 10', foreign: '0' }
   - { id: rem-100-7, local: 'Reszta z dzielenia 100 przez 7', foreign: '2' }
   - { id: rem-max-7, local: 'Największa możliwa reszta z dzielenia przez 7', foreign: '6' }
   - { id: rem-max-9, local: 'Największa możliwa reszta z dzielenia przez 9', foreign: '8' }
-  # Szukana dzielna: sprawdzenie "iloraz · dzielnik + reszta".
-  - { id: dividend-5-7-4, local: '_ : 5 = 7 r 4', foreign: '39' }
-  - { id: dividend-6-4-3, local: '_ : 6 = 4 r 3', foreign: '27' }
-  - { id: dividend-8-3-6, local: '_ : 8 = 3 r 6', foreign: '30' }
-  - { id: dividend-9-6-1, local: '_ : 9 = 6 r 1', foreign: '55' }
   # Zadania z treścią.
   - {
       id: word-candies,
@@ -55,9 +41,9 @@ concepts:
   - { id: square-10, local: '10² =', foreign: '100' }
   - { id: square-11, local: '11² =', foreign: '121' }
   - { id: square-12, local: '12² =', foreign: '144' }
-  - { id: square-13, local: 'Kwadrat liczby 13', foreign: '169' }
-  - { id: square-14, local: 'Kwadrat liczby 14', foreign: '196' }
-  - { id: square-15, local: 'Kwadrat liczby 15', foreign: '225' }
+  - { id: square-13, local: '13² =', foreign: '169' }
+  - { id: square-14, local: '14² =', foreign: '196' }
+  - { id: square-15, local: '15² =', foreign: '225' }
   # Sześciany do 6³ = 216 oraz 10³.
   - { id: cube-0, local: '0³ =', foreign: '0' }
   - { id: cube-1, local: '1³ =', foreign: '1' }
@@ -65,7 +51,7 @@ concepts:
   - { id: cube-3, local: '3³ =', foreign: '27' }
   - { id: cube-4, local: '4³ =', foreign: '64' }
   - { id: cube-5, local: '5³ =', foreign: '125' }
-  - { id: cube-6, local: 'Sześcian liczby 6', foreign: '216' }
+  - { id: cube-6, local: '6³ =', foreign: '216' }
   - { id: cube-10, local: '10³ =', foreign: '1000' }
   # Jaka liczba podniesiona do potęgi daje wynik?
   - { id: base-square-49, local: '_² = 49', foreign: '7' }
