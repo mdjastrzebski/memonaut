@@ -393,7 +393,7 @@ test('setup offers each subject with its core set selected first', async () => {
     within(subjects)
       .getAllByRole('radio')
       .map((radio) => radio.getAttribute('aria-label')),
-  ).toEqual(['English', 'German', 'Polish']);
+  ).toEqual(['English', 'German', 'Matematyka', 'Polish']);
 
   await user.click(screen.getByRole('radio', { name: 'German' }));
   expect(screen.getByRole('radio', { name: 'Essentials' })).toBeChecked();

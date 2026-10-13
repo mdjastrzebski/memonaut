@@ -1,0 +1,8 @@
+id: math
+name: Matematyka
+emoji: 🔢
+foreignLanguage: pl-PL
+# Powers are typed with ² and ³; Polish letters for terms such as "sześcian".
+specialCharacters: [², ³, ą, ć, ę, ł, ń, ó, ś, ź, ż]
+# The question is shown as the local side and its answer is the foreign side: pick it, then type it.
+exerciseTypes: [translation-choice, translation]

@@ -1,0 +1,154 @@
+id: reszta-kwadraty-szesciany
+name: Dzielenie z resztą, kwadraty i sześciany
+# A number one digit off is wrong, not almost right.
+strictSpelling: true
+shuffleNew: true
+concepts:
+  # Dzielenie z resztą: wynik zapisany jako "iloraz r reszta".
+  - { id: div-17-5, local: '17 : 5 = _ r _', foreign: '3 r 2', group: division/result }
+  - { id: div-23-4, local: '23 : 4 = _ r _', foreign: '5 r 3', group: division/result }
+  - { id: div-29-6, local: '29 : 6 = _ r _', foreign: '4 r 5', group: division/result }
+  - { id: div-38-7, local: '38 : 7 = _ r _', foreign: '5 r 3', group: division/result }
+  - { id: div-45-8, local: '45 : 8 = _ r _', foreign: '5 r 5', group: division/result }
+  - { id: div-52-9, local: '52 : 9 = _ r _', foreign: '5 r 7', group: division/result }
+  - { id: div-61-7, local: '61 : 7 = _ r _', foreign: '8 r 5', group: division/result }
+  - { id: div-74-9, local: '74 : 9 = _ r _', foreign: '8 r 2', group: division/result }
+  - { id: div-85-6, local: '85 : 6 = _ r _', foreign: '14 r 1', group: division/result }
+  - { id: div-100-7, local: '100 : 7 = _ r _', foreign: '14 r 2', group: division/result }
+  - { id: div-7-9, local: '7 : 9 = _ r _', foreign: '0 r 7', group: division/result }
+  # Sama reszta.
+  - {
+      id: rem-47-6,
+      local: 'Reszta z dzielenia 47 przez 6',
+      foreign: '5',
+      group: division/remainder,
+    }
+  - {
+      id: rem-59-8,
+      local: 'Reszta z dzielenia 59 przez 8',
+      foreign: '3',
+      group: division/remainder,
+    }
+  - {
+      id: rem-40-10,
+      local: 'Reszta z dzielenia 40 przez 10',
+      foreign: '0',
+      group: division/remainder,
+    }
+  - {
+      id: rem-max-7,
+      local: 'Największa możliwa reszta z dzielenia przez 7',
+      foreign: '6',
+      group: division/remainder,
+    }
+  - {
+      id: rem-max-9,
+      local: 'Największa możliwa reszta z dzielenia przez 9',
+      foreign: '8',
+      group: division/remainder,
+    }
+  # Szukana dzielna: sprawdzenie "iloraz · dzielnik + reszta".
+  - { id: dividend-5-7-4, local: '_ : 5 = 7 r 4', foreign: '39', group: division/dividend }
+  - { id: dividend-6-4-3, local: '_ : 6 = 4 r 3', foreign: '27', group: division/dividend }
+  - { id: dividend-8-3-6, local: '_ : 8 = 3 r 6', foreign: '30', group: division/dividend }
+  - { id: dividend-9-6-1, local: '_ : 9 = 6 r 1', foreign: '55', group: division/dividend }
+  # Zadania z treścią.
+  - {
+      id: word-candies,
+      local: '25 cukierków dzielimy po równo między 4 dzieci. Ile cukierków zostanie?',
+      foreign: '1',
+      group: division/word,
+    }
+  - {
+      id: word-teams,
+      local: 'Ile pełnych drużyn po 6 osób utworzy 20 dzieci?',
+      foreign: '3',
+      group: division/word,
+    }
+  - {
+      id: word-boxes,
+      local: 'W pudełku mieszczą się 4 jajka. Ile pudełek potrzeba na 18 jajek?',
+      foreign: '5',
+      group: division/word,
+    }
+  # Nazwy.
+  - { id: term-quotient, local: 'Wynik dzielenia to…', foreign: 'iloraz', group: term }
+  - { id: term-dividend, local: 'Liczba, którą dzielimy, to…', foreign: 'dzielna', group: term }
+  - {
+      id: term-divisor,
+      local: 'Liczba, przez którą dzielimy, to…',
+      foreign: 'dzielnik',
+      group: term,
+    }
+  - {
+      id: term-remainder-less,
+      local: 'Reszta jest zawsze mniejsza od…',
+      foreign: 'dzielnika',
+      group: term,
+    }
+  - {
+      id: term-square,
+      local: 'Druga potęga liczby to inaczej jej…',
+      foreign: 'kwadrat',
+      group: term,
+    }
+  - {
+      id: term-cube,
+      local: 'Trzecia potęga liczby to inaczej jej…',
+      foreign: 'sześcian',
+      group: term,
+    }
+  # Kwadraty.
+  - { id: square-0, local: '0² =', foreign: '0', group: power/square }
+  - { id: square-1, local: '1² =', foreign: '1', group: power/square }
+  - { id: square-2, local: '2² =', foreign: '4', group: power/square }
+  - { id: square-3, local: '3² =', foreign: '9', group: power/square }
+  - { id: square-4, local: '4² =', foreign: '16', group: power/square }
+  - { id: square-5, local: '5² =', foreign: '25', group: power/square }
+  - { id: square-6, local: '6² =', foreign: '36', group: power/square }
+  - { id: square-7, local: '7² =', foreign: '49', group: power/square }
+  - { id: square-8, local: '8² =', foreign: '64', group: power/square }
+  - { id: square-9, local: '9² =', foreign: '81', group: power/square }
+  - { id: square-10, local: '10² =', foreign: '100', group: power/square }
+  - { id: square-11, local: '11² =', foreign: '121', group: power/square }
+  - { id: square-12, local: '12² =', foreign: '144', group: power/square }
+  - { id: square-20, local: '20² =', foreign: '400', group: power/square }
+  # Sześciany.
+  - { id: cube-0, local: '0³ =', foreign: '0', group: power/cube }
+  - { id: cube-1, local: '1³ =', foreign: '1', group: power/cube }
+  - { id: cube-2, local: '2³ =', foreign: '8', group: power/cube }
+  - { id: cube-3, local: '3³ =', foreign: '27', group: power/cube }
+  - { id: cube-4, local: '4³ =', foreign: '64', group: power/cube }
+  - { id: cube-5, local: '5³ =', foreign: '125', group: power/cube }
+  - { id: cube-10, local: '10³ =', foreign: '1000', group: power/cube }
+  # Jaka liczba podniesiona do potęgi daje wynik?
+  - { id: base-square-49, local: '_² = 49', foreign: '7', group: power/base }
+  - { id: base-square-64, local: '_² = 64', foreign: '8', group: power/base }
+  - { id: base-square-81, local: '_² = 81', foreign: '9', group: power/base }
+  - { id: base-cube-8, local: '_³ = 8', foreign: '2', group: power/base }
+  - { id: base-cube-27, local: '_³ = 27', foreign: '3', group: power/base }
+  - { id: base-cube-1000, local: '_³ = 1000', foreign: '10', group: power/base }
+  # Zapis iloczynu jako potęgi.
+  - { id: notation-6-6, local: 'Zapisz jako potęgę: 6 · 6', foreign: '6²', group: power/notation }
+  - { id: notation-9-9, local: 'Zapisz jako potęgę: 9 · 9', foreign: '9²', group: power/notation }
+  - {
+      id: notation-2-2-2,
+      local: 'Zapisz jako potęgę: 2 · 2 · 2',
+      foreign: '2³',
+      group: power/notation,
+    }
+  - {
+      id: notation-10-10-10,
+      local: 'Zapisz jako potęgę: 10 · 10 · 10',
+      foreign: '10³',
+      group: power/notation,
+    }
+  # Działania z potęgami: najpierw potęgowanie, potem mnożenie i dzielenie, na końcu dodawanie i odejmowanie.
+  - { id: mixed-3sq-plus-2cube, local: '3² + 2³ =', foreign: '17', group: power/mixed }
+  - { id: mixed-5sq-minus-4sq, local: '5² − 4² =', foreign: '9', group: power/mixed }
+  - { id: mixed-2-times-3sq, local: '2 · 3² =', foreign: '18', group: power/mixed }
+  - { id: mixed-2-times-3-sq, local: '(2 · 3)² =', foreign: '36', group: power/mixed }
+  - { id: mixed-10sq-minus-1cube, local: '10² − 1³ =', foreign: '99', group: power/mixed }
+  - { id: mixed-1-plus-2-cube, local: '(1 + 2)³ =', foreign: '27', group: power/mixed }
+  - { id: mixed-4sq-div-2, local: '4² : 2 =', foreign: '8', group: power/mixed }
+  - { id: mixed-2cube-times-5, local: '2³ · 5 =', foreign: '40', group: power/mixed }
