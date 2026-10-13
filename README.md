@@ -62,7 +62,12 @@ A session holds up to a chosen number of Cards (10, 20, 50 or 100), filled in th
 
 "Due today" on the setup screen counts the words with a Card from steps 1 and 2 before the next study day starts.
 
-A `knowledge` Subject, e.g. math, asks questions one way only, with the `question` Exercise Type: see the question, type its answer. Its words on screen are "questions" rather than "words". Other ways to answer questions, e.g. multiple choice, may follow.
+A `knowledge` Subject, e.g. math, asks questions one way only, with its own Exercise Types, easiest first:
+
+1. `question-choice`: see the question, pick its answer from it and the question's own wrong `choices`; only questions with `choices` get this exercise
+2. `question-type`: see the question, type its answer
+
+Its words on screen are "questions" rather than "words".
 
 A Subject can practise only some Exercise Types, and a Deck only some of its Subject's. Polish spelling (ortografia) uses only `dictation`: its words have nothing to translate. The English and German core sets leave out multiple choice, which is for meeting words in units. In dictation, words that sound the same, such as _morze_ and _może_, are told apart by a spoken hint read aloud after the word, e.g. "zbiornik słonej wody".
 
@@ -108,9 +113,10 @@ id: reszta-kwadraty-szesciany
 name: Dzielenie z resztą, kwadraty i sześciany
 concepts:
   - { id: square-3, question: '3² =', answer: '9', explanation: '3² = 9' }
+  - { id: twice-square-3, question: '2 · 3² =', answer: '18', choices: [36, 12, 11] }
 ```
 
-A `language` Subject needs a `foreignLanguage`, and its words have `local`, `foreign` and the optional fields below. A `knowledge` Subject's Concepts have a `question`, an `answer` and an optional `explanation`, shown with the result, e.g. `29 : 6 = 4 r 5` for "Reszta z dzielenia 29 przez 6". `hint` is shown on screen in translation and translation choice only, since it could give the meaning away in the others; `spokenHint` is read aloud in dictation and must be in the language being learned. `local` may be left out only in a Subject with only `dictation`. `group` names a set of like words within the Subject, e.g. `weekday`, for the wrong options in multiple choice; a slash puts it within a wider one, e.g. `number/small` within `number`. Leave out near-synonyms, which would be right too.
+A `language` Subject needs a `foreignLanguage`, and its words have `local`, `foreign` and the optional fields below. A `knowledge` Subject's Concepts have a `question`, an `answer`, an optional `explanation`, shown with the result, e.g. `29 : 6 = 4 r 5` for "Reszta z dzielenia 29 przez 6", and optional `choices`: wrong answers to pick from, best common mistakes, e.g. `36` for `2 · 3² =`. `hint` is shown on screen in translation and translation choice only, since it could give the meaning away in the others; `spokenHint` is read aloud in dictation and must be in the language being learned. `local` may be left out only in a Subject with only `dictation`. `group` names a set of like words within the Subject, e.g. `weekday`, for the wrong options in multiple choice; a slash puts it within a wider one, e.g. `number/small` within `number`. Leave out near-synonyms, which would be right too.
 
 Answers are rated automatically. By default an almost-correct answer (wrong capitalization, a missing umlaut or one letter off) is rated Hard. A number, e.g. `49`, must be exact in any Deck: one digit off is a wrong result, not a typo. A Deck with `strictSpelling: true`, like the Polish spelling sets, forgives only wrong capitalization, so _zolw_ for _żółw_ or _może_ for _morze_ is wrong. For the core Deck, set it in `core.yaml`. A Subject's `trickySpellings`, e.g. `[ó, u, rz, ż, ch, h]` for Polish, are marked in a right answer, to remind which spellings it got right.
 

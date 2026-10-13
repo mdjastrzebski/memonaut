@@ -1,5 +1,7 @@
 import { expect, test } from 'vitest';
 
+import { getConceptExerciseTypes } from '@/session/session';
+
 import { buildContent, content } from './content';
 
 const subject = 'id: german\nname: German\nkind: language\nforeignLanguage: de-DE\n';
@@ -346,7 +348,7 @@ test('rejects invalid content', () => {
   );
 });
 
-test('a knowledge subject asks questions, practised with the question exercise only', () => {
+test('a knowledge subject asks questions, practised with choice only when they have choices', () => {
   const { subjects, concepts, decks } = buildContent({
     './math/subject.yaml': 'id: math\nname: Math\nkind: knowledge\n',
     './math/decks/powers.yaml': `
@@ -354,10 +356,14 @@ id: powers
 name: Powers
 concepts:
   - { id: square-3, question: '3² =', answer: '9', explanation: '3² = 9' }
+  - { id: twice-square-3, question: '2 · 3² =', answer: '18', choices: [36, 12] }
 `,
   });
-  expect(subjects[0]).toMatchObject({ kind: 'knowledge', exerciseTypes: ['question'] });
-  expect(decks[0].exerciseTypes).toEqual(['question']);
+  const exerciseTypes = ['question-choice', 'question-type'];
+  expect(subjects[0]).toMatchObject({ kind: 'knowledge', exerciseTypes });
+  expect(decks[0].exerciseTypes).toEqual(exerciseTypes);
+  expect(decks[0].conceptExerciseTypes).toEqual({ 'math/square-3': ['question-type'] });
+  expect(getConceptExerciseTypes(decks[0], 'math/twice-square-3')).toEqual(exerciseTypes);
   expect(concepts).toEqual([
     {
       id: 'math/square-3',
@@ -367,7 +373,31 @@ concepts:
       answer: '9',
       explanation: '3² = 9',
     },
+    {
+      id: 'math/twice-square-3',
+      subjectId: 'math',
+      kind: 'knowledge',
+      question: '2 · 3² =',
+      answer: '18',
+      choices: ['36', '12'],
+    },
   ]);
+});
+
+test('question choices leave out the answer, and a deck has an exercise type for each question', () => {
+  const math = (deck: string) => () =>
+    buildContent({
+      './math/subject.yaml': 'id: math\nname: Math\nkind: knowledge\n',
+      './math/decks/a.yaml': `id: a\nname: A\n${deck}`,
+    });
+  expect(
+    math("concepts:\n  - { id: a, question: '1 + 1', answer: '2', choices: [3, 2] }\n"),
+  ).toThrow(/a\.yaml: concept "a" has its answer among its wrong choices/);
+  expect(
+    math(
+      "exerciseTypes: [question-choice]\nconcepts:\n  - { id: a, question: '1 + 1', answer: '2' }\n",
+    ),
+  ).toThrow(/a\.yaml: concept "a" fits none of the deck's exercise types/);
 });
 
 test('a subject needs a kind, and fields and exercise types of that kind', () => {
@@ -381,9 +411,9 @@ test('a subject needs a kind, and fields and exercise types of that kind', () =>
   expect(math('')).toThrow(/subject\.yaml/);
   expect(math('kind: knowledge\nforeignLanguage: pl-PL\n')).toThrow(/foreignLanguage/);
   expect(math('kind: knowledge\nexerciseTypes: [translation]\n')).toThrow(
-    /Use exercise types of a knowledge subject: question/,
+    /Use exercise types of a knowledge subject: question-choice, question-type/,
   );
-  expect(math('kind: language\nforeignLanguage: pl-PL\nexerciseTypes: [question]\n')).toThrow(
+  expect(math('kind: language\nforeignLanguage: pl-PL\nexerciseTypes: [question-type]\n')).toThrow(
     /Use exercise types of a language subject/,
   );
   expect(math('kind: knowledge\n', '{ id: a, local: jeden, foreign: one }')).toThrow(/a\.yaml/);

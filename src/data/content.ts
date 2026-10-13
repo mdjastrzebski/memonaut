@@ -2,7 +2,7 @@ import { parse } from 'yaml';
 import { z } from 'zod';
 
 import type { Concept, Deck, ExerciseType, Subject, SubjectKind } from '@/domain/types';
-import { EXERCISE_TYPES, KIND_EXERCISE_TYPES } from '@/session/session';
+import { canPractise, EXERCISE_TYPES, KIND_EXERCISE_TYPES } from '@/session/session';
 
 const id = z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'Use lowercase letters, digits and dashes');
 
@@ -69,11 +69,13 @@ const CONCEPT_FIELDS = {
     question: z.string().min(1),
     answer: z.string().min(1),
     explanation: z.string().min(1).optional(),
+    /** Wrong answers, for question choice. */
+    choices: z.array(z.string().min(1)).min(1).optional(),
   },
 } satisfies Record<SubjectKind, z.ZodRawShape>;
 
 /** Its fields are checked by the schema for its Subject's kind. */
-type ConceptFields = { id: string } & Record<string, string | undefined>;
+type ConceptFields = { id: string } & Record<string, string | string[] | undefined>;
 
 const deckSchema = (kind: SubjectKind) =>
   z.strictObject({
@@ -167,12 +169,33 @@ export function buildContent(files: Record<string, string>): Content {
         id: prefix(fields.id),
         subjectId: subject.id,
       } as Concept;
+      if (concept.kind === 'knowledge' && concept.choices?.includes(concept.answer)) {
+        throw new Error(`${path}: concept "${fields.id}" has its answer among its wrong choices`);
+      }
       const existing = concepts.get(fields.id);
       if (!existing) {
         concepts.set(fields.id, concept);
       } else if (!isSameConcept(existing, concept)) {
         throw new Error(`${path}: concept "${fields.id}" is defined differently in another deck`);
       }
+    };
+
+    /** Fewer Exercise Types for the Concepts that can't be practised with all of the Deck's. */
+    const getFewerExerciseTypes = (
+      path: string,
+      conceptIds: string[],
+      exerciseTypes: ExerciseType[],
+    ): Pick<Deck, 'conceptExerciseTypes'> => {
+      const fewer: Record<string, ExerciseType[]> = {};
+      for (const conceptId of conceptIds) {
+        const concept = concepts.get(conceptId)!;
+        const types = exerciseTypes.filter((type) => canPractise(concept, type));
+        if (types.length === 0) {
+          throw new Error(`${path}: concept "${conceptId}" fits none of the deck's exercise types`);
+        }
+        if (types.length < exerciseTypes.length) fewer[prefix(conceptId)] = types;
+      }
+      return Object.keys(fewer).length > 0 ? { conceptExerciseTypes: fewer } : {};
     };
 
     const corePath = `./${dir}/core.yaml`;
@@ -200,15 +223,18 @@ export function buildContent(files: Record<string, string>): Content {
           coreIds.add(fields.id);
         }
       }
+      const exerciseTypes = getExerciseTypes(path, deck.exerciseTypes);
+      const conceptIds = deck.concepts.map((concept) => concept.id);
       content.decks.push({
         id: prefix(deck.id),
         subjectId: subject.id,
         kind: 'unit',
         name: deck.name,
-        conceptIds: deck.concepts.map((concept) => prefix(concept.id)),
+        conceptIds: conceptIds.map(prefix),
         ...(deck.strictSpelling && { strictSpelling: true }),
         ...(deck.shuffleNew && { shuffleNew: true }),
-        exerciseTypes: getExerciseTypes(path, deck.exerciseTypes),
+        exerciseTypes,
+        ...getFewerExerciseTypes(path, conceptIds, exerciseTypes),
       });
     }
 
@@ -223,6 +249,7 @@ export function buildContent(files: Record<string, string>): Content {
         ...(coreStrictSpelling && { strictSpelling: true }),
         ...(coreShuffleNew && { shuffleNew: true }),
         exerciseTypes: coreExerciseTypes,
+        ...getFewerExerciseTypes(`./${dir}: core deck`, [...coreIds], coreExerciseTypes),
       });
     }
   }
@@ -234,7 +261,8 @@ function isSameConcept(a: Concept, b: Concept): boolean {
   const fields = (concept: Concept): Record<string, unknown> => ({ ...concept });
   const [first, second] = [fields(a), fields(b)];
   const keys = new Set([...Object.keys(first), ...Object.keys(second)]);
-  return [...keys].every((key) => first[key] === second[key]);
+  // Compared as JSON, so lists like choices count as the same when they have the same items.
+  return [...keys].every((key) => JSON.stringify(first[key]) === JSON.stringify(second[key]));
 }
 
 function read<T>(path: string, source: string, schema: z.ZodType<T>): T {

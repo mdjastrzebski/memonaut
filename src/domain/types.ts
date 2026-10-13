@@ -56,6 +56,11 @@ export interface Deck {
   shuffleNew?: boolean;
   /** How its Concepts are practised, easiest first: some or all of its Subject's. */
   exerciseTypes: ExerciseType[];
+  /**
+   * Fewer Exercise Types, keyed by Concept id, for Concepts that can't be practised with all of
+   * the Deck's, e.g. a question without choices.
+   */
+  conceptExerciseTypes?: Record<string, ExerciseType[]>;
 }
 
 /**
@@ -104,6 +109,11 @@ export interface KnowledgeConcept extends ConceptBase {
   answer: string;
   /** Optional, shown with the result, e.g. "3² = 9" or "29 : 6 = 4 r 5". */
   explanation?: string;
+  /**
+   * Optional wrong answers to pick from, e.g. common mistakes like "36" for "2 · 3² =". Only a
+   * question with them is practised with question choice.
+   */
+  choices?: string[];
 }
 
 /**
@@ -112,14 +122,16 @@ export interface KnowledgeConcept extends ConceptBase {
  * - dictation: hear the foreign word and type how it's spelled
  * - translation-choice: see the local word and pick the foreign one from a few options
  * - translation: see the local word and type the foreign one
- * - question: see a knowledge question and type its answer
+ * - question-choice: see a knowledge question and pick its answer from a few options
+ * - question-type: see a knowledge question and type its answer
  */
 export type ExerciseType =
   | 'recognition-choice'
   | 'dictation'
   | 'translation-choice'
   | 'translation'
-  | 'question';
+  | 'question-choice'
+  | 'question-type';
 
 /** One Concept practised with one Exercise Type. It holds its own FSRS review state. */
 export interface Card {

@@ -30,7 +30,7 @@ import { getSubjectDecks } from '@/data/decks';
 import type { Card, Concept, Deck, ExerciseType, Subject } from '@/domain/types';
 import { formatRelative } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { countDueToday, getCardId } from '@/session/session';
+import { countDueToday, getCardId, getConceptExerciseTypes } from '@/session/session';
 import { State, type FsrsCard } from '@/srs/scheduler';
 
 interface SetupScreenProps {
@@ -313,7 +313,7 @@ function UnitTile({ units, noun, cards, now, unit, checked, onSelect }: UnitTile
               onValueChange={(id) => onSelect(units.find((option) => option.id === id)!)}
             >
               {units.map((option) => {
-                const due = countDueToday(option.conceptIds, cards, now, option.exerciseTypes);
+                const due = countDueToday(option, cards, now);
                 return (
                   <DropdownMenuRadioItem
                     key={option.id}
@@ -348,15 +348,13 @@ interface DeckStatsProps {
 function DeckStats({ deck, noun, cards, now }: DeckStatsProps) {
   return (
     <>
-      <DueToday
-        count={countDueToday(deck.conceptIds, cards, now, deck.exerciseTypes)}
-        noun={noun}
-      />
+      <DueToday count={countDueToday(deck, cards, now)} noun={noun} />
       <span className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm text-muted-foreground">
         {plural(deck.conceptIds.length, noun)}
         <ProgressCounts
           progress={deck.conceptIds.map(
-            (conceptId) => getConceptStatus(conceptId, cards, deck.exerciseTypes).progress,
+            (conceptId) =>
+              getConceptStatus(conceptId, cards, getConceptExerciseTypes(deck, conceptId)).progress,
           )}
         />
       </span>
@@ -376,11 +374,11 @@ interface DeckOverviewProps {
 /** What's in the selected Deck, how well each word is known, and the start button. */
 function DeckOverview({ content, cards, subject, deck, now, onStart }: DeckOverviewProps) {
   const concepts = content.concepts.filter((concept) => deck.conceptIds.includes(concept.id));
-  const { exerciseTypes } = deck;
   const words = concepts.map((concept) => ({
     concept,
-    ...getConceptStatus(concept.id, cards, exerciseTypes),
+    ...getConceptStatus(concept.id, cards, getConceptExerciseTypes(deck, concept.id)),
   }));
+  const exerciseCount = words.reduce((count, word) => count + word.exercises.length, 0);
   const noun = CONCEPT_NOUNS[subject.kind];
   const [showWords, setShowWords] = useState(false);
   const wordListId = useId();
@@ -398,14 +396,10 @@ function DeckOverview({ content, cards, subject, deck, now, onStart }: DeckOverv
       </div>
 
       <dl className="grid grid-cols-2 gap-3">
-        <StatTile
-          label={noun.Many}
-          value={concepts.length}
-          note={`Exercises: ${concepts.length * exerciseTypes.length}`}
-        />
+        <StatTile label={noun.Many} value={concepts.length} note={`Exercises: ${exerciseCount}`} />
         <StatTile
           label="Due today"
-          value={countDueToday(deck.conceptIds, cards, now, exerciseTypes)}
+          value={countDueToday(deck, cards, now)}
           note={`${noun.Many} to practise again`}
         />
       </dl>
