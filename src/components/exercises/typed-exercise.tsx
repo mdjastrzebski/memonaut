@@ -47,8 +47,8 @@ interface TypedExerciseProps extends ExerciseProps {
 }
 
 /**
- * An exercise where the learner types the answer, e.g. the foreign word. After a wrong or almost-right answer, they
- * type the right one before moving on.
+ * An exercise where the learner types the answer, e.g. the foreign word. After a wrong or
+ * almost-right answer, they type the right one before moving on.
  */
 export function TypedExercise({
   session,

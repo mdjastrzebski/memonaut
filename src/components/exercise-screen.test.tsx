@@ -110,7 +110,7 @@ test('a wrong answer compares it with the answer instead', async () => {
   expect(within(status).queryByText('żó', { selector: 'mark' })).not.toBeInTheDocument();
 });
 
-test('math answers are not read aloud', async () => {
+test('questions are not read aloud', async () => {
   const user = userEvent.setup();
   const math = content.subjects.find((subject) => subject.id === 'math')!;
   renderExercise('math/square-7', math);
@@ -121,7 +121,7 @@ test('math answers are not read aloud', async () => {
   expect(utterances).toEqual([]);
 });
 
-test('an answer explanation is shown with the result instead of the local word', async () => {
+test("a question's explanation is shown with the result, not a meaning", async () => {
   const user = userEvent.setup();
   const math = content.subjects.find((subject) => subject.id === 'math')!;
   renderExercise('math/square-3', math);

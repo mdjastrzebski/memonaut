@@ -20,11 +20,10 @@ const exerciseTypes = z
   .min(1)
   .transform((listed) => EXERCISE_TYPES.filter((type) => listed.includes(type)));
 
-const flag = () =>
-  z
-    .enum(['true', 'false'])
-    .default('false')
-    .transform((value) => value === 'true');
+const flag = z
+  .enum(['true', 'false'])
+  .default('false')
+  .transform((value) => value === 'true');
 
 const subjectFields = {
   id,
@@ -80,8 +79,8 @@ const deckSchema = (kind: SubjectKind) =>
   z.strictObject({
     id,
     name: z.string(),
-    strictSpelling: flag(),
-    shuffleNew: flag(),
+    strictSpelling: flag,
+    shuffleNew: flag,
     /** The Subject's if left out. */
     exerciseTypes: exerciseTypes.optional(),
     concepts: z.array(
@@ -89,7 +88,7 @@ const deckSchema = (kind: SubjectKind) =>
         id,
         ...CONCEPT_FIELDS[kind],
         /** Puts the Concept in the Subject's core Deck. */
-        core: flag(),
+        core: flag,
       }) as unknown as z.ZodType<ConceptFields & { core: boolean }>,
     ),
   });
@@ -97,8 +96,8 @@ const deckSchema = (kind: SubjectKind) =>
 /** Concepts only in the core Deck; every one of them is core. Its options apply to the core Deck. */
 const coreSchema = (kind: SubjectKind) =>
   z.strictObject({
-    strictSpelling: flag(),
-    shuffleNew: flag(),
+    strictSpelling: flag,
+    shuffleNew: flag,
     exerciseTypes: exerciseTypes.optional(),
     concepts: z.array(
       z.strictObject({ id, ...CONCEPT_FIELDS[kind] }) as unknown as z.ZodType<ConceptFields>,
@@ -134,7 +133,7 @@ export function buildContent(files: Record<string, string>): Content {
     if (!(subjectPath in files)) {
       throw new Error(`${subjectPath}: missing`);
     }
-    const subject: Subject = read(subjectPath, files[subjectPath], subjectSchema);
+    const subject = read(subjectPath, files[subjectPath], subjectSchema);
     if (content.subjects.some((other) => other.id === subject.id)) {
       throw new Error(`${subjectPath}: duplicate subject id "${subject.id}"`);
     }
@@ -158,9 +157,7 @@ export function buildContent(files: Record<string, string>): Content {
     };
 
     const addConcept = (path: string, fields: ConceptFields) => {
-      const needingLocal = subject.exerciseTypes.find(
-        (type) => type !== 'dictation' && type !== 'question',
-      );
+      const needingLocal = subject.exerciseTypes.find((type) => type !== 'dictation');
       if (subject.kind === 'lang' && fields.local === undefined && needingLocal) {
         throw new Error(`${path}: concept "${fields.id}" needs a local word for ${needingLocal}`);
       }
