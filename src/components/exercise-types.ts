@@ -1,4 +1,4 @@
-import { Eye, Languages, ListChecks, Volume2, type LucideIcon } from 'lucide-react';
+import { CircleHelp, Eye, Languages, ListChecks, Volume2, type LucideIcon } from 'lucide-react';
 
 import type { ExerciseType } from '@/domain/types';
 
@@ -8,4 +8,5 @@ export const EXERCISES: Record<ExerciseType, { label: string; Icon: LucideIcon }
   'dictation': { label: 'Dictation', Icon: Volume2 },
   'translation-choice': { label: 'Translation choice', Icon: ListChecks },
   'translation': { label: 'Translation', Icon: Languages },
+  'question': { label: 'Question', Icon: CircleHelp },
 };

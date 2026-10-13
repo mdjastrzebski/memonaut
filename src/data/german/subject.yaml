@@ -1,5 +1,6 @@
 id: german
 name: German
+kind: lang
 emoji: 🇩🇪
 foreignLanguage: de-DE
 specialCharacters: [ä, ö, ü, ß, Ä, Ö, Ü, ẞ]

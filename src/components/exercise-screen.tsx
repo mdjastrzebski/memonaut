@@ -2,6 +2,7 @@ import type { ComponentType } from 'react';
 
 import { DictationExercise } from '@/components/exercises/dictation-exercise';
 import type { ExerciseProps } from '@/components/exercises/exercise-parts';
+import { QuestionExercise } from '@/components/exercises/question-exercise';
 import { RecognitionChoiceExercise } from '@/components/exercises/recognition-choice-exercise';
 import { TranslationChoiceExercise } from '@/components/exercises/translation-choice-exercise';
 import { TranslationExercise } from '@/components/exercises/translation-exercise';
@@ -16,6 +17,7 @@ const EXERCISE_COMPONENTS: Record<ExerciseType, ComponentType<ExerciseProps>> = 
   'dictation': DictationExercise,
   'translation-choice': TranslationChoiceExercise,
   'translation': TranslationExercise,
+  'question': QuestionExercise,
 };
 
 /** The session's current exercise, drawn by its Exercise Type's component. */

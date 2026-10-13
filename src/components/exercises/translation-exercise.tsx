@@ -1,22 +1,23 @@
 import { PromptWord, type ExerciseProps } from '@/components/exercises/exercise-parts';
+import { getLangProps } from '@/components/exercises/lang-props';
 import { TypedExercise } from '@/components/exercises/typed-exercise';
 import { speak } from '@/lib/speech';
 
 /**
  * Translation: the learner sees the local word and types the foreign one, then hears it once
- * they've typed it, unless the Subject doesn't read answers aloud.
+ * they've typed it.
  */
 export function TranslationExercise(props: ExerciseProps) {
-  const { concept, subject } = props;
+  const { concept, subject } = getLangProps(props);
 
   return (
     <TypedExercise
       {...props}
       hint={concept.hint}
       prompt={<PromptWord>{concept.local}</PromptWord>}
-      onChecked={
-        subject.readAloud ? () => speak(concept.foreign, subject.foreignLanguage) : undefined
-      }
+      answer={concept.foreign}
+      meaning={concept.local}
+      onChecked={() => speak(concept.foreign, subject.foreignLanguage)}
     />
   );
 }

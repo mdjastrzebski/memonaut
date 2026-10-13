@@ -1,4 +1,4 @@
-import type { Concept } from '@/domain/types';
+import type { LangConcept } from '@/domain/types';
 import { shuffle } from '@/lib/shuffle';
 import { Rating } from '@/srs/scheduler';
 
@@ -19,9 +19,9 @@ export const FAST_CHOICE_MS = 3000;
 interface PickChoicesOptions {
   side: ChoiceSide;
   /** Other Concepts of the Deck, which make the best wrong options: same topic and level. */
-  deckConcepts: Concept[];
+  deckConcepts: LangConcept[];
   /** Other Concepts of the Subject, used only when the Deck has too few. */
-  subjectConcepts: Concept[];
+  subjectConcepts: LangConcept[];
   count?: number;
   random?: () => number;
 }
@@ -42,7 +42,7 @@ function getGroupPrefixes(group: string | undefined): string[] {
  * "big" and "large" both for "duży".
  */
 export function pickChoices(
-  answer: Concept,
+  answer: LangConcept,
   {
     side,
     deckConcepts,
@@ -53,12 +53,12 @@ export function pickChoices(
 ): string[] {
   const key = (value = '') => normalizeAnswer(value).toLowerCase();
   const taken = new Set([key(answer[side])]);
-  const isWrong = (concept: Concept) =>
+  const isWrong = (concept: LangConcept) =>
     concept[side] !== undefined &&
     key(concept.local) !== key(answer.local) &&
     key(concept.foreign) !== key(answer.foreign);
 
-  const inGroup = (prefix: string) => (concept: Concept) =>
+  const inGroup = (prefix: string) => (concept: LangConcept) =>
     `${concept.group ?? ''}/`.startsWith(prefix);
   const candidates = [
     ...getGroupPrefixes(answer.group).flatMap((prefix) => [

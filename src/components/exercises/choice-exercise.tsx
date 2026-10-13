@@ -12,6 +12,7 @@ import { useAnswer } from '@/components/exercises/use-answer';
 import { FastBonus } from '@/components/fast-bonus';
 import { GRADE_STYLES } from '@/components/grades';
 import { Button } from '@/components/ui/button';
+import type { LangConcept } from '@/domain/types';
 import {
   FAST_CHOICE_MS,
   gradeChoice,
@@ -22,7 +23,8 @@ import { formatSeconds } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { Rating } from '@/srs/scheduler';
 
-interface ChoiceExerciseProps extends ExerciseProps {
+interface ChoiceExerciseProps extends Omit<ExerciseProps, 'concept'> {
+  concept: LangConcept;
   /** The word offered as options: local in recognition, foreign in translation. */
   side: ChoiceSide;
   /** Asked above the prompt, e.g. "What does it mean?". */
@@ -57,13 +59,14 @@ export function ChoiceExercise({
   const continueRef = useRef<HTMLButtonElement>(null);
 
   const answer = concept[side]!;
-  const [options] = useState(() =>
-    pickChoices(concept, {
+  const [options] = useState(() => {
+    const words = subjectConcepts.filter((other): other is LangConcept => other.kind === 'lang');
+    return pickChoices(concept, {
       side,
-      deckConcepts: subjectConcepts.filter((other) => session.deck.conceptIds.includes(other.id)),
-      subjectConcepts,
-    }),
-  );
+      deckConcepts: words.filter((other) => session.deck.conceptIds.includes(other.id)),
+      subjectConcepts: words,
+    });
+  });
 
   const pick = (option: string) => {
     if (picked) return;
@@ -145,16 +148,12 @@ export function ChoiceExercise({
           <div className="relative mt-4 flex flex-col gap-4">
             <FeedbackPanel grade={picked.result.grade}>
               <p className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 font-display text-xl font-bold break-words">
-                {concept.answerExplanation ?? (
-                  <>
-                    <span>{concept.foreign}</span>
-                    <span aria-hidden className="text-muted-foreground">
-                      =
-                    </span>
-                    <span className="sr-only">means</span>
-                    <span>{concept.local}</span>
-                  </>
-                )}
+                <span>{concept.foreign}</span>
+                <span aria-hidden className="text-muted-foreground">
+                  =
+                </span>
+                <span className="sr-only">means</span>
+                <span>{concept.local}</span>
               </p>
               {onListen && (
                 <Button

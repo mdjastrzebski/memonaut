@@ -33,7 +33,7 @@ afterEach(() => {
 
 const polish = content.subjects.find((subject) => subject.id === 'polish')!;
 
-function renderExercise(conceptId: string, subject = polish) {
+function renderExercise(conceptId: string, subject = polish, strictSpelling = true) {
   const session = createSession({
     deck: {
       id: 'd',
@@ -41,7 +41,7 @@ function renderExercise(conceptId: string, subject = polish) {
       kind: 'unit',
       name: 'D',
       conceptIds: [conceptId],
-      strictSpelling: true,
+      strictSpelling,
       exerciseTypes: subject.exerciseTypes,
     },
     concepts: content.concepts,
@@ -130,4 +130,13 @@ test('an answer explanation is shown with the result instead of the local word',
   const status = screen.getByRole('status');
   expect(status).toHaveTextContent('3² = 9');
   expect(status).not.toHaveTextContent('means');
+});
+
+test('a numeric answer must be exact, even in a deck without strict spelling', async () => {
+  const user = userEvent.setup();
+  const math = content.subjects.find((subject) => subject.id === 'math')!;
+  renderExercise('math/square-7', math, false);
+
+  await user.type(screen.getByRole('textbox', { name: 'Answer' }), '48{Enter}');
+  expect(screen.getByRole('status')).toHaveTextContent('Again');
 });

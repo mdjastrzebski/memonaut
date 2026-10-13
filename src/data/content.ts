@@ -1,8 +1,8 @@
 import { parse } from 'yaml';
 import { z } from 'zod';
 
-import type { Concept, Deck, ExerciseType, Subject } from '@/domain/types';
-import { EXERCISE_TYPES } from '@/session/session';
+import type { Concept, Deck, ExerciseType, Subject, SubjectKind } from '@/domain/types';
+import { EXERCISE_TYPES, KIND_EXERCISE_TYPES } from '@/session/session';
 
 const id = z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'Use lowercase letters, digits and dashes');
 
@@ -20,55 +20,90 @@ const exerciseTypes = z
   .min(1)
   .transform((listed) => EXERCISE_TYPES.filter((type) => listed.includes(type)));
 
-const flag = (byDefault: 'true' | 'false' = 'false') =>
+const flag = () =>
   z
     .enum(['true', 'false'])
-    .default(byDefault)
+    .default('false')
     .transform((value) => value === 'true');
 
-const subjectSchema = z.strictObject({
+const subjectFields = {
   id,
   name: z.string(),
   emoji: z.string().optional(),
-  foreignLanguage: z.string(),
-  readAloud: flag('true'),
   specialCharacters: z.array(z.string()).optional(),
   trickySpellings: z.array(z.string().min(1)).optional(),
-  /** Every Exercise Type if left out. */
-  exerciseTypes: exerciseTypes.default(EXERCISE_TYPES),
-});
+};
 
-const conceptSchema = z.strictObject({
-  id,
-  local: z.string().min(1).optional(),
-  foreign: z.string().min(1),
-  hint: z.string().optional(),
-  spokenHint: z.string().min(1).optional(),
-  /** Shown with the result instead of the local word. */
-  answerExplanation: z.string().min(1).optional(),
-  /** Groups like Concepts of the Subject, e.g. "weekday", for multiple choice. */
-  group: group.optional(),
-  /** Puts the Concept in the Subject's core Deck. */
-  core: flag(),
-});
+/** Every Exercise Type of its kind if left out. */
+const subjectExerciseTypes = (kind: SubjectKind) =>
+  exerciseTypes
+    .refine((listed) => listed.every((type) => KIND_EXERCISE_TYPES[kind].includes(type)), {
+      message: `Use exercise types of a ${kind} subject: ${KIND_EXERCISE_TYPES[kind].join(', ')}`,
+    })
+    .default(KIND_EXERCISE_TYPES[kind]);
 
-const deckSchema = z.strictObject({
-  id,
-  name: z.string(),
-  strictSpelling: flag(),
-  shuffleNew: flag(),
-  /** The Subject's if left out. */
-  exerciseTypes: exerciseTypes.optional(),
-  concepts: z.array(conceptSchema),
-});
+const subjectSchema = z.discriminatedUnion('kind', [
+  z.strictObject({
+    ...subjectFields,
+    kind: z.literal('lang'),
+    foreignLanguage: z.string(),
+    exerciseTypes: subjectExerciseTypes('lang'),
+  }),
+  z.strictObject({
+    ...subjectFields,
+    kind: z.literal('knowledge'),
+    exerciseTypes: subjectExerciseTypes('knowledge'),
+  }),
+]);
+
+/** A Concept's fields in the files, by its Subject's kind. */
+const CONCEPT_FIELDS = {
+  lang: {
+    local: z.string().min(1).optional(),
+    foreign: z.string().min(1),
+    hint: z.string().optional(),
+    spokenHint: z.string().min(1).optional(),
+    /** Groups like Concepts of the Subject, e.g. "weekday", for multiple choice. */
+    group: group.optional(),
+  },
+  knowledge: {
+    question: z.string().min(1),
+    answer: z.string().min(1),
+    explanation: z.string().min(1).optional(),
+  },
+} satisfies Record<SubjectKind, z.ZodRawShape>;
+
+/** Its fields are checked by the schema for its Subject's kind. */
+type ConceptFields = { id: string } & Record<string, string | undefined>;
+
+const deckSchema = (kind: SubjectKind) =>
+  z.strictObject({
+    id,
+    name: z.string(),
+    strictSpelling: flag(),
+    shuffleNew: flag(),
+    /** The Subject's if left out. */
+    exerciseTypes: exerciseTypes.optional(),
+    concepts: z.array(
+      z.strictObject({
+        id,
+        ...CONCEPT_FIELDS[kind],
+        /** Puts the Concept in the Subject's core Deck. */
+        core: flag(),
+      }) as unknown as z.ZodType<ConceptFields & { core: boolean }>,
+    ),
+  });
 
 /** Concepts only in the core Deck; every one of them is core. Its options apply to the core Deck. */
-const coreSchema = z.strictObject({
-  strictSpelling: flag(),
-  shuffleNew: flag(),
-  exerciseTypes: exerciseTypes.optional(),
-  concepts: z.array(conceptSchema.omit({ core: true })),
-});
+const coreSchema = (kind: SubjectKind) =>
+  z.strictObject({
+    strictSpelling: flag(),
+    shuffleNew: flag(),
+    exerciseTypes: exerciseTypes.optional(),
+    concepts: z.array(
+      z.strictObject({ id, ...CONCEPT_FIELDS[kind] }) as unknown as z.ZodType<ConceptFields>,
+    ),
+  });
 
 const CORE_DECK = { id: 'core', name: 'Essentials' };
 
@@ -99,13 +134,7 @@ export function buildContent(files: Record<string, string>): Content {
     if (!(subjectPath in files)) {
       throw new Error(`${subjectPath}: missing`);
     }
-    const subject = read(subjectPath, files[subjectPath], subjectSchema);
-    const needingSpeech = subject.exerciseTypes.find(
-      (type) => type === 'dictation' || type === 'recognition-choice',
-    );
-    if (!subject.readAloud && needingSpeech) {
-      throw new Error(`${subjectPath}: ${needingSpeech} needs readAloud`);
-    }
+    const subject: Subject = read(subjectPath, files[subjectPath], subjectSchema);
     if (content.subjects.some((other) => other.id === subject.id)) {
       throw new Error(`${subjectPath}: duplicate subject id "${subject.id}"`);
     }
@@ -128,12 +157,19 @@ export function buildContent(files: Record<string, string>): Content {
       return listed ?? subject.exerciseTypes;
     };
 
-    const addConcept = (path: string, fields: Omit<Concept, 'subjectId'>) => {
-      const needingLocal = subject.exerciseTypes.find((type) => type !== 'dictation');
-      if (fields.local === undefined && needingLocal) {
+    const addConcept = (path: string, fields: ConceptFields) => {
+      const needingLocal = subject.exerciseTypes.find(
+        (type) => type !== 'dictation' && type !== 'question',
+      );
+      if (subject.kind === 'lang' && fields.local === undefined && needingLocal) {
         throw new Error(`${path}: concept "${fields.id}" needs a local word for ${needingLocal}`);
       }
-      const concept = { ...fields, id: prefix(fields.id), subjectId: subject.id };
+      const concept = {
+        ...fields,
+        kind: subject.kind,
+        id: prefix(fields.id),
+        subjectId: subject.id,
+      } as Concept;
       const existing = concepts.get(fields.id);
       if (!existing) {
         concepts.set(fields.id, concept);
@@ -145,7 +181,7 @@ export function buildContent(files: Record<string, string>): Content {
     const corePath = `./${dir}/core.yaml`;
     if (corePath in files) {
       const listed = new Set<string>();
-      const core = read(corePath, files[corePath], coreSchema);
+      const core = read(corePath, files[corePath], coreSchema(subject.kind));
       coreStrictSpelling = core.strictSpelling;
       coreShuffleNew = core.shuffleNew;
       coreExerciseTypes = getExerciseTypes(corePath, core.exerciseTypes);
@@ -157,7 +193,7 @@ export function buildContent(files: Record<string, string>): Content {
     }
 
     for (const path of deckPaths) {
-      const deck = read(path, files[path], deckSchema);
+      const deck = read(path, files[path], deckSchema(subject.kind));
       checkUnique(deckIds, deck.id, `${path}: duplicate deck id`);
       const listed = new Set<string>();
       for (const { core, ...fields } of deck.concepts) {
@@ -198,14 +234,10 @@ export function buildContent(files: Record<string, string>): Content {
 }
 
 function isSameConcept(a: Concept, b: Concept): boolean {
-  return (
-    a.local === b.local &&
-    a.foreign === b.foreign &&
-    a.hint === b.hint &&
-    a.spokenHint === b.spokenHint &&
-    a.answerExplanation === b.answerExplanation &&
-    a.group === b.group
-  );
+  const fields = (concept: Concept): Record<string, unknown> => ({ ...concept });
+  const [first, second] = [fields(a), fields(b)];
+  const keys = new Set([...Object.keys(first), ...Object.keys(second)]);
+  return [...keys].every((key) => first[key] === second[key]);
 }
 
 function read<T>(path: string, source: string, schema: z.ZodType<T>): T {

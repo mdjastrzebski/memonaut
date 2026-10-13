@@ -1,8 +1,5 @@
 id: math
 name: Matematyka
 emoji: 🔢
-foreignLanguage: pl-PL
-# Hearing the answer read out after typing it doesn't help.
-readAloud: false
-# The question is shown as the local side and its numeric answer, the foreign side, is typed.
-exerciseTypes: [translation]
+# Questions with an answer to type, asked one way only.
+kind: knowledge

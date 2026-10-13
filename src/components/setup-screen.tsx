@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useId, useState, type CSSProperties, type ReactNode } from 'react';
 
+import { CONCEPT_NOUNS, getConceptText, plural, type ConceptNoun } from '@/components/concept-text';
 import { EXERCISES } from '@/components/exercise-types';
 import { getProgress, getWordProgress, PROGRESS_LABELS, type Progress } from '@/components/grades';
 import { SESSION_SIZES, type SessionSize } from '@/components/setup-choice';
@@ -66,6 +67,7 @@ export function SetupScreen({
   const coreDecks = decks.filter((deck) => deck.kind === 'core');
   const unitDecks = decks.filter((deck) => deck.kind === 'unit');
   const selectedUnit = unitDecks.find((option) => option.id === deck.id);
+  const noun = CONCEPT_NOUNS[subject.kind];
   const tileUnit =
     selectedUnit ??
     unitDecks.find((option) => option.id === lastUnitIds[subject.id]) ??
@@ -95,6 +97,7 @@ export function SetupScreen({
               <CoreTile
                 key={option.id}
                 deck={option}
+                noun={noun}
                 cards={cards}
                 now={now}
                 checked={option.id === deck.id}
@@ -104,6 +107,7 @@ export function SetupScreen({
             {tileUnit && (
               <UnitTile
                 units={unitDecks}
+                noun={noun}
                 cards={cards}
                 now={now}
                 unit={tileUnit}
@@ -214,7 +218,9 @@ interface SubjectTileProps {
 
 function SubjectTile({ subject, content, checked, onSelect, style }: SubjectTileProps) {
   const setCount = content.decks.filter((deck) => deck.subjectId === subject.id).length;
-  const wordCount = content.concepts.filter((concept) => concept.subjectId === subject.id).length;
+  const conceptCount = content.concepts.filter(
+    (concept) => concept.subjectId === subject.id,
+  ).length;
 
   return (
     <ChoiceTile
@@ -232,7 +238,7 @@ function SubjectTile({ subject, content, checked, onSelect, style }: SubjectTile
           {subject.name}
         </span>
         <span className="text-sm text-muted-foreground">
-          {plural(setCount, 'set')} · {plural(wordCount, 'word')}
+          {plural(setCount, 'set')} · {plural(conceptCount, CONCEPT_NOUNS[subject.kind])}
         </span>
       </span>
     </ChoiceTile>
@@ -241,13 +247,14 @@ function SubjectTile({ subject, content, checked, onSelect, style }: SubjectTile
 
 interface CoreTileProps {
   deck: Deck;
+  noun: ConceptNoun;
   cards: Record<string, Card>;
   now: Date;
   checked: boolean;
   onSelect: () => void;
 }
 
-function CoreTile({ deck, cards, now, checked, onSelect }: CoreTileProps) {
+function CoreTile({ deck, noun, cards, now, checked, onSelect }: CoreTileProps) {
   return (
     <ChoiceTile
       name={deck.name}
@@ -264,7 +271,7 @@ function CoreTile({ deck, cards, now, checked, onSelect }: CoreTileProps) {
         <span aria-hidden className="flex h-11 items-center font-display text-lg font-bold">
           {deck.name}
         </span>
-        <DeckStats deck={deck} cards={cards} now={now} />
+        <DeckStats deck={deck} noun={noun} cards={cards} now={now} />
       </span>
     </ChoiceTile>
   );
@@ -272,6 +279,7 @@ function CoreTile({ deck, cards, now, checked, onSelect }: CoreTileProps) {
 
 interface UnitTileProps {
   units: Deck[];
+  noun: ConceptNoun;
   cards: Record<string, Card>;
   now: Date;
   /** The unit on the tile: the selected one, or else the one last picked. */
@@ -281,7 +289,7 @@ interface UnitTileProps {
 }
 
 /** A unit as a tile to select, with a select box to switch to another unit. */
-function UnitTile({ units, cards, now, unit, checked, onSelect }: UnitTileProps) {
+function UnitTile({ units, noun, cards, now, unit, checked, onSelect }: UnitTileProps) {
   return (
     <ChoiceTile name={unit.name} group="deck" checked={checked} onSelect={() => onSelect(unit)}>
       <span className="flex min-w-0 flex-1 flex-col gap-1">
@@ -314,7 +322,7 @@ function UnitTile({ units, cards, now, unit, checked, onSelect }: UnitTileProps)
                   >
                     <span className="font-display font-bold">{option.name}</span>
                     <span className="text-xs text-muted-foreground">
-                      {plural(option.conceptIds.length, 'word')}
+                      {plural(option.conceptIds.length, noun)}
                       {due > 0 && ` · ${due} due today`}
                     </span>
                   </DropdownMenuRadioItem>
@@ -323,7 +331,7 @@ function UnitTile({ units, cards, now, unit, checked, onSelect }: UnitTileProps)
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>
-        <DeckStats deck={unit} cards={cards} now={now} />
+        <DeckStats deck={unit} noun={noun} cards={cards} now={now} />
       </span>
     </ChoiceTile>
   );
@@ -331,17 +339,21 @@ function UnitTile({ units, cards, now, unit, checked, onSelect }: UnitTileProps)
 
 interface DeckStatsProps {
   deck: Deck;
+  noun: ConceptNoun;
   cards: Record<string, Card>;
   now: Date;
 }
 
 /** A deck tile's rows below its name: words due today, word count and progress. */
-function DeckStats({ deck, cards, now }: DeckStatsProps) {
+function DeckStats({ deck, noun, cards, now }: DeckStatsProps) {
   return (
     <>
-      <DueToday count={countDueToday(deck.conceptIds, cards, now, deck.exerciseTypes)} />
+      <DueToday
+        count={countDueToday(deck.conceptIds, cards, now, deck.exerciseTypes)}
+        noun={noun}
+      />
       <span className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm text-muted-foreground">
-        {plural(deck.conceptIds.length, 'word')}
+        {plural(deck.conceptIds.length, noun)}
         <ProgressCounts
           progress={deck.conceptIds.map(
             (conceptId) => getConceptStatus(conceptId, cards, deck.exerciseTypes).progress,
@@ -369,6 +381,7 @@ function DeckOverview({ content, cards, subject, deck, now, onStart }: DeckOverv
     concept,
     ...getConceptStatus(concept.id, cards, exerciseTypes),
   }));
+  const noun = CONCEPT_NOUNS[subject.kind];
   const [showWords, setShowWords] = useState(false);
   const wordListId = useId();
 
@@ -386,14 +399,14 @@ function DeckOverview({ content, cards, subject, deck, now, onStart }: DeckOverv
 
       <dl className="grid grid-cols-2 gap-3">
         <StatTile
-          label="Words"
+          label={noun.Many}
           value={concepts.length}
           note={`Exercises: ${concepts.length * exerciseTypes.length}`}
         />
         <StatTile
           label="Due today"
           value={countDueToday(deck.conceptIds, cards, now, exerciseTypes)}
-          note="Words to practise again"
+          note={`${noun.Many} to practise again`}
         />
       </dl>
 
@@ -407,7 +420,7 @@ function DeckOverview({ content, cards, subject, deck, now, onStart }: DeckOverv
               onClick={() => setShowWords(!showWords)}
               className="flex cursor-pointer items-center gap-1 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
             >
-              Words
+              {noun.Many}
               <ChevronDown
                 aria-hidden
                 className={cn('size-4 transition-transform', showWords && 'rotate-180')}
@@ -419,7 +432,7 @@ function DeckOverview({ content, cards, subject, deck, now, onStart }: DeckOverv
         {showWords && (
           <ul
             id={wordListId}
-            aria-label="Words in set"
+            aria-label={`${noun.Many} in set`}
             className="flex max-h-72 flex-col overflow-y-auto rounded-2xl border-2 border-foreground/15 bg-background px-3 py-1 text-sm"
           >
             {words.map((word) => (
@@ -497,6 +510,9 @@ function WordRow({ word, now }: { word: Word; now: Date }) {
   const { concept, exercises, progress } = word;
   const { Icon, className } = WORD_STATUS[progress];
   const label = PROGRESS_LABELS[progress];
+  // A word first, then its meaning; a question first, then its answer.
+  const { prompt, answer } = getConceptText(concept);
+  const [main, extra] = concept.kind === 'lang' ? [answer, prompt] : [prompt, answer];
 
   return (
     <li className="flex items-center gap-2.5 border-b border-foreground/10 py-1.5 last:border-b-0">
@@ -516,8 +532,8 @@ function WordRow({ word, now }: { word: Word; now: Date }) {
           ))}
         </TooltipContent>
       </Tooltip>
-      <span className="min-w-0 flex-1 font-semibold break-words">{concept.foreign}</span>
-      {concept.local && <span className="text-right text-muted-foreground">{concept.local}</span>}
+      <span className="min-w-0 flex-1 font-semibold break-words">{main}</span>
+      {extra && <span className="text-right text-muted-foreground">{extra}</span>}
     </li>
   );
 }
@@ -576,7 +592,7 @@ function StatTile({ label, value, note }: StatTileProps) {
 }
 
 /** How many words need practice today, or that none do. */
-function DueToday({ count }: { count: number }) {
+function DueToday({ count, noun }: { count: number; noun: ConceptNoun }) {
   return (
     <span
       className={cn(
@@ -585,11 +601,7 @@ function DueToday({ count }: { count: number }) {
       )}
     >
       <Sunrise aria-hidden className="size-3.5" />
-      {count > 0 ? `${plural(count, 'word')} due today` : 'Nothing due today'}
+      {count > 0 ? `${plural(count, noun)} due today` : 'Nothing due today'}
     </span>
   );
-}
-
-function plural(count: number, word: string): string {
-  return `${count} ${word}${count === 1 ? '' : 's'}`;
 }

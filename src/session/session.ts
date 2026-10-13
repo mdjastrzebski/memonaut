@@ -1,4 +1,4 @@
-import type { Card, Concept, Deck, ExerciseType, Review } from '@/domain/types';
+import type { Card, Concept, Deck, ExerciseType, Review, SubjectKind } from '@/domain/types';
 import type { AnswerIssue } from '@/exercises/type-answer';
 import { shuffle } from '@/lib/shuffle';
 import {
@@ -21,7 +21,14 @@ export const EXERCISE_TYPES: ExerciseType[] = [
   'dictation',
   'translation-choice',
   'translation',
+  'question',
 ];
+
+/** The Exercise Types each kind of Subject can use, easiest first. */
+export const KIND_EXERCISE_TYPES: Record<SubjectKind, ExerciseType[]> = {
+  lang: ['recognition-choice', 'dictation', 'translation-choice', 'translation'],
+  knowledge: ['question'],
+};
 
 /** A study day starts at 4 AM local time, like Anki's, so late-evening study counts as one day. */
 export const DAY_START_HOUR = 4;
