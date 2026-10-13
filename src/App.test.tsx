@@ -276,6 +276,7 @@ test('dictation reads the word aloud and shows its meaning only after checking',
   expect(screen.queryByText(hint!)).not.toBeInTheDocument();
 });
 
+// Practises every word of the German core set through the whole app, so it takes a few seconds.
 test('a word moves on to translation once its dictation graduates', async () => {
   const user = userEvent.setup();
   await startEssentialsSession(user);
@@ -308,7 +309,7 @@ test('a word moves on to translation once its dictation graduates', async () => 
   expect(spoken).toHaveLength(spokenBefore);
   await user.keyboard('{Enter}');
   expect(spoken.slice(spokenBefore)).toEqual([foreign]);
-});
+}, 20_000);
 
 test('finishing early asks first and stays on cancel', async () => {
   const user = userEvent.setup();
