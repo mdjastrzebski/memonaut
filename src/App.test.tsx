@@ -4,7 +4,7 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import App from './App';
 import { content } from './data/content';
-import type { LangConcept } from './domain/types';
+import type { LanguageConcept } from './domain/types';
 import { FAST_CHOICE_MS } from './exercises/multiple-choice';
 
 // jsdom has no speech synthesis; record what would be read aloud instead.
@@ -42,8 +42,8 @@ afterEach(() => {
 const essentials = content.decks.find((deck) => deck.id === 'german/core')!;
 const essentialsSize = essentials.conceptIds.length;
 const essentialConcepts = content.concepts.filter(
-  (concept): concept is LangConcept =>
-    concept.kind === 'lang' && essentials.conceptIds.includes(concept.id),
+  (concept): concept is LanguageConcept =>
+    concept.kind === 'language' && essentials.conceptIds.includes(concept.id),
 );
 
 /** Opens the unit select box and picks the named unit of the selected Subject. */
@@ -445,7 +445,8 @@ test('a unit unlocks recognition choice, dictation, translation choice, then tra
   await user.click(screen.getByRole('radio', { name: '10' }));
   await user.click(screen.getByRole('button', { name: 'Start session' }));
   const concepts = content.concepts.filter(
-    (concept): concept is LangConcept => concept.kind === 'lang' && concept.subjectId === 'german',
+    (concept): concept is LanguageConcept =>
+      concept.kind === 'language' && concept.subjectId === 'german',
   );
   const options = () =>
     within(screen.getByRole('group', { name: 'Options' })).getAllByRole('button');

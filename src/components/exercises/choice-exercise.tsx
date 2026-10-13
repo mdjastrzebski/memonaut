@@ -12,7 +12,7 @@ import { useAnswer } from '@/components/exercises/use-answer';
 import { FastBonus } from '@/components/fast-bonus';
 import { GRADE_STYLES } from '@/components/grades';
 import { Button } from '@/components/ui/button';
-import type { LangConcept } from '@/domain/types';
+import type { LanguageConcept } from '@/domain/types';
 import {
   FAST_CHOICE_MS,
   gradeChoice,
@@ -24,7 +24,7 @@ import { cn } from '@/lib/utils';
 import { Rating } from '@/srs/scheduler';
 
 interface ChoiceExerciseProps extends Omit<ExerciseProps, 'concept'> {
-  concept: LangConcept;
+  concept: LanguageConcept;
   /** The word offered as options: local in recognition, foreign in translation. */
   side: ChoiceSide;
   /** Asked above the prompt, e.g. "What does it mean?". */
@@ -60,7 +60,9 @@ export function ChoiceExercise({
 
   const answer = concept[side]!;
   const [options] = useState(() => {
-    const words = subjectConcepts.filter((other): other is LangConcept => other.kind === 'lang');
+    const words = subjectConcepts.filter(
+      (other): other is LanguageConcept => other.kind === 'language',
+    );
     return pickChoices(concept, {
       side,
       deckConcepts: words.filter((other) => session.deck.conceptIds.includes(other.id)),

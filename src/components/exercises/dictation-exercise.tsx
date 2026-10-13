@@ -1,7 +1,7 @@
 import { Volume2 } from 'lucide-react';
 
 import type { ExerciseProps } from '@/components/exercises/exercise-parts';
-import { getLangProps } from '@/components/exercises/lang-props';
+import { getLanguageProps } from '@/components/exercises/language-props';
 import { TypedExercise } from '@/components/exercises/typed-exercise';
 import { useAutoPlay } from '@/components/exercises/use-auto-play';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ import { speak } from '@/lib/speech';
  * same. Its hint isn't shown, as one like "3" would give the word away.
  */
 export function DictationExercise(props: ExerciseProps) {
-  const { concept, subject } = getLangProps(props);
+  const { concept, subject } = getLanguageProps(props);
   const playWord = () => speak(concept.foreign, subject.foreignLanguage, concept.spokenHint);
   useAutoPlay(playWord);
 

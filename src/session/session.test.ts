@@ -19,8 +19,8 @@ import {
 } from './session';
 
 const concepts: Concept[] = [
-  { id: 'one', subjectId: 'german', kind: 'lang', local: 'jeden', foreign: 'eins' },
-  { id: 'two', subjectId: 'german', kind: 'lang', local: 'dwa', foreign: 'zwei' },
+  { id: 'one', subjectId: 'german', kind: 'language', local: 'jeden', foreign: 'eins' },
+  { id: 'two', subjectId: 'german', kind: 'language', local: 'dwa', foreign: 'zwei' },
 ];
 const deck: Deck = {
   id: 'numbers',

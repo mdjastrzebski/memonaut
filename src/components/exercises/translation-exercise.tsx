@@ -1,5 +1,5 @@
 import { PromptWord, type ExerciseProps } from '@/components/exercises/exercise-parts';
-import { getLangProps } from '@/components/exercises/lang-props';
+import { getLanguageProps } from '@/components/exercises/language-props';
 import { TypedExercise } from '@/components/exercises/typed-exercise';
 import { speak } from '@/lib/speech';
 
@@ -8,7 +8,7 @@ import { speak } from '@/lib/speech';
  * they've typed it.
  */
 export function TranslationExercise(props: ExerciseProps) {
-  const { concept, subject } = getLangProps(props);
+  const { concept, subject } = getLanguageProps(props);
 
   return (
     <TypedExercise

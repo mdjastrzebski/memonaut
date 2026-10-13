@@ -1,6 +1,6 @@
 import { ChoiceExercise } from '@/components/exercises/choice-exercise';
 import { PromptWord, type ExerciseProps } from '@/components/exercises/exercise-parts';
-import { getLangProps } from '@/components/exercises/lang-props';
+import { getLanguageProps } from '@/components/exercises/language-props';
 import { speak } from '@/lib/speech';
 
 /**
@@ -8,7 +8,7 @@ import { speak } from '@/lib/speech';
  * they've picked.
  */
 export function TranslationChoiceExercise(props: ExerciseProps) {
-  const { concept, subject } = getLangProps(props);
+  const { concept, subject } = getLanguageProps(props);
   const playWord = () => speak(concept.foreign, subject.foreignLanguage);
 
   return (

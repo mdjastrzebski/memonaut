@@ -4,13 +4,13 @@ import type { AnswerIssue } from '@/exercises/type-answer';
 
 /**
  * What a Subject teaches, which decides its Concepts' fields and Exercise Types:
- * - lang: words of a language, e.g. English or Polish spelling, practised both ways
+ * - language: words of a language, e.g. English or Polish spelling, practised both ways
  * - knowledge: questions with an answer, e.g. math, asked one way only
  */
-export type SubjectKind = 'lang' | 'knowledge';
+export type SubjectKind = 'language' | 'knowledge';
 
 /** A separate area of study, e.g. English, German or Przyroda. */
-export type Subject = LangSubject | KnowledgeSubject;
+export type Subject = LanguageSubject | KnowledgeSubject;
 
 interface SubjectBase {
   id: string;
@@ -28,8 +28,8 @@ interface SubjectBase {
   trickySpellings?: string[];
 }
 
-export interface LangSubject extends SubjectBase {
-  kind: 'lang';
+export interface LanguageSubject extends SubjectBase {
+  kind: 'language';
   /** BCP 47 tag of the language being learned, used to read words aloud, e.g. "de-DE". */
   foreignLanguage: string;
 }
@@ -62,7 +62,7 @@ export interface Deck {
  * One piece of knowledge, e.g. a word or a question. It can be in any number of Decks within its
  * Subject, and is of its Subject's kind.
  */
-export type Concept = LangConcept | KnowledgeConcept;
+export type Concept = LanguageConcept | KnowledgeConcept;
 
 interface ConceptBase {
   /** Unique across Subjects, e.g. "german/number-3". Learning state is keyed by it, so it must not change. */
@@ -71,8 +71,8 @@ interface ConceptBase {
 }
 
 /** A word of a language Subject. */
-export interface LangConcept extends ConceptBase {
-  kind: 'lang';
+export interface LanguageConcept extends ConceptBase {
+  kind: 'language';
   /**
    * The word in the learner's own language, e.g. "trzy". Left out where there's nothing to
    * translate, e.g. in Polish spelling, whose Subject has no translation exercises.

@@ -16,14 +16,14 @@ Memonaut is a learning web app for school kids, built on spaced repetition. It h
 
 A **Deck** includes a number of **Concepts**. Each Concept splits into a number of **Cards**, one per **Exercise Type**, which the user sees as separate exercises. Each Card keeps its own review schedule. A Concept can be in any number of Decks: several unit decks, the core deck, or only the core deck. A review in one Deck counts everywhere.
 
-| Term              | Meaning                                                                                                                                                                                                  |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Subject**       | A separate area of study, e.g. English, German or Przyroda. All Decks and Concepts belong to one Subject. Its kind is `lang` (words of a language) or `knowledge` (questions with an answer, e.g. math). |
-| **Deck**          | A group of Concepts within a Subject. Its kind is either `unit` (a school unit) or `core` (long-term essentials).                                                                                        |
-| **Concept**       | One piece of knowledge, e.g. a word, a verb's conjugation or a fact. It can be in any number of Decks within its Subject.                                                                                |
-| **Exercise Type** | A way to practise a Concept, e.g. flashcard, type the answer, multiple choice or conjugate.                                                                                                              |
-| **Card**          | One Concept practised with one Exercise Type. It's the unit that gets scheduled, and it holds its own review state.                                                                                      |
-| **Review**        | One attempt at a Card, with a rating: `Again`, `Hard`, `Good` or `Easy`.                                                                                                                                 |
+| Term              | Meaning                                                                                                                                                                                                      |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Subject**       | A separate area of study, e.g. English, German or Przyroda. All Decks and Concepts belong to one Subject. Its kind is `language` (words of a language) or `knowledge` (questions with an answer, e.g. math). |
+| **Deck**          | A group of Concepts within a Subject. Its kind is either `unit` (a school unit) or `core` (long-term essentials).                                                                                            |
+| **Concept**       | One piece of knowledge, e.g. a word, a verb's conjugation or a fact. It can be in any number of Decks within its Subject.                                                                                    |
+| **Exercise Type** | A way to practise a Concept, e.g. flashcard, type the answer, multiple choice or conjugate.                                                                                                                  |
+| **Card**          | One Concept practised with one Exercise Type. It's the unit that gets scheduled, and it holds its own review state.                                                                                          |
+| **Review**        | One attempt at a Card, with a rating: `Again`, `Hard`, `Good` or `Easy`.                                                                                                                                     |
 
 ```
 Subject
@@ -84,7 +84,7 @@ concepts:
 # src/data/polish/subject.yaml
 id: polish
 name: Polish
-kind: lang
+kind: language
 foreignLanguage: pl-PL
 exerciseTypes: [dictation] # every Exercise Type of its kind if left out; a Deck or core.yaml can list fewer
 
@@ -110,7 +110,7 @@ concepts:
   - { id: square-3, question: '3² =', answer: '9', explanation: '3² = 9' }
 ```
 
-A `lang` Subject needs a `foreignLanguage`, and its words have `local`, `foreign` and the optional fields below. A `knowledge` Subject's Concepts have a `question`, an `answer` and an optional `explanation`, shown with the result, e.g. `29 : 6 = 4 r 5` for "Reszta z dzielenia 29 przez 6". `hint` is shown on screen in translation and translation choice only, since it could give the meaning away in the others; `spokenHint` is read aloud in dictation and must be in the language being learned. `local` may be left out only in a Subject with only `dictation`. `group` names a set of like words within the Subject, e.g. `weekday`, for the wrong options in multiple choice; a slash puts it within a wider one, e.g. `number/small` within `number`. Leave out near-synonyms, which would be right too.
+A `language` Subject needs a `foreignLanguage`, and its words have `local`, `foreign` and the optional fields below. A `knowledge` Subject's Concepts have a `question`, an `answer` and an optional `explanation`, shown with the result, e.g. `29 : 6 = 4 r 5` for "Reszta z dzielenia 29 przez 6". `hint` is shown on screen in translation and translation choice only, since it could give the meaning away in the others; `spokenHint` is read aloud in dictation and must be in the language being learned. `local` may be left out only in a Subject with only `dictation`. `group` names a set of like words within the Subject, e.g. `weekday`, for the wrong options in multiple choice; a slash puts it within a wider one, e.g. `number/small` within `number`. Leave out near-synonyms, which would be right too.
 
 Answers are rated automatically. By default an almost-correct answer (wrong capitalization, a missing umlaut or one letter off) is rated Hard. A number, e.g. `49`, must be exact in any Deck: one digit off is a wrong result, not a typo. A Deck with `strictSpelling: true`, like the Polish spelling sets, forgives only wrong capitalization, so _zolw_ for _żółw_ or _może_ for _morze_ is wrong. For the core Deck, set it in `core.yaml`. A Subject's `trickySpellings`, e.g. `[ó, u, rz, ż, ch, h]` for Polish, are marked in a right answer, to remind which spellings it got right.
 

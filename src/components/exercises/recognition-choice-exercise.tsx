@@ -2,7 +2,7 @@ import { Volume2 } from 'lucide-react';
 
 import { ChoiceExercise } from '@/components/exercises/choice-exercise';
 import { PromptWord, type ExerciseProps } from '@/components/exercises/exercise-parts';
-import { getLangProps } from '@/components/exercises/lang-props';
+import { getLanguageProps } from '@/components/exercises/language-props';
 import { useAutoPlay } from '@/components/exercises/use-auto-play';
 import { Button } from '@/components/ui/button';
 import { speak } from '@/lib/speech';
@@ -13,7 +13,7 @@ import { speak } from '@/lib/speech';
  * away.
  */
 export function RecognitionChoiceExercise(props: ExerciseProps) {
-  const { concept, subject } = getLangProps(props);
+  const { concept, subject } = getLanguageProps(props);
   const playWord = () => speak(concept.foreign, subject.foreignLanguage);
   useAutoPlay(playWord);
 

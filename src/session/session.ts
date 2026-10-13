@@ -26,7 +26,7 @@ export const EXERCISE_TYPES: ExerciseType[] = [
 
 /** The Exercise Types each kind of Subject can use, easiest first. */
 export const KIND_EXERCISE_TYPES: Record<SubjectKind, ExerciseType[]> = {
-  lang: ['recognition-choice', 'dictation', 'translation-choice', 'translation'],
+  language: ['recognition-choice', 'dictation', 'translation-choice', 'translation'],
   knowledge: ['question'],
 };
 

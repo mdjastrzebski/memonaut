@@ -2,7 +2,7 @@ import { expect, test } from 'vitest';
 
 import { buildContent, content } from './content';
 
-const subject = 'id: german\nname: German\nkind: lang\nforeignLanguage: de-DE\n';
+const subject = 'id: german\nname: German\nkind: language\nforeignLanguage: de-DE\n';
 
 test('loads the bundled content', () => {
   expect(content.subjects.map((subject) => subject.id)).toContain('german');
@@ -27,7 +27,7 @@ concepts:
     {
       id: 'german/number-0',
       subjectId: 'german',
-      kind: 'lang',
+      kind: 'language',
       local: 'zero',
       foreign: 'null',
       hint: '0',
@@ -116,7 +116,7 @@ concepts:
 test('the bundled words are grouped', () => {
   const group = (id: string) => {
     const concept = content.concepts.find((concept) => concept.id === id);
-    return concept?.kind === 'lang' ? concept.group : undefined;
+    return concept?.kind === 'language' ? concept.group : undefined;
   };
   expect(group('english/monday')).toBe('weekday');
   expect(group('german/number-3')).toBe('number/small');
@@ -241,7 +241,7 @@ concepts:
   expect(() =>
     buildContent({
       './polish/subject.yaml':
-        'id: polish\nname: Polish\nkind: lang\nforeignLanguage: pl-PL\nexerciseTypes: [dictation]\n',
+        'id: polish\nname: Polish\nkind: language\nforeignLanguage: pl-PL\nexerciseTypes: [dictation]\n',
       './polish/decks/a.yaml':
         'id: a\nname: A\nexerciseTypes: [recognition-choice]\nconcepts:\n  - { id: b, foreign: z }\n',
     }),
@@ -268,7 +268,7 @@ test('the bundled English and German units practise multiple choice, but not the
 test('words of a subject without translation need no local word, and keep a spoken hint', () => {
   const { concepts } = buildContent({
     './polish/subject.yaml':
-      'id: polish\nname: Polish\nkind: lang\nforeignLanguage: pl-PL\nexerciseTypes: [dictation]\n',
+      'id: polish\nname: Polish\nkind: language\nforeignLanguage: pl-PL\nexerciseTypes: [dictation]\n',
     './polish/decks/a.yaml': `
 id: a
 name: A
@@ -280,7 +280,7 @@ concepts:
     {
       id: 'polish/morze',
       subjectId: 'polish',
-      kind: 'lang',
+      kind: 'language',
       foreign: 'morze',
       spokenHint: 'zbiornik słonej wody',
     },
@@ -383,8 +383,8 @@ test('a subject needs a kind, and fields and exercise types of that kind', () =>
   expect(math('kind: knowledge\nexerciseTypes: [translation]\n')).toThrow(
     /Use exercise types of a knowledge subject: question/,
   );
-  expect(math('kind: lang\nforeignLanguage: pl-PL\nexerciseTypes: [question]\n')).toThrow(
-    /Use exercise types of a lang subject/,
+  expect(math('kind: language\nforeignLanguage: pl-PL\nexerciseTypes: [question]\n')).toThrow(
+    /Use exercise types of a language subject/,
   );
   expect(math('kind: knowledge\n', '{ id: a, local: jeden, foreign: one }')).toThrow(/a\.yaml/);
 });

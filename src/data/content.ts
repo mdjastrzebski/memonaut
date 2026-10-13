@@ -44,9 +44,9 @@ const subjectExerciseTypes = (kind: SubjectKind) =>
 const subjectSchema = z.discriminatedUnion('kind', [
   z.strictObject({
     ...subjectFields,
-    kind: z.literal('lang'),
+    kind: z.literal('language'),
     foreignLanguage: z.string(),
-    exerciseTypes: subjectExerciseTypes('lang'),
+    exerciseTypes: subjectExerciseTypes('language'),
   }),
   z.strictObject({
     ...subjectFields,
@@ -57,7 +57,7 @@ const subjectSchema = z.discriminatedUnion('kind', [
 
 /** A Concept's fields in the files, by its Subject's kind. */
 const CONCEPT_FIELDS = {
-  lang: {
+  language: {
     local: z.string().min(1).optional(),
     foreign: z.string().min(1),
     hint: z.string().optional(),
@@ -158,7 +158,7 @@ export function buildContent(files: Record<string, string>): Content {
 
     const addConcept = (path: string, fields: ConceptFields) => {
       const needingLocal = subject.exerciseTypes.find((type) => type !== 'dictation');
-      if (subject.kind === 'lang' && fields.local === undefined && needingLocal) {
+      if (subject.kind === 'language' && fields.local === undefined && needingLocal) {
         throw new Error(`${path}: concept "${fields.id}" needs a local word for ${needingLocal}`);
       }
       const concept = {

@@ -2,14 +2,14 @@ import type { Concept, SubjectKind } from '@/domain/types';
 
 /** What a Concept asks, e.g. the local word or the question, and its answer, e.g. the foreign word. */
 export function getConceptText(concept: Concept): { prompt?: string; answer: string } {
-  return concept.kind === 'lang'
+  return concept.kind === 'language'
     ? { prompt: concept.local, answer: concept.foreign }
     : { prompt: concept.question, answer: concept.answer };
 }
 
 /** What the Concepts of each kind of Subject are called. */
 export const CONCEPT_NOUNS: Record<SubjectKind, { one: string; many: string; Many: string }> = {
-  lang: { one: 'word', many: 'words', Many: 'Words' },
+  language: { one: 'word', many: 'words', Many: 'Words' },
   knowledge: { one: 'question', many: 'questions', Many: 'Questions' },
 };
 
