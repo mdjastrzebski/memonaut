@@ -334,3 +334,18 @@ test('rejects invalid content', () => {
     'subject.yaml: missing',
   );
 });
+
+test('a subject reads answers aloud unless it turns that off, which listening exercises need', () => {
+  const readAloud = (lines: string) =>
+    buildContent({ './german/subject.yaml': subject + lines }).subjects[0].readAloud;
+  expect(readAloud('')).toBe(true);
+  expect(readAloud('readAloud: false\nexerciseTypes: [translation-choice, translation]\n')).toBe(
+    false,
+  );
+  expect(() => readAloud('readAloud: false\n')).toThrow(
+    /subject\.yaml: recognition-choice needs readAloud/,
+  );
+  expect(() => readAloud('readAloud: false\nexerciseTypes: [dictation]\n')).toThrow(
+    /subject\.yaml: dictation needs readAloud/,
+  );
+});

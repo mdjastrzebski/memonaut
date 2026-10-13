@@ -4,11 +4,13 @@ import { speak } from '@/lib/speech';
 
 /**
  * Translation choice: the learner sees the local word and picks the foreign one, then hears it once
- * they've picked.
+ * they've picked, unless the Subject doesn't read answers aloud.
  */
 export function TranslationChoiceExercise(props: ExerciseProps) {
   const { concept, subject } = props;
-  const playWord = () => speak(concept.foreign, subject.foreignLanguage);
+  const playWord = subject.readAloud
+    ? () => speak(concept.foreign, subject.foreignLanguage)
+    : undefined;
 
   return (
     <ChoiceExercise

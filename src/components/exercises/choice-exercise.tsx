@@ -31,8 +31,8 @@ interface ChoiceExerciseProps extends ExerciseProps {
   prompt: ReactNode;
   /** Extra context drawn large in the corner, e.g. "3". */
   hint?: string;
-  /** Reads the foreign word aloud again from the feedback. */
-  onListen: () => void;
+  /** Reads the foreign word aloud again from the feedback; no button when left out. */
+  onListen?: () => void;
   /** Called once an option is picked, e.g. to read the word aloud. */
   onPicked?: () => void;
 }
@@ -152,15 +152,17 @@ export function ChoiceExercise({
                 <span className="sr-only">means</span>
                 <span>{concept.local}</span>
               </p>
-              <Button
-                type="button"
-                variant="ghost"
-                aria-label="Listen again"
-                className="size-10 shrink-0 rounded-xl"
-                onClick={onListen}
-              >
-                <Volume2 className="size-5" />
-              </Button>
+              {onListen && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  aria-label="Listen again"
+                  className="size-10 shrink-0 rounded-xl"
+                  onClick={onListen}
+                >
+                  <Volume2 className="size-5" />
+                </Button>
+              )}
             </FeedbackPanel>
             <ContinueButton ref={continueRef} type="button" onClick={submit} />
           </div>

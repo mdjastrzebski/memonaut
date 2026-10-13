@@ -10,6 +10,11 @@ export interface Subject {
   emoji?: string;
   /** BCP 47 tag of the language being learned, used to read words aloud, e.g. "de-DE". */
   foreignLanguage: string;
+  /**
+   * Reads answers aloud. Off where hearing the answer doesn't help, e.g. in math; dictation and
+   * recognition choice need it.
+   */
+  readAloud: boolean;
   /** Characters offered on the on-screen keyboard, e.g. German umlauts. */
   specialCharacters?: string[];
   /**

@@ -20,21 +20,23 @@ const exerciseTypes = z
   .min(1)
   .transform((listed) => EXERCISE_TYPES.filter((type) => listed.includes(type)));
 
+const flag = (byDefault: 'true' | 'false' = 'false') =>
+  z
+    .enum(['true', 'false'])
+    .default(byDefault)
+    .transform((value) => value === 'true');
+
 const subjectSchema = z.strictObject({
   id,
   name: z.string(),
   emoji: z.string().optional(),
   foreignLanguage: z.string(),
+  readAloud: flag('true'),
   specialCharacters: z.array(z.string()).optional(),
   trickySpellings: z.array(z.string().min(1)).optional(),
   /** Every Exercise Type if left out. */
   exerciseTypes: exerciseTypes.default(EXERCISE_TYPES),
 });
-
-const flag = z
-  .enum(['true', 'false'])
-  .default('false')
-  .transform((value) => value === 'true');
 
 const conceptSchema = z.strictObject({
   id,
@@ -45,14 +47,14 @@ const conceptSchema = z.strictObject({
   /** Groups like Concepts of the Subject, e.g. "weekday", for multiple choice. */
   group: group.optional(),
   /** Puts the Concept in the Subject's core Deck. */
-  core: flag,
+  core: flag(),
 });
 
 const deckSchema = z.strictObject({
   id,
   name: z.string(),
-  strictSpelling: flag,
-  shuffleNew: flag,
+  strictSpelling: flag(),
+  shuffleNew: flag(),
   /** The Subject's if left out. */
   exerciseTypes: exerciseTypes.optional(),
   concepts: z.array(conceptSchema),
@@ -60,8 +62,8 @@ const deckSchema = z.strictObject({
 
 /** Concepts only in the core Deck; every one of them is core. Its options apply to the core Deck. */
 const coreSchema = z.strictObject({
-  strictSpelling: flag,
-  shuffleNew: flag,
+  strictSpelling: flag(),
+  shuffleNew: flag(),
   exerciseTypes: exerciseTypes.optional(),
   concepts: z.array(conceptSchema.omit({ core: true })),
 });
@@ -96,6 +98,12 @@ export function buildContent(files: Record<string, string>): Content {
       throw new Error(`${subjectPath}: missing`);
     }
     const subject = read(subjectPath, files[subjectPath], subjectSchema);
+    const needingSpeech = subject.exerciseTypes.find(
+      (type) => type === 'dictation' || type === 'recognition-choice',
+    );
+    if (!subject.readAloud && needingSpeech) {
+      throw new Error(`${subjectPath}: ${needingSpeech} needs readAloud`);
+    }
     if (content.subjects.some((other) => other.id === subject.id)) {
       throw new Error(`${subjectPath}: duplicate subject id "${subject.id}"`);
     }

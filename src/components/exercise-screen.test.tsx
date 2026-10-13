@@ -33,16 +33,16 @@ afterEach(() => {
 
 const polish = content.subjects.find((subject) => subject.id === 'polish')!;
 
-function renderExercise(conceptId: string) {
+function renderExercise(conceptId: string, subject = polish) {
   const session = createSession({
     deck: {
       id: 'd',
-      subjectId: 'polish',
+      subjectId: subject.id,
       kind: 'unit',
       name: 'D',
       conceptIds: [conceptId],
       strictSpelling: true,
-      exerciseTypes: polish.exerciseTypes,
+      exerciseTypes: subject.exerciseTypes,
     },
     concepts: content.concepts,
   });
@@ -50,7 +50,7 @@ function renderExercise(conceptId: string) {
     <ExerciseScreen
       session={session}
       onReview={() => {}}
-      subject={polish}
+      subject={subject}
       subjectConcepts={[]}
       showSpecialCharacters={false}
       onToggleSpecialCharacters={() => {}}
@@ -108,4 +108,15 @@ test('a wrong answer compares it with the answer instead', async () => {
   expect(status).toHaveTextContent('Again');
   expect(within(status).getByText('ó', { selector: 'mark' })).toBeInTheDocument();
   expect(within(status).queryByText('żó', { selector: 'mark' })).not.toBeInTheDocument();
+});
+
+test('math answers are not read aloud', async () => {
+  const user = userEvent.setup();
+  const math = content.subjects.find((subject) => subject.id === 'math')!;
+  renderExercise('math/square-7', math);
+  expect(screen.getByRole('heading', { name: '7² =' })).toBeInTheDocument();
+
+  await user.type(screen.getByRole('textbox', { name: 'Answer' }), '49{Enter}');
+  expect(screen.getByRole('status')).toHaveTextContent('Easy');
+  expect(utterances).toEqual([]);
 });
