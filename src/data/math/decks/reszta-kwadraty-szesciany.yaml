@@ -17,11 +17,11 @@ concepts:
   - { id: rem-45-8, local: '45 : 8 = 5 r _', foreign: '5' }
   - { id: rem-52-9, local: '52 : 9 = 5 r _', foreign: '7' }
   - { id: rem-74-9, local: '74 : 9 = 8 r _', foreign: '2' }
-  - { id: rem-100-7, local: '100 : 7 = 14 r _', foreign: '2' }
   # Sama reszta.
   - { id: rem-47-6, local: 'Reszta z dzielenia 47 przez 6', foreign: '5' }
   - { id: rem-59-8, local: 'Reszta z dzielenia 59 przez 8', foreign: '3' }
   - { id: rem-40-10, local: 'Reszta z dzielenia 40 przez 10', foreign: '0' }
+  - { id: rem-100-7, local: 'Reszta z dzielenia 100 przez 7', foreign: '2' }
   - { id: rem-max-7, local: 'Największa możliwa reszta z dzielenia przez 7', foreign: '6' }
   - { id: rem-max-9, local: 'Największa możliwa reszta z dzielenia przez 9', foreign: '8' }
   # Szukana dzielna: sprawdzenie "iloraz · dzielnik + reszta".
