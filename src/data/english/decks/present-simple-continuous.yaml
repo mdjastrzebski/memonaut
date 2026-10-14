@@ -1,0 +1,174 @@
+id: present-simple-continuous
+name: Present Simple i Present Continuous
+concepts:
+  # Signal words. Present Simple: what happens regularly (always, usually, every day).
+  - { id: always, local: zawsze, foreign: always, group: signal/simple, core: true }
+  - { id: usually, local: zwykle, foreign: usually, group: signal/simple, core: true }
+  - { id: often, local: często, foreign: often, group: signal/simple, core: true }
+  - { id: sometimes, local: czasami, foreign: sometimes, group: signal/simple, core: true }
+  - { id: never, local: nigdy, foreign: never, group: signal/simple, core: true }
+  - { id: every-day, local: codziennie, foreign: every day, group: signal/simple, core: true }
+  # Present Continuous: what is happening right now (now, Look!, Listen!).
+  - { id: now, local: teraz, foreign: now, group: signal/continuous, core: true }
+  - { id: look, local: Popatrz!, foreign: Look!, group: signal/continuous, core: true }
+  - { id: listen, local: Posłuchaj!, foreign: Listen!, group: signal/continuous, core: true }
+  # The same verb in both tenses: every day vs now.
+  - {
+      id: i-play-football-every-day,
+      local: Codziennie gram w piłkę.,
+      foreign: I play football every day.,
+      group: sentence/play,
+    }
+  - {
+      id: i-am-playing-football-now,
+      local: Teraz gram w piłkę.,
+      foreign: I am playing football now.,
+      group: sentence/play,
+    }
+  - {
+      id: she-reads-books-every-evening,
+      local: Ona czyta książki co wieczór.,
+      foreign: She reads books every evening.,
+      group: sentence/read,
+    }
+  - {
+      id: she-is-reading-a-book-now,
+      local: Ona teraz czyta książkę.,
+      foreign: She is reading a book now.,
+      group: sentence/read,
+    }
+  - {
+      id: he-watches-tv-every-day,
+      local: On codziennie ogląda telewizję.,
+      foreign: He watches TV every day.,
+      group: sentence/watch,
+    }
+  - {
+      id: he-is-watching-tv-now,
+      local: On teraz ogląda telewizję.,
+      foreign: He is watching TV now.,
+      group: sentence/watch,
+    }
+  - {
+      id: he-runs-every-morning,
+      local: On biega co rano.,
+      foreign: He runs every morning.,
+      group: sentence/run,
+    }
+  - {
+      id: is-he-running-now,
+      local: Czy on teraz biegnie?,
+      foreign: Is he running now?,
+      group: sentence/run,
+    }
+  # He/she/it: -s or -es; questions with do/does, negatives with don't/doesn't.
+  - {
+      id: she-goes-to-school-every-day,
+      local: Ona codziennie chodzi do szkoły.,
+      foreign: She goes to school every day.,
+      group: sentence/simple,
+    }
+  - {
+      id: he-doesnt-like-milk,
+      local: On nie lubi mleka.,
+      foreign: He doesn't like milk.,
+      group: sentence/simple,
+    }
+  - {
+      id: do-you-like-pizza,
+      local: Czy lubisz pizzę?,
+      foreign: Do you like pizza?,
+      group: sentence/simple,
+    }
+  - {
+      id: i-do-my-homework-after-school,
+      local: Odrabiam lekcje po szkole.,
+      foreign: I do my homework after school.,
+      group: sentence/simple,
+    }
+  # am/is/are + -ing, with the spelling changes: swim → swimming, write → writing.
+  - {
+      id: they-are-swimming-now,
+      local: Oni teraz pływają.,
+      foreign: They are swimming now.,
+      group: sentence/continuous,
+    }
+  - {
+      id: she-is-writing-a-letter,
+      local: Ona teraz pisze list.,
+      foreign: She is writing a letter now.,
+      group: sentence/continuous,
+    }
+  - {
+      id: i-am-not-sleeping,
+      local: Teraz nie śpię.,
+      foreign: I am not sleeping now.,
+      group: sentence/continuous,
+    }
+  - {
+      id: look-it-is-raining,
+      local: Popatrz! Pada deszcz.,
+      foreign: Look! It is raining.,
+      group: sentence/weather,
+    }
+  # Usually vs today, or a fact vs what is happening now: the same Polish verb, a different tense.
+  - {
+      id: my-dad-usually-works-in-an-office,
+      local: Tata zwykle pracuje w biurze.,
+      foreign: My dad usually works in an office.,
+      group: sentence/work,
+    }
+  - {
+      id: today-my-dad-is-working-at-home,
+      local: Dziś tata pracuje w domu.,
+      foreign: Today my dad is working at home.,
+      group: sentence/work,
+    }
+  - {
+      id: she-usually-wears-a-skirt,
+      local: Ona zwykle nosi spódnicę.,
+      foreign: She usually wears a skirt.,
+      group: sentence/wear,
+    }
+  - {
+      id: today-she-is-wearing-jeans,
+      local: Dziś ona ma na sobie dżinsy.,
+      foreign: Today she is wearing jeans.,
+      group: sentence/wear,
+    }
+  - {
+      id: it-often-rains-in-november,
+      local: W listopadzie często pada.,
+      foreign: It often rains in November.,
+      group: sentence/weather,
+    }
+  - {
+      id: look-it-is-snowing,
+      local: Popatrz! Pada śnieg.,
+      foreign: Look! It is snowing.,
+      group: sentence/weather,
+    }
+  - {
+      id: birds-sing-in-spring,
+      local: Ptaki śpiewają wiosną.,
+      foreign: Birds sing in spring.,
+      group: sentence/sing,
+    }
+  - {
+      id: listen-a-bird-is-singing,
+      local: Posłuchaj! Ptak śpiewa.,
+      foreign: Listen! A bird is singing.,
+      group: sentence/sing,
+    }
+  - {
+      id: what-do-you-do-on-saturdays,
+      local: Co robisz w soboty?,
+      foreign: What do you do on Saturdays?,
+      group: sentence/do,
+    }
+  - {
+      id: what-are-you-doing-now,
+      local: Co teraz robisz?,
+      foreign: What are you doing now?,
+      group: sentence/do,
+    }
