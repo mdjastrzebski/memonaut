@@ -109,5 +109,66 @@ concepts:
       id: look-it-is-raining,
       local: Popatrz! Pada deszcz.,
       foreign: Look! It is raining.,
-      group: sentence/continuous,
+      group: sentence/weather,
+    }
+  # Usually vs today, or a fact vs what is happening now: the same Polish verb, a different tense.
+  - {
+      id: my-dad-usually-works-in-an-office,
+      local: Tata zwykle pracuje w biurze.,
+      foreign: My dad usually works in an office.,
+      group: sentence/work,
+    }
+  - {
+      id: today-my-dad-is-working-at-home,
+      local: Dziś tata pracuje w domu.,
+      foreign: Today my dad is working at home.,
+      group: sentence/work,
+    }
+  - {
+      id: she-usually-wears-a-skirt,
+      local: Ona zwykle nosi spódnicę.,
+      foreign: She usually wears a skirt.,
+      group: sentence/wear,
+    }
+  - {
+      id: today-she-is-wearing-jeans,
+      local: Dziś ona ma na sobie dżinsy.,
+      foreign: Today she is wearing jeans.,
+      group: sentence/wear,
+    }
+  - {
+      id: it-often-rains-in-november,
+      local: W listopadzie często pada.,
+      foreign: It often rains in November.,
+      group: sentence/weather,
+    }
+  - {
+      id: look-it-is-snowing,
+      local: Popatrz! Pada śnieg.,
+      foreign: Look! It is snowing.,
+      group: sentence/weather,
+    }
+  - {
+      id: birds-sing-in-spring,
+      local: Ptaki śpiewają wiosną.,
+      foreign: Birds sing in spring.,
+      group: sentence/sing,
+    }
+  - {
+      id: listen-a-bird-is-singing,
+      local: Posłuchaj! Ptak śpiewa.,
+      foreign: Listen! A bird is singing.,
+      group: sentence/sing,
+    }
+  - {
+      id: what-do-you-do-on-saturdays,
+      local: Co robisz w soboty?,
+      foreign: What do you do on Saturdays?,
+      group: sentence/do,
+    }
+  - {
+      id: what-are-you-doing-now,
+      local: Co teraz robisz?,
+      foreign: What are you doing now?,
+      group: sentence/do,
     }
