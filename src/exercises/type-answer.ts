@@ -44,7 +44,8 @@ interface GradeOptions {
  * - Easy: exact and typed within the fast limit
  * - Good: exact
  * - Hard: exact after forgiving any combination of wrong capitalization, missing umlauts or ß
- *   ("Funf", "fuenf") and one letter off; only wrong capitalization when `strict`
+ *   ("Funf", "fuenf") and one letter off; only wrong capitalization when `strict`; nothing when
+ *   the answer is a number, as one digit off is a wrong result, not a typo
  * - Again: anything else
  *
  * Forgiven mistakes accumulate: the answer is compared with all of them forgiven at once, and
@@ -64,6 +65,10 @@ export function gradeAnswer(
     return result(elapsedMs <= getFastLimitMs(expected) ? Rating.Easy : Rating.Good);
   }
 
+  if (isNumber(target)) {
+    return result(Rating.Again);
+  }
+
   const lower = (value: string) => value.toLowerCase();
   if (strict) {
     return lower(given) === lower(target) ? result(Rating.Hard, ['case']) : result(Rating.Again);
@@ -79,6 +84,11 @@ export function gradeAnswer(
   if (levenshtein(lower(given), lower(target)) > remaining) issues.push('diacritics');
   if (remaining === 1) issues.push('typo');
   return result(Rating.Hard, issues);
+}
+
+/** "9", "-3", "2,5" or "1000". */
+function isNumber(value: string): boolean {
+  return /^-?\d+([.,]\d+)?$/.test(value);
 }
 
 export function normalizeSpacing(value: string): string {

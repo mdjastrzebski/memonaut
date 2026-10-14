@@ -1,5 +1,6 @@
 id: polish
 name: Polish
+kind: language
 emoji: 🇵🇱
 foreignLanguage: pl-PL
 specialCharacters: [ą, ć, ę, ł, ń, ó, ś, ź, ż]

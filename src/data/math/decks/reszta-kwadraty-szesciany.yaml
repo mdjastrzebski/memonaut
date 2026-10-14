@@ -1,0 +1,141 @@
+id: reszta-kwadraty-szesciany
+name: Dzielenie z resztą, kwadraty i sześciany
+shuffleNew: true
+concepts:
+  # Dzielenie z resztą.
+  - {
+      id: rem-29-6,
+      question: 'Reszta z dzielenia 29 przez 6',
+      answer: '5',
+      explanation: '29 : 6 = 4 r 5',
+    }
+  - {
+      id: rem-45-8,
+      question: 'Reszta z dzielenia 45 przez 8',
+      answer: '5',
+      explanation: '45 : 8 = 5 r 5',
+    }
+  - {
+      id: rem-52-9,
+      question: 'Reszta z dzielenia 52 przez 9',
+      answer: '7',
+      explanation: '52 : 9 = 5 r 7',
+    }
+  - {
+      id: rem-74-9,
+      question: 'Reszta z dzielenia 74 przez 9',
+      answer: '2',
+      explanation: '74 : 9 = 8 r 2',
+    }
+  - {
+      id: rem-47-6,
+      question: 'Reszta z dzielenia 47 przez 6',
+      answer: '5',
+      explanation: '47 : 6 = 7 r 5',
+    }
+  - {
+      id: rem-59-8,
+      question: 'Reszta z dzielenia 59 przez 8',
+      answer: '3',
+      explanation: '59 : 8 = 7 r 3',
+    }
+  - {
+      id: rem-40-10,
+      question: 'Reszta z dzielenia 40 przez 10',
+      answer: '0',
+      explanation: '40 : 10 = 4 r 0',
+    }
+  - {
+      id: rem-100-7,
+      question: 'Reszta z dzielenia 100 przez 7',
+      answer: '2',
+      explanation: '100 : 7 = 14 r 2',
+    }
+  - {
+      id: rem-max-7,
+      question: 'Największa możliwa reszta z dzielenia przez 7',
+      answer: '6',
+      explanation: 'Reszta jest mniejsza od 7, więc najwyżej 6',
+      choices: ['7', '5', '0'],
+    }
+  - {
+      id: rem-max-9,
+      question: 'Największa możliwa reszta z dzielenia przez 9',
+      answer: '8',
+      explanation: 'Reszta jest mniejsza od 9, więc najwyżej 8',
+    }
+  # Zadania z treścią.
+  - {
+      id: word-candies,
+      question: '25 cukierków dzielimy po równo między 4 dzieci. Ile cukierków zostanie?',
+      answer: '1',
+      explanation: '25 : 4 = 6 r 1, zostanie 1 cukierek',
+    }
+  - {
+      id: word-teams,
+      question: 'Ile pełnych drużyn po 6 osób utworzy 20 dzieci?',
+      answer: '3',
+      explanation: '20 : 6 = 3 r 2, czyli 3 pełne drużyny',
+    }
+  - {
+      id: word-boxes,
+      question: 'W pudełku mieszczą się 4 jajka. Ile pudełek potrzeba na 18 jajek?',
+      answer: '5',
+      explanation: '18 : 4 = 4 r 2, czyli potrzeba 5 pudełek',
+    }
+  # Kwadraty do 15² = 225.
+  - { id: square-0, question: '0² =', answer: '0', explanation: '0² = 0' }
+  - { id: square-1, question: '1² =', answer: '1', explanation: '1² = 1' }
+  - { id: square-2, question: '2² =', answer: '4', explanation: '2² = 4' }
+  - { id: square-3, question: '3² =', answer: '9', explanation: '3² = 9' }
+  - { id: square-4, question: '4² =', answer: '16', explanation: '4² = 16' }
+  - { id: square-5, question: '5² =', answer: '25', explanation: '5² = 25' }
+  - { id: square-6, question: '6² =', answer: '36', explanation: '6² = 36' }
+  - { id: square-7, question: '7² =', answer: '49', explanation: '7² = 49' }
+  - { id: square-8, question: '8² =', answer: '64', explanation: '8² = 64' }
+  - { id: square-9, question: '9² =', answer: '81', explanation: '9² = 81' }
+  - { id: square-10, question: '10² =', answer: '100', explanation: '10² = 100' }
+  - { id: square-11, question: '11² =', answer: '121', explanation: '11² = 121' }
+  - { id: square-12, question: '12² =', answer: '144', explanation: '12² = 144' }
+  - { id: square-13, question: '13² =', answer: '169', explanation: '13² = 169' }
+  - { id: square-14, question: '14² =', answer: '196', explanation: '14² = 196' }
+  - { id: square-15, question: '15² =', answer: '225', explanation: '15² = 225' }
+  # Sześciany do 6³ = 216 oraz 10³.
+  - { id: cube-0, question: '0³ =', answer: '0', explanation: '0³ = 0' }
+  - { id: cube-1, question: '1³ =', answer: '1', explanation: '1³ = 1' }
+  - { id: cube-2, question: '2³ =', answer: '8', explanation: '2³ = 8' }
+  - { id: cube-3, question: '3³ =', answer: '27', explanation: '3³ = 27' }
+  - { id: cube-4, question: '4³ =', answer: '64', explanation: '4³ = 64' }
+  - { id: cube-5, question: '5³ =', answer: '125', explanation: '5³ = 125' }
+  - { id: cube-6, question: '6³ =', answer: '216', explanation: '6³ = 216' }
+  - { id: cube-10, question: '10³ =', answer: '1000', explanation: '10³ = 1000' }
+  # Jaka liczba podniesiona do potęgi daje wynik?
+  - { id: base-square-49, question: '_² = 49', answer: '7', explanation: '7² = 49' }
+  - { id: base-square-64, question: '_² = 64', answer: '8', explanation: '8² = 64' }
+  - { id: base-square-81, question: '_² = 81', answer: '9', explanation: '9² = 81' }
+  - { id: base-square-144, question: '_² = 144', answer: '12', explanation: '12² = 144' }
+  - { id: base-square-225, question: '_² = 225', answer: '15', explanation: '15² = 225' }
+  - { id: base-cube-8, question: '_³ = 8', answer: '2', explanation: '2³ = 8' }
+  - { id: base-cube-27, question: '_³ = 27', answer: '3', explanation: '3³ = 27' }
+  - { id: base-cube-125, question: '_³ = 125', answer: '5', explanation: '5³ = 125' }
+  - { id: base-cube-1000, question: '_³ = 1000', answer: '10', explanation: '10³ = 1000' }
+  # Działania z potęgami: najpierw potęgowanie, potem mnożenie i dzielenie, na końcu dodawanie i odejmowanie.
+  - { id: mixed-3sq-plus-2cube, question: '3² + 2³ =', answer: '17', explanation: '3² + 2³ = 17' }
+  - { id: mixed-5sq-minus-4sq, question: '5² − 4² =', answer: '9', explanation: '5² − 4² = 9' }
+  - {
+      id: mixed-2-times-3sq,
+      question: '2 · 3² =',
+      answer: '18',
+      explanation: '2 · 3² = 18',
+      choices: ['36', '12', '11'],
+    }
+  - { id: mixed-2-times-3-sq, question: '(2 · 3)² =', answer: '36', explanation: '(2 · 3)² = 36' }
+  - {
+      id: mixed-10sq-minus-1cube,
+      question: '10² − 1³ =',
+      answer: '99',
+      explanation: '10² − 1³ = 99',
+    }
+  - { id: mixed-1-plus-2-cube, question: '(1 + 2)³ =', answer: '27', explanation: '(1 + 2)³ = 27' }
+  - { id: mixed-4sq-div-2, question: '4² : 2 =', answer: '8', explanation: '4² : 2 = 8' }
+  - { id: mixed-2cube-times-5, question: '2³ · 5 =', answer: '40', explanation: '2³ · 5 = 40' }

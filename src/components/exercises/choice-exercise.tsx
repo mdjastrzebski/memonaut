@@ -12,58 +12,49 @@ import { useAnswer } from '@/components/exercises/use-answer';
 import { FastBonus } from '@/components/fast-bonus';
 import { GRADE_STYLES } from '@/components/grades';
 import { Button } from '@/components/ui/button';
-import {
-  FAST_CHOICE_MS,
-  gradeChoice,
-  pickChoices,
-  type ChoiceSide,
-} from '@/exercises/multiple-choice';
+import { FAST_CHOICE_MS, gradeChoice } from '@/exercises/multiple-choice';
 import { formatSeconds } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { Rating } from '@/srs/scheduler';
 
-interface ChoiceExerciseProps extends ExerciseProps {
-  /** The word offered as options: local in recognition, foreign in translation. */
-  side: ChoiceSide;
+export interface ChoiceExerciseProps extends ExerciseProps {
   /** Asked above the prompt, e.g. "What does it mean?". */
   question: string;
-  /** The word to find the other one for. */
+  /** What to find the answer for, e.g. the word or the question. */
   prompt: ReactNode;
+  /** The right option. */
+  answer: string;
+  /** The options, the answer among them, in the order shown. Called once. */
+  pickOptions: () => string[];
+  /** Shown with the result, e.g. the word and its meaning. */
+  feedback: ReactNode;
   /** Extra context drawn large in the corner, e.g. "3". */
   hint?: string;
-  /** Reads the foreign word aloud again from the feedback. */
-  onListen: () => void;
+  /** Reads the word aloud again from the feedback; no button when left out. */
+  onListen?: () => void;
   /** Called once an option is picked, e.g. to read the word aloud. */
   onPicked?: () => void;
 }
 
-/** A multiple-choice exercise: the learner picks the right word for the prompt, also with keys 1–4. */
+/** A multiple-choice exercise: the learner picks the right option for the prompt, also with keys 1–4. */
 export function ChoiceExercise({
   session,
   card,
-  concept,
   onReview,
-  subjectConcepts,
   showSrsDetails,
   onToggleSrsDetails,
-  side,
   question,
   prompt,
+  answer,
+  pickOptions,
+  feedback,
   hint,
   onListen,
   onPicked,
 }: ChoiceExerciseProps) {
   const { answered: picked, check, submit, now } = useAnswer(onReview);
   const continueRef = useRef<HTMLButtonElement>(null);
-
-  const answer = concept[side]!;
-  const [options] = useState(() =>
-    pickChoices(concept, {
-      side,
-      deckConcepts: subjectConcepts.filter((other) => session.deck.conceptIds.includes(other.id)),
-      subjectConcepts,
-    }),
-  );
+  const [options] = useState(pickOptions);
 
   const pick = (option: string) => {
     if (picked) return;
@@ -145,22 +136,19 @@ export function ChoiceExercise({
           <div className="relative mt-4 flex flex-col gap-4">
             <FeedbackPanel grade={picked.result.grade}>
               <p className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 font-display text-xl font-bold break-words">
-                <span>{concept.foreign}</span>
-                <span aria-hidden className="text-muted-foreground">
-                  =
-                </span>
-                <span className="sr-only">means</span>
-                <span>{concept.local}</span>
+                {feedback}
               </p>
-              <Button
-                type="button"
-                variant="ghost"
-                aria-label="Listen again"
-                className="size-10 shrink-0 rounded-xl"
-                onClick={onListen}
-              >
-                <Volume2 className="size-5" />
-              </Button>
+              {onListen && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  aria-label="Listen again"
+                  className="size-10 shrink-0 rounded-xl"
+                  onClick={onListen}
+                >
+                  <Volume2 className="size-5" />
+                </Button>
+              )}
             </FeedbackPanel>
             <ContinueButton ref={continueRef} type="button" onClick={submit} />
           </div>

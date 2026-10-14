@@ -31,26 +31,21 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const polish = content.subjects.find((subject) => subject.id === 'polish')!;
-
-function renderExercise(conceptId: string) {
+/** Its first exercise, in a bundled unit deck holding only it. */
+function renderExercise(conceptId: string, strictSpelling = true) {
+  const deck = content.decks.find(
+    (deck) => deck.kind === 'unit' && deck.conceptIds.includes(conceptId),
+  )!;
+  const subject = content.subjects.find((subject) => subject.id === deck.subjectId)!;
   const session = createSession({
-    deck: {
-      id: 'd',
-      subjectId: 'polish',
-      kind: 'unit',
-      name: 'D',
-      conceptIds: [conceptId],
-      strictSpelling: true,
-      exerciseTypes: polish.exerciseTypes,
-    },
+    deck: { ...deck, conceptIds: [conceptId], strictSpelling },
     concepts: content.concepts,
   });
   render(
     <ExerciseScreen
       session={session}
       onReview={() => {}}
-      subject={polish}
+      subject={subject}
       subjectConcepts={[]}
       showSpecialCharacters={false}
       onToggleSpecialCharacters={() => {}}
@@ -108,4 +103,52 @@ test('a wrong answer compares it with the answer instead', async () => {
   expect(status).toHaveTextContent('Again');
   expect(within(status).getByText('ó', { selector: 'mark' })).toBeInTheDocument();
   expect(within(status).queryByText('żó', { selector: 'mark' })).not.toBeInTheDocument();
+});
+
+test('questions are not read aloud', async () => {
+  const user = userEvent.setup();
+  renderExercise('math/square-7');
+  expect(screen.getByRole('heading', { name: '7² =' })).toBeInTheDocument();
+
+  await user.type(screen.getByRole('textbox', { name: 'Answer' }), '49{Enter}');
+  expect(screen.getByRole('status')).toHaveTextContent('Easy');
+  expect(utterances).toEqual([]);
+});
+
+test("a question's explanation is shown with the result, not a meaning", async () => {
+  const user = userEvent.setup();
+  renderExercise('math/square-3');
+
+  await user.type(screen.getByRole('textbox', { name: 'Answer' }), '8{Enter}');
+  const status = screen.getByRole('status');
+  expect(status).toHaveTextContent('3² = 9');
+  expect(status).not.toHaveTextContent('means');
+});
+
+test('a numeric answer must be exact, even in a deck without strict spelling', async () => {
+  const user = userEvent.setup();
+  renderExercise('math/square-7', false);
+
+  await user.type(screen.getByRole('textbox', { name: 'Answer' }), '48{Enter}');
+  expect(screen.getByRole('status')).toHaveTextContent('Again');
+});
+
+test('a question with choices is picked first from its answer and its own wrong choices', async () => {
+  const user = userEvent.setup();
+  renderExercise('math/mixed-2-times-3sq');
+  expect(screen.getByRole('heading', { name: '2 · 3² =' })).toBeInTheDocument();
+  const options = within(screen.getByRole('group', { name: 'Options' })).getAllByRole('button');
+  expect(options.map((option) => option.textContent?.slice(1)).sort()).toEqual([
+    '11',
+    '12',
+    '18',
+    '36',
+  ]);
+
+  await user.click(screen.getByRole('button', { name: /36/ }));
+  const status = screen.getByRole('status');
+  expect(status).toHaveTextContent('Again');
+  expect(status).toHaveTextContent('2 · 3² = 18');
+  expect(screen.queryByRole('button', { name: 'Listen again' })).not.toBeInTheDocument();
+  expect(utterances).toEqual([]);
 });

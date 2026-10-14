@@ -4,6 +4,7 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import App from './App';
 import { content } from './data/content';
+import type { LanguageConcept } from './domain/types';
 import { FAST_CHOICE_MS } from './exercises/multiple-choice';
 
 // jsdom has no speech synthesis; record what would be read aloud instead.
@@ -40,8 +41,9 @@ afterEach(() => {
 
 const essentials = content.decks.find((deck) => deck.id === 'german/core')!;
 const essentialsSize = essentials.conceptIds.length;
-const essentialConcepts = content.concepts.filter((concept) =>
-  essentials.conceptIds.includes(concept.id),
+const essentialConcepts = content.concepts.filter(
+  (concept): concept is LanguageConcept =>
+    concept.kind === 'language' && essentials.conceptIds.includes(concept.id),
 );
 
 /** Opens the unit select box and picks the named unit of the selected Subject. */
@@ -276,6 +278,7 @@ test('dictation reads the word aloud and shows its meaning only after checking',
   expect(screen.queryByText(hint!)).not.toBeInTheDocument();
 });
 
+// Practises every word of the German core set through the whole app, so it takes a few seconds.
 test('a word moves on to translation once its dictation graduates', async () => {
   const user = userEvent.setup();
   await startEssentialsSession(user);
@@ -308,7 +311,7 @@ test('a word moves on to translation once its dictation graduates', async () => 
   expect(spoken).toHaveLength(spokenBefore);
   await user.keyboard('{Enter}');
   expect(spoken.slice(spokenBefore)).toEqual([foreign]);
-});
+}, 20_000);
 
 test('finishing early asks first and stays on cancel', async () => {
   const user = userEvent.setup();
@@ -393,7 +396,7 @@ test('setup offers each subject with its core set selected first', async () => {
     within(subjects)
       .getAllByRole('radio')
       .map((radio) => radio.getAttribute('aria-label')),
-  ).toEqual(['English', 'German', 'Polish']);
+  ).toEqual(['English', 'German', 'Matematyka', 'Polish']);
 
   await user.click(screen.getByRole('radio', { name: 'German' }));
   expect(screen.getByRole('radio', { name: 'Essentials' })).toBeChecked();
@@ -441,7 +444,10 @@ test('a unit unlocks recognition choice, dictation, translation choice, then tra
   await pickUnit(user, 'Kapitel 0');
   await user.click(screen.getByRole('radio', { name: '10' }));
   await user.click(screen.getByRole('button', { name: 'Start session' }));
-  const concepts = content.concepts.filter((concept) => concept.subjectId === 'german');
+  const concepts = content.concepts.filter(
+    (concept): concept is LanguageConcept =>
+      concept.kind === 'language' && concept.subjectId === 'german',
+  );
   const options = () =>
     within(screen.getByRole('group', { name: 'Options' })).getAllByRole('button');
   // Each next exercise type unlocks on the next study day, before any new word.

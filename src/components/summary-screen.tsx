@@ -1,6 +1,7 @@
 import { Rocket } from 'lucide-react';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 
+import { CONCEPT_NOUNS, getConceptText } from '@/components/concept-text';
 import { EXERCISES } from '@/components/exercise-types';
 import { getProgress, GRADE_STYLES, PROGRESS_LABELS, type Progress } from '@/components/grades';
 import { SrsDetails, StateBadge } from '@/components/srs-stats';
@@ -13,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { Card, Review } from '@/domain/types';
+import type { Card, Review, SubjectKind } from '@/domain/types';
 import {
   formatDuration,
   formatNumber,
@@ -44,6 +45,8 @@ const PROGRESS_STYLES: Record<Progress, string> = {
 
 interface SummaryScreenProps {
   session: Session;
+  /** Its kind names the Concepts, e.g. "words". */
+  subjectKind: SubjectKind;
   /** Time spent practising, without the idle stretches. */
   activeMs: number;
   /** Goes back to the setup screen to choose the next session. */
@@ -54,6 +57,7 @@ interface SummaryScreenProps {
 
 export function SummaryScreen({
   session,
+  subjectKind,
   activeMs,
   onNewSession,
   showSrsDetails,
@@ -74,11 +78,12 @@ export function SummaryScreen({
   const correctCount = reviews.filter((review) => review.rating !== Rating.Again).length;
   const accuracy = reviews.length ? correctCount / reviews.length : 0;
   const { newWords, repeatedWords } = countNewAndRepeatedWords(session);
+  const noun = CONCEPT_NOUNS[subjectKind];
 
   const stats: [label: string, value: string][] = [
     ['Time', formatDuration(activeMs)],
-    ['Repeated words', String(repeatedWords)],
-    ['New words', String(newWords)],
+    [`Repeated ${noun.many}`, String(repeatedWords)],
+    [`New ${noun.many}`, String(newWords)],
   ];
 
   return (
@@ -112,10 +117,10 @@ export function SummaryScreen({
 
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <h3 className="font-display text-2xl font-bold">Words</h3>
+          <h3 className="font-display text-2xl font-bold">{noun.Many}</h3>
           <span className="text-sm text-muted-foreground">Coming back soonest first</span>
         </div>
-        <ol aria-label="Session words" className="flex flex-col gap-2">
+        <ol aria-label={`Session ${noun.many}`} className="flex flex-col gap-2">
           {sortByDueThenDifficulty(cards).map((card, index) => (
             <WordRow
               key={card.id}
@@ -267,7 +272,7 @@ interface WordRowProps {
 }
 
 function WordRow({ session, card, now, style }: WordRowProps) {
-  const concept = session.concepts[card.conceptId];
+  const { prompt, answer } = getConceptText(session.concepts[card.conceptId]);
   const attempts = session.reviews.filter((review) => review.cardId === card.id);
   const progress = getProgress(card.srs.state);
   const isNew = progress === 'new';
@@ -291,14 +296,14 @@ function WordRow({ session, card, now, style }: WordRowProps) {
       </span>
       <Icon aria-label={label} className="size-4 shrink-0 text-muted-foreground" />
       <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">
-        {concept.local && <span className="text-sm text-muted-foreground">{concept.local}</span>}
+        {prompt && <span className="text-sm text-muted-foreground">{prompt}</span>}
         <span
           className={cn(
             'font-display text-lg leading-tight font-bold break-words',
             isNew && 'text-muted-foreground',
           )}
         >
-          {concept.foreign}
+          {answer}
         </span>
       </span>
       {!isNew && (
@@ -356,7 +361,7 @@ function SessionSrsTables({ session, now }: { session: Session; now: Date }) {
           </TableHeader>
           <TableBody>
             {cards.map((card) => {
-              const concept = session.concepts[card.conceptId];
+              const { prompt, answer } = getConceptText(session.concepts[card.conceptId]);
               const isNew = card.srs.state === State.New;
               const r = (offset: number) =>
                 isNew
@@ -365,8 +370,8 @@ function SessionSrsTables({ session, now }: { session: Session; now: Date }) {
               return (
                 <TableRow key={card.id} className="tabular-nums">
                   <TableCell>
-                    {concept.local && `${concept.local} → `}
-                    <span className="font-medium">{concept.foreign}</span> ·{' '}
+                    {prompt && `${prompt} → `}
+                    <span className="font-medium">{answer}</span> ·{' '}
                     {EXERCISES[card.exerciseType].label}
                   </TableCell>
                   <TableCell>
@@ -412,7 +417,7 @@ function SessionSrsTables({ session, now }: { session: Session; now: Date }) {
           <TableBody>
             {reviews.map((review, index) => {
               const card = session.cards[review.cardId];
-              const concept = session.concepts[card.conceptId];
+              const { prompt, answer } = getConceptText(session.concepts[card.conceptId]);
               const { log, srsAfter } = review;
               const wasNew = log.state === State.New;
               return (
@@ -422,7 +427,7 @@ function SessionSrsTables({ session, now }: { session: Session; now: Date }) {
                     +{formatDuration(log.review.getTime() - session.startedAt.getTime())}
                   </TableCell>
                   <TableCell>
-                    {concept.local ?? concept.foreign} · {EXERCISES[card.exerciseType].label}
+                    {prompt ?? answer} ·{EXERCISES[card.exerciseType].label}
                   </TableCell>
                   <TableCell className={GRADE_STYLES[review.rating].text}>
                     {GRADE_STYLES[review.rating].mark} {review.input}

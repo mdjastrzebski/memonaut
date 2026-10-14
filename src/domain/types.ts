@@ -2,14 +2,21 @@ import type { Card as FsrsCard, Grade, ReviewLog } from 'ts-fsrs';
 
 import type { AnswerIssue } from '@/exercises/type-answer';
 
+/**
+ * What a Subject teaches, which decides its Concepts' fields and Exercise Types:
+ * - language: words of a language, e.g. English or Polish spelling, practised both ways
+ * - knowledge: questions with an answer, e.g. math, asked one way only
+ */
+export type SubjectKind = 'language' | 'knowledge';
+
 /** A separate area of study, e.g. English, German or Przyroda. */
-export interface Subject {
+export type Subject = LanguageSubject | KnowledgeSubject;
+
+interface SubjectBase {
   id: string;
   name: string;
   /** Shown next to the name, e.g. a flag. */
   emoji?: string;
-  /** BCP 47 tag of the language being learned, used to read words aloud, e.g. "de-DE". */
-  foreignLanguage: string;
   /** Characters offered on the on-screen keyboard, e.g. German umlauts. */
   specialCharacters?: string[];
   /**
@@ -19,6 +26,16 @@ export interface Subject {
   exerciseTypes: ExerciseType[];
   /** Spellings marked in a right answer, to remind which ones it got right, e.g. Polish "rz". */
   trickySpellings?: string[];
+}
+
+export interface LanguageSubject extends SubjectBase {
+  kind: 'language';
+  /** BCP 47 tag of the language being learned, used to read words aloud, e.g. "de-DE". */
+  foreignLanguage: string;
+}
+
+export interface KnowledgeSubject extends SubjectBase {
+  kind: 'knowledge';
 }
 
 export type DeckKind = 'unit' | 'core';
@@ -39,13 +56,28 @@ export interface Deck {
   shuffleNew?: boolean;
   /** How its Concepts are practised, easiest first: some or all of its Subject's. */
   exerciseTypes: ExerciseType[];
+  /**
+   * Fewer Exercise Types, keyed by Concept id, for Concepts that can't be practised with all of
+   * the Deck's, e.g. a question without choices.
+   */
+  conceptExerciseTypes?: Record<string, ExerciseType[]>;
 }
 
-/** One piece of knowledge, e.g. a word. It can be in any number of Decks within its Subject. */
-export interface Concept {
+/**
+ * One piece of knowledge, e.g. a word or a question. It can be in any number of Decks within its
+ * Subject, and is of its Subject's kind.
+ */
+export type Concept = LanguageConcept | KnowledgeConcept;
+
+interface ConceptBase {
   /** Unique across Subjects, e.g. "german/number-3". Learning state is keyed by it, so it must not change. */
   id: string;
   subjectId: string;
+}
+
+/** A word of a language Subject. */
+export interface LanguageConcept extends ConceptBase {
+  kind: 'language';
   /**
    * The word in the learner's own language, e.g. "trzy". Left out where there's nothing to
    * translate, e.g. in Polish spelling, whose Subject has no translation exercises.
@@ -68,18 +100,38 @@ export interface Concept {
   group?: string;
 }
 
+/** A question of a knowledge Subject, asked one way only. */
+export interface KnowledgeConcept extends ConceptBase {
+  kind: 'knowledge';
+  /** E.g. "3² =" or "Reszta z dzielenia 29 przez 6". */
+  question: string;
+  /** Typed exactly, e.g. "9". */
+  answer: string;
+  /** Optional, shown with the result, e.g. "3² = 9" or "29 : 6 = 4 r 5". */
+  explanation?: string;
+  /**
+   * Optional wrong answers to pick from, e.g. common mistakes like "36" for "2 · 3² =". Only a
+   * question with them is practised with question choice.
+   */
+  choices?: string[];
+}
+
 /**
  * A way to practise a Concept:
  * - recognition-choice: see and hear the foreign word and pick the local one from a few options
  * - dictation: hear the foreign word and type how it's spelled
  * - translation-choice: see the local word and pick the foreign one from a few options
  * - translation: see the local word and type the foreign one
+ * - question-choice: see a knowledge question and pick its answer from a few options
+ * - question-type: see a knowledge question and type its answer
  */
 export type ExerciseType =
   | 'recognition-choice'
   | 'dictation'
   | 'translation-choice'
-  | 'translation';
+  | 'translation'
+  | 'question-choice'
+  | 'question-type';
 
 /** One Concept practised with one Exercise Type. It holds its own FSRS review state. */
 export interface Card {

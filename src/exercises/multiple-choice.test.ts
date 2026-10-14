@@ -1,12 +1,13 @@
 import { expect, test } from 'vitest';
 
-import type { Concept } from '@/domain/types';
+import type { LanguageConcept } from '@/domain/types';
 import { Rating } from '@/srs/scheduler';
 
 import { FAST_CHOICE_MS, gradeChoice, pickChoices } from './multiple-choice';
 
-const concept = (id: string, local: string, foreign: string): Concept => ({
+const concept = (id: string, local: string, foreign: string): LanguageConcept => ({
   id,
+  kind: 'language',
   subjectId: 'german',
   local,
   foreign,

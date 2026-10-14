@@ -1,4 +1,4 @@
-import type { Card, Concept, Deck, ExerciseType, Review } from '@/domain/types';
+import type { Card, Concept, Deck, ExerciseType, Review, SubjectKind } from '@/domain/types';
 import type { AnswerIssue } from '@/exercises/type-answer';
 import { shuffle } from '@/lib/shuffle';
 import {
@@ -21,7 +21,25 @@ export const EXERCISE_TYPES: ExerciseType[] = [
   'dictation',
   'translation-choice',
   'translation',
+  'question-choice',
+  'question-type',
 ];
+
+/** The Exercise Types each kind of Subject can use, easiest first. */
+export const KIND_EXERCISE_TYPES: Record<SubjectKind, ExerciseType[]> = {
+  language: ['recognition-choice', 'dictation', 'translation-choice', 'translation'],
+  knowledge: ['question-choice', 'question-type'],
+};
+
+/** Whether a Concept can be practised with an Exercise Type: question choice needs choices. */
+export function canPractise(concept: Concept, exerciseType: ExerciseType): boolean {
+  return exerciseType !== 'question-choice' || (concept.kind === 'knowledge' && !!concept.choices);
+}
+
+/** How a Concept is practised in a Deck, easiest first. */
+export function getConceptExerciseTypes(deck: Deck, conceptId: string): ExerciseType[] {
+  return deck.conceptExerciseTypes?.[conceptId] ?? deck.exerciseTypes;
+}
 
 /** A study day starts at 4 AM local time, like Anki's, so late-evening study counts as one day. */
 export const DAY_START_HOUR = 4;
@@ -83,28 +101,24 @@ export function createSession({
     const concept = concepts.find((concept) => concept.id === conceptId);
     return concept ? [concept] : [];
   });
+  const conceptCards = (conceptId: string) =>
+    getConceptCards(conceptId, previous, now, getConceptExerciseTypes(deck, conceptId));
   const newConceptIds = deckConcepts
     .map((concept) => concept.id)
-    .filter((conceptId) =>
-      getConceptCards(conceptId, previous, now, exerciseTypes).every(
-        (card) => card.srs.state === State.New,
-      ),
-    );
+    .filter((conceptId) => conceptCards(conceptId).every((card) => card.srs.state === State.New));
   const newOrder = deck.shuffleNew ? shuffle(newConceptIds, random) : newConceptIds;
 
   const candidates = deckConcepts.flatMap((concept, conceptIndex) =>
-    getCandidates(getConceptCards(concept.id, previous, now, exerciseTypes), now, now).map(
-      ({ card, step }) => {
-        const typeIndex = exerciseTypes.indexOf(card.exerciseType);
-        const sortKey =
-          step === Step.Unlocked || step === Step.HeldUnlocked
-            ? [typeIndex, conceptIndex]
-            : step === Step.New
-              ? [newOrder.indexOf(concept.id), 0]
-              : [card.srs.due.getTime(), conceptIndex];
-        return { concept, card, sortKey: [step, ...sortKey] };
-      },
-    ),
+    getCandidates(conceptCards(concept.id), now, now).map(({ card, step }) => {
+      const typeIndex = exerciseTypes.indexOf(card.exerciseType);
+      const sortKey =
+        step === Step.Unlocked || step === Step.HeldUnlocked
+          ? [typeIndex, conceptIndex]
+          : step === Step.New
+            ? [newOrder.indexOf(concept.id), 0]
+            : [card.srs.due.getTime(), conceptIndex];
+      return { concept, card, sortKey: [step, ...sortKey] };
+    }),
   );
   candidates.sort((a, b) => compareKeys(a.sortKey, b.sortKey));
   const picked = candidates.slice(0, maxCards);
@@ -207,23 +221,24 @@ export function getConceptCards(
 }
 
 /**
- * How many of the Concepts need practice before the next study day starts, with their Subject's
- * Exercise Types: those with a Card a session would pick as due or unlocked. New Concepts and
- * Cards held back for today don't count.
+ * How many of the Deck's Concepts need practice before the next study day starts: those with a
+ * Card a session would pick as due or unlocked. New Concepts and Cards held back for today don't
+ * count.
  */
-export function countDueToday(
-  conceptIds: string[],
-  cards: Record<string, Card>,
-  now: Date,
-  exerciseTypes = EXERCISE_TYPES,
-): number {
+export function countDueToday(deck: Deck, cards: Record<string, Card>, now: Date): number {
   const nextDayStart = getDayStart(now);
   nextDayStart.setDate(nextDayStart.getDate() + 1);
-  return conceptIds.filter((conceptId) =>
-    getCandidates(getConceptCards(conceptId, cards, now, exerciseTypes), now, nextDayStart).some(
+  return deck.conceptIds.filter((conceptId) => {
+    const conceptCards = getConceptCards(
+      conceptId,
+      cards,
+      now,
+      getConceptExerciseTypes(deck, conceptId),
+    );
+    return getCandidates(conceptCards, now, nextDayStart).some(
       ({ step }) => step === Step.Due || step === Step.Unlocked,
-    ),
-  ).length;
+    );
+  }).length;
 }
 
 /** The id of the Card that practises a Concept with an Exercise Type. */

@@ -19,8 +19,8 @@ import {
 } from './session';
 
 const concepts: Concept[] = [
-  { id: 'one', subjectId: 'german', local: 'jeden', foreign: 'eins' },
-  { id: 'two', subjectId: 'german', local: 'dwa', foreign: 'zwei' },
+  { id: 'one', subjectId: 'german', kind: 'language', local: 'jeden', foreign: 'eins' },
+  { id: 'two', subjectId: 'german', kind: 'language', local: 'dwa', foreign: 'zwei' },
 ];
 const deck: Deck = {
   id: 'numbers',
@@ -255,8 +255,18 @@ test('counts words due before the next study day, or with an exercise type unloc
     reviewed('five:dictation', new Date(2026, 0, 2, 7)),
   );
   const conceptIds = ['one', 'two', 'three', 'four', 'five', 'six'];
+  const withTypes = (exerciseTypes: ExerciseType[]) => ({ ...deck, conceptIds, exerciseTypes });
 
-  expect(countDueToday(conceptIds, cards, morning, ['dictation', 'translation'])).toBe(3);
+  expect(countDueToday(withTypes(['dictation', 'translation']), cards, morning)).toBe(3);
   // Without translation exercises, nothing gets unlocked.
-  expect(countDueToday(conceptIds, cards, morning, ['dictation'])).toBe(2);
+  expect(countDueToday(withTypes(['dictation']), cards, morning)).toBe(2);
+  // Nor for a word practised with fewer of the deck's exercise types.
+  const conceptExerciseTypes = { two: ['dictation'] as ExerciseType[] };
+  expect(
+    countDueToday(
+      { ...withTypes(['dictation', 'translation']), conceptExerciseTypes },
+      cards,
+      morning,
+    ),
+  ).toBe(2);
 });

@@ -124,6 +124,7 @@ export default function App() {
         ) : finished ? (
           <SummaryScreen
             session={session}
+            subjectKind={subject.kind}
             activeMs={getActiveMs()}
             onNewSession={goHome}
             showSrsDetails={showSrsDetails}

@@ -116,3 +116,12 @@ describe('strict spelling forgives only wrong capitalization', () => {
     expect(gradeAnswer(expected, input, SLOW, strict).grade).toBe(Rating.Again);
   });
 });
+
+test('a number must be exact, as one digit off is a wrong result', () => {
+  expect(gradeAnswer('49', '48', 1000).grade).toBe(Rating.Again);
+  expect(gradeAnswer('49', '4 9', 1000).grade).toBe(Rating.Again);
+  expect(gradeAnswer('1000', '100', 1000).grade).toBe(Rating.Again);
+  expect(gradeAnswer('49', ' 49 ', 1000).grade).toBe(Rating.Easy);
+  // Words still forgive a letter off.
+  expect(gradeAnswer('neun', 'nein', 1000).grade).toBe(Rating.Hard);
+});
