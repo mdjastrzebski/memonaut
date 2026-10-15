@@ -60,6 +60,8 @@ A session takes about a chosen number of minutes (5, 10, 15 or 20). Each Card is
 
 The minutes become points at the learner's pace in the Subject, 8 points a minute to start with. Cards are picked in the order below while their points fit, but at least one: the points decide only how many Cards a session holds, never which come first, and nothing changes once it started. When a session is over, finished or left early, the points of the answers given per active minute move the pace toward what was measured, halfway for a session of 10 minutes or more and less for a shorter one, so the next session's estimate fits better. Sessions under a minute don't count. The setup screen shows how many exercises fit and about how long they take; the results compare the time taken with the time planned.
 
+To tune the points, each session's plan and answers are logged in the browser (`memonaut:effort-log`, the latest 100 sessions). With `?dev=1` in the URL, the setup screen shows an **Effort stats** panel: the time each answer took per point by Exercise Type and by difficulty, with suggested points that would even them out; how often Cards were answered against what was expected; and each session's planned time against the time it took. The log can be downloaded as JSON or cleared there.
+
 A session's Cards are picked in this order:
 
 1. due Cards, most overdue first; of a Concept's due Cards, the one most likely forgotten, the easier type on a tie

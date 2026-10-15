@@ -634,3 +634,38 @@ test('remembers the subject, set and words per session after a reload', async ()
   expect(unitTile('Kapitel 0')).toBeChecked();
   expect(screen.getByRole('radio', { name: '20 min' })).toBeChecked();
 });
+
+test('the effort stats show with dev=1 in the URL, with each finished session logged', async () => {
+  const user = userEvent.setup();
+  const { unmount } = render(<App />);
+  expect(screen.queryByRole('region', { name: 'Effort stats' })).not.toBeInTheDocument();
+  unmount();
+
+  window.history.pushState({}, '', '/?dev=1');
+  try {
+    render(<App />);
+    expect(screen.getByRole('button', { name: /Effort stats/ })).toHaveTextContent(
+      '0 sessions logged',
+    );
+
+    await user.click(screen.getByRole('radio', { name: 'German' }));
+    await user.click(screen.getByRole('button', { name: 'Start session' }));
+    for (let i = 0; i < 2; i++) {
+      await user.type(
+        screen.getByRole('textbox', { name: 'Answer' }),
+        `${currentConcept().foreign}{Enter}`,
+      );
+      await user.keyboard('{Enter}');
+    }
+    await finishSession(user);
+    await user.click(screen.getByRole('button', { name: 'Start a new session' }));
+
+    const toggle = screen.getByRole('button', { name: /Effort stats/ });
+    expect(toggle).toHaveTextContent('1 session logged');
+    await user.click(toggle);
+    expect(screen.getByRole('table', { name: 'Exercise types' })).toHaveTextContent('Dictation');
+    expect(screen.getByRole('table', { name: 'Sessions' })).toHaveTextContent('german/core');
+  } finally {
+    window.history.pushState({}, '', '/');
+  }
+});
