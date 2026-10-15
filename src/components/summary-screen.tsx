@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { CONCEPT_NOUNS, getConceptText } from '@/components/concept-text';
 import { EXERCISES } from '@/components/exercise-types';
 import { getProgress, GRADE_STYLES, PROGRESS_LABELS, type Progress } from '@/components/grades';
-import { AdvancedPanel, StateBadge } from '@/components/srs-stats';
+import { AdvancedPanel, SrsTermHint, StateBadge } from '@/components/srs-stats';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -266,7 +266,10 @@ interface WordRowProps {
 }
 
 function WordRow({ session, card, now, style }: WordRowProps) {
-  const { prompt, answer } = getConceptText(session.concepts[card.conceptId]);
+  const concept = session.concepts[card.conceptId];
+  const { prompt, answer } = getConceptText(concept);
+  // A word comes before its meaning; a question before its answer.
+  const promptFirst = concept.kind === 'knowledge';
   const attempts = session.reviews.filter((review) => review.cardId === card.id);
   const progress = getProgress(card.srs.state);
   const isNew = progress === 'new';
@@ -290,7 +293,7 @@ function WordRow({ session, card, now, style }: WordRowProps) {
       </span>
       <Icon aria-label={label} className="size-4 shrink-0 text-muted-foreground" />
       <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">
-        {prompt && <span className="text-sm text-muted-foreground">{prompt}</span>}
+        {promptFirst && prompt && <span className="text-sm text-muted-foreground">{prompt}</span>}
         <span
           className={cn(
             'font-display text-lg leading-tight font-bold break-words',
@@ -299,6 +302,7 @@ function WordRow({ session, card, now, style }: WordRowProps) {
         >
           {answer}
         </span>
+        {!promptFirst && prompt && <span className="text-sm text-muted-foreground">{prompt}</span>}
       </span>
       {!isNew && (
         <span className="ml-auto flex items-center gap-3">
@@ -332,15 +336,14 @@ function SessionCards({ session, now }: { session: Session; now: Date }) {
       <TableHeader>
         <TableRow>
           <TableHead>Exercise</TableHead>
-          <TableHead>State</TableHead>
-          <TableHead className="text-right">Difficulty</TableHead>
-          <TableHead className="text-right" title="Every review, right or wrong">
-            Reps
+          <TableHead>
+            <SrsTermHint term="State" />
           </TableHead>
-          <TableHead className="text-right" title="Times forgotten once learned">
-            Lapses
-          </TableHead>
-          <TableHead className="text-right">Next review</TableHead>
+          {(['Difficulty', 'Reps', 'Lapses', 'Next review'] as const).map((term) => (
+            <TableHead key={term} className="text-right">
+              <SrsTermHint term={term} />
+            </TableHead>
+          ))}
         </TableRow>
       </TableHeader>
       <TableBody>

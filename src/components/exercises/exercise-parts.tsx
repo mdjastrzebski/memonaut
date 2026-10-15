@@ -3,7 +3,7 @@ import type { ComponentProps, ReactNode } from 'react';
 
 import { Burst } from '@/components/burst';
 import { GRADE_ICONS, GRADE_STYLES } from '@/components/grades';
-import { AdvancedPanel, StateBadge } from '@/components/srs-stats';
+import { AdvancedPanel, SrsTermHint, StateBadge, type SrsTerm } from '@/components/srs-stats';
 import { Button } from '@/components/ui/button';
 import type { Card, Concept, Subject } from '@/domain/types';
 import type { AnswerResult } from '@/exercises/type-answer';
@@ -145,7 +145,7 @@ export function ExerciseAdvanced({ card, now, result, open, onToggle }: Exercise
       {to !== undefined && <> → {to}</>}
     </>
   );
-  const rows: [label: string, value: ReactNode][] = [
+  const rows: [label: SrsTerm | 'Answer', value: ReactNode][] = [
     [
       'State',
       change(<StateBadge state={before.state} />, after && <StateBadge state={after.state} />),
@@ -157,9 +157,7 @@ export function ExerciseAdvanced({ card, now, result, open, onToggle }: Exercise
         after && formatNumber(after.difficulty, 1),
       ),
     ],
-    // Every review, right or wrong.
     ['Reps', change(before.reps, after?.reps)],
-    // Times forgotten once learned: Again in Review, not while still learning.
     ['Lapses', change(before.lapses, after?.lapses)],
     [
       'Last review',
@@ -182,7 +180,7 @@ export function ExerciseAdvanced({ card, now, result, open, onToggle }: Exercise
       <dl className="flex flex-wrap gap-x-6 gap-y-3">
         {rows.map(([label, value]) => (
           <div key={label} className="flex flex-col gap-0.5">
-            <dt>{label}</dt>
+            <dt>{label === 'Answer' ? label : <SrsTermHint term={label} />}</dt>
             <dd className="flex items-center gap-1 font-medium text-foreground tabular-nums">
               {value}
             </dd>

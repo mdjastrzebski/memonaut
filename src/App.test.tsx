@@ -185,6 +185,8 @@ test('the Advanced panel shows only with dev=1, starts collapsed and stays expan
     await user.click(toggle());
     expect(panel()).toHaveTextContent('StateNew');
     expect(panel()).toHaveTextContent('Reps0Lapses0Last review—Next review—');
+    await user.hover(within(panel()).getByRole('button', { name: 'Lapses' }));
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('forgotten once learned');
     expect(panel()).not.toHaveTextContent('Answer');
 
     const input = screen.getByRole('textbox', { name: 'Answer' });
@@ -216,6 +218,9 @@ test('ending the session shows results with the Advanced panel collapsed', async
   expect(screen.getByText(/Session results/)).toBeInTheDocument();
   // The missed word comes back soonest, so it leads the list.
   expect(sessionWords()[0]).toHaveTextContent('Learning');
+  // The word comes before its meaning.
+  const { foreign, local } = essentialConcepts[0];
+  expect(sessionWords()[0]).toHaveTextContent(`${foreign}${local}`);
   expect(screen.getByText('New words').nextSibling).toHaveTextContent('1');
   expect(screen.getByText('Repeated words').nextSibling).toHaveTextContent('0');
   const toggle = screen.getByRole('button', { name: 'Advanced' });
