@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react';
 
+import { ArticleChoiceDeExercise } from '@/components/exercises/article-choice-de-exercise';
 import { DictationExercise } from '@/components/exercises/dictation-exercise';
 import type { ExerciseProps } from '@/components/exercises/exercise-parts';
 import { QuestionChoiceExercise } from '@/components/exercises/question-choice-exercise';
@@ -17,6 +18,7 @@ const EXERCISE_COMPONENTS: Record<ExerciseType, ComponentType<ExerciseProps>> = 
   'recognition-choice': RecognitionChoiceExercise,
   'dictation': DictationExercise,
   'translation-choice': TranslationChoiceExercise,
+  'article-choice-de': ArticleChoiceDeExercise,
   'translation': TranslationExercise,
   'question-choice': QuestionChoiceExercise,
   'question-type': QuestionTypeExercise,

@@ -1,4 +1,13 @@
-import type { Card, Concept, Deck, ExerciseType, Review, SubjectKind } from '@/domain/types';
+import type {
+  Card,
+  Concept,
+  Deck,
+  ExerciseType,
+  Review,
+  Subject,
+  SubjectKind,
+} from '@/domain/types';
+import { getGermanNoun, isGerman } from '@/exercises/german-articles';
 import type { AnswerIssue } from '@/exercises/type-answer';
 import { shuffle } from '@/lib/shuffle';
 import { getCardEffort, getReviewEffort } from '@/session/effort';
@@ -21,6 +30,7 @@ export const EXERCISE_TYPES: ExerciseType[] = [
   'recognition-choice',
   'dictation',
   'translation-choice',
+  'article-choice-de',
   'translation',
   'question-choice',
   'question-type',
@@ -28,13 +38,33 @@ export const EXERCISE_TYPES: ExerciseType[] = [
 
 /** The Exercise Types each kind of Subject can use, easiest first. */
 export const KIND_EXERCISE_TYPES: Record<SubjectKind, ExerciseType[]> = {
-  language: ['recognition-choice', 'dictation', 'translation-choice', 'translation'],
+  language: [
+    'recognition-choice',
+    'dictation',
+    'translation-choice',
+    'article-choice-de',
+    'translation',
+  ],
   knowledge: ['question-choice', 'question-type'],
 };
 
-/** Whether a Concept can be practised with an Exercise Type: question choice needs choices. */
-export function canPractise(concept: Concept, exerciseType: ExerciseType): boolean {
-  return exerciseType !== 'question-choice' || (concept.kind === 'knowledge' && !!concept.choices);
+/**
+ * Whether a Concept can be practised with an Exercise Type: question choice needs choices, and
+ * German article choice a German singular noun with its article, e.g. "das Buch".
+ */
+export function canPractise(
+  concept: Concept,
+  exerciseType: ExerciseType,
+  subject: Subject,
+): boolean {
+  switch (exerciseType) {
+    case 'question-choice':
+      return concept.kind === 'knowledge' && !!concept.choices;
+    case 'article-choice-de':
+      return concept.kind === 'language' && isGerman(subject) && !!getGermanNoun(concept);
+    default:
+      return true;
+  }
 }
 
 /** How a Concept is practised in a Deck, easiest first. */

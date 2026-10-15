@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 
-import { content } from '@/data/content';
+import { testContent as content } from '@/test/content';
 
 import { loadSetupChoice, saveSetupChoice } from './setup-choice';
 

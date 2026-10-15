@@ -12,10 +12,10 @@ concepts:
   - { id: der-computer, local: komputer, foreign: der Computer, group: thing/personal }
   - { id: die-torte, local: tort, foreign: die Torte }
   - { id: das-wort, local: słowo, foreign: das Wort }
-  - { id: die-woerter, local: słowa, foreign: die Wörter }
+  - { id: die-woerter, local: słowa, foreign: die Wörter, plural: true }
   - { id: ich-kenne, local: ja znam, foreign: ich kenne, group: kennen }
   - { id: das-tablet, local: tablet, foreign: das Tablet }
-  - { id: die-alpen, local: Alpy, foreign: die Alpen }
+  - { id: die-alpen, local: Alpy, foreign: die Alpen, plural: true }
   - { id: der-fussball, local: piłka nożna, foreign: der Fußball, group: hobby }
   - { id: die-giraffe, local: żyrafa, foreign: die Giraffe }
   - { id: der-film, local: film, foreign: der Film }
@@ -29,16 +29,16 @@ concepts:
   - { id: die-lektion, local: lekcja, foreign: die Lektion }
   - { id: deutsch, local: język niemiecki, foreign: Deutsch, group: language }
   - { id: das-foto, local: zdjęcie, foreign: das Foto, group: thing/personal }
-  - { id: die-computerspiele, local: gry komputerowe, foreign: die Computerspiele }
-  - { id: die-katzen, local: koty, foreign: die Katzen }
+  - { id: die-computerspiele, local: gry komputerowe, foreign: die Computerspiele, plural: true }
+  - { id: die-katzen, local: koty, foreign: die Katzen, plural: true }
   - { id: die-gymnastik, local: gimnastyka, foreign: die Gymnastik }
   - { id: die-limonade, local: lemoniada, foreign: die Limonade }
   - { id: die-pizza, local: pizza, foreign: die Pizza }
-  - { id: die-pandas, local: pandy, foreign: die Pandas }
-  - { id: die-bananen, local: banany, foreign: die Bananen }
-  - { id: die-filme, local: filmy, foreign: die Filme }
+  - { id: die-pandas, local: pandy, foreign: die Pandas, plural: true }
+  - { id: die-bananen, local: banany, foreign: die Bananen, plural: true }
+  - { id: die-filme, local: filmy, foreign: die Filme, plural: true }
   - { id: das-domino, local: domino, foreign: das Domino }
-  - { id: die-comics, local: komiksy, foreign: die Comics }
+  - { id: die-comics, local: komiksy, foreign: die Comics, plural: true }
   - { id: das-boxen, local: boks, foreign: das Boxen }
   - { id: ich-mag, local: ja lubię, foreign: ich mag, group: moegen }
   - { id: ich-mag-limonade, local: lubię lemoniadę, foreign: ich mag Limonade }

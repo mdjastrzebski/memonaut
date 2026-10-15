@@ -9,6 +9,9 @@ export const EXERCISE_EFFORT: Record<ExerciseType, number> = {
   'recognition-choice': 1,
   'dictation': 2,
   'translation-choice': 1,
+  // As quick as other multiple choice to answer: three short options always in the same place and
+  // nothing read aloud first, but recalling a gender takes thought, and its result has rules to read.
+  'article-choice-de': 1,
   'translation': 2.5,
   'question-choice': 1.5,
   'question-type': 2.5,

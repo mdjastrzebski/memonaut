@@ -3,9 +3,10 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import App from './App';
-import { content } from './data/content';
 import type { LanguageConcept } from './domain/types';
 import { FAST_CHOICE_MS } from './exercises/multiple-choice';
+import { getConceptExerciseTypes } from './session/session';
+import { testContent as content } from './test/content';
 
 // jsdom has no speech synthesis; record what would be read aloud instead.
 const spoken: string[] = [];
@@ -300,9 +301,10 @@ test('a word moves on to translation once its dictation graduates', async () => 
   expect(dictations).toBe(essentialsSize);
   expect(screen.getByText(/Session results/)).toBeInTheDocument();
 
-  // Every word was practised today, so its unlocked translation only fills the room left.
+  // Every word was practised today, so its unlocked translation only fills the room left. 5 minutes
+  // fit 8 of them, at 2.5 points answered twice, leaving no room to review dictations ahead.
   await user.click(screen.getByRole('button', { name: 'Start a new session' }));
-  await user.click(screen.getByRole('radio', { name: '10 min' }));
+  await user.click(screen.getByRole('radio', { name: '5 min' }));
   await user.click(screen.getByRole('button', { name: 'Start session' }));
   const { local, foreign } = currentConcept();
   expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(local);
@@ -408,7 +410,7 @@ test('setup offers each subject with its core set selected first', async () => {
   const selected = screen.getByRole('region', { name: 'Selected set' });
   expect(within(selected).getByRole('heading', { name: 'Essentials' })).toBeInTheDocument();
   expect(within(selected).getByText('Words', { selector: 'dt' }).nextSibling).toHaveTextContent(
-    '46',
+    String(essentialsSize),
   );
   expect(within(selected).queryByRole('list', { name: 'Words in set' })).not.toBeInTheDocument();
 });
@@ -420,17 +422,22 @@ test('picking a unit shows its stats and words, and starts a session of it', asy
   await user.click(screen.getByRole('radio', { name: 'German' }));
   await pickUnit(user, 'Kapitel 0');
 
-  const size = content.decks.find((deck) => deck.id === 'german/kapitel-0')!.conceptIds.length;
+  const deck = content.decks.find((deck) => deck.id === 'german/kapitel-0')!;
+  const size = deck.conceptIds.length;
+  const cards = deck.conceptIds.reduce(
+    (total, conceptId) => total + getConceptExerciseTypes(deck, conceptId).length,
+    0,
+  );
   const selected = screen.getByRole('region', { name: 'Selected set' });
   expect(within(selected).getByText('Words', { selector: 'dt' }).nextSibling).toHaveTextContent(
     String(size),
   );
-  expect(within(selected).getByText(`Exercises: ${size * 4}`)).toBeInTheDocument();
+  expect(within(selected).getByText(`Exercises: ${cards}`)).toBeInTheDocument();
 
   await user.click(within(selected).getByRole('button', { name: 'Words' }));
   const words = within(selected).getByRole('list', { name: 'Words in set' });
   expect(within(words).getAllByRole('listitem')).toHaveLength(size);
-  expect(words).toHaveTextContent('der Hamburger');
+  expect(words).toHaveTextContent('wort 1');
   expect(within(words).getAllByRole('button', { name: 'New' })).toHaveLength(size);
 
   await user.click(within(selected).getByRole('button', { name: 'Start session' }));
