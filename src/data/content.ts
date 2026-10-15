@@ -64,6 +64,8 @@ const CONCEPT_FIELDS = {
     alternatives: z.array(z.string().min(1)).min(1).optional(),
     hint: z.string().optional(),
     spokenHint: z.string().min(1).optional(),
+    /** Shown with the result, e.g. how a plural is made. */
+    explanation: z.string().min(1).optional(),
     /** Groups like Concepts of the Subject, e.g. "weekday", for multiple choice. */
     group: group.optional(),
   },

@@ -98,6 +98,11 @@ export interface LanguageConcept extends ConceptBase {
    */
   spokenHint?: string;
   /**
+   * Optional, shown with the result, with parts in square brackets highlighted, e.g. how a plural is
+   * made: "das Buch → die B[ü]ch[er]".
+   */
+  explanation?: string;
+  /**
    * Optional name of a set of like Concepts within the Subject, e.g. "weekday", or "number/small"
    * within the wider "number". In multiple choice, the others of its group are offered first as
    * wrong options, then those of each wider group.
@@ -112,7 +117,10 @@ export interface KnowledgeConcept extends ConceptBase {
   question: string;
   /** Typed exactly, e.g. "9". */
   answer: string;
-  /** Optional, shown with the result, e.g. "3² = 9" or "29 : 6 = 4 r 5". */
+  /**
+   * Optional, shown with the result instead of the answer, e.g. "3² = 9" or "29 : 6 = 4 r 5". Parts
+   * in square brackets are highlighted.
+   */
   explanation?: string;
   /**
    * Optional wrong answers to pick from, e.g. common mistakes like "36" for "2 · 3² =". Only a

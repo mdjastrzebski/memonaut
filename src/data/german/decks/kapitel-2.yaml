@@ -135,10 +135,34 @@ concepts:
   - { id: lernst-du-deutsch, local: czy uczysz się niemieckiego?, foreign: lernst du Deutsch? }
   - { id: ist-das-dein-heft, local: czy to jest twój zeszyt?, foreign: ist das dein Heft? }
   # Liczba mnoga: zawsze die. Na końcu zdanie z meine.
-  - { id: die-bleistifte, local: ołówki, foreign: die Bleistifte, group: school-thing }
-  - { id: die-kulis, local: długopisy, foreign: die Kulis, group: school-thing }
-  - { id: die-schultaschen, local: tornistry, foreign: die Schultaschen, group: school-thing }
-  - { id: die-buecher, local: książki, foreign: die Bücher, group: school-thing }
+  - {
+      id: die-bleistifte,
+      local: ołówki,
+      foreign: die Bleistifte,
+      explanation: 'der Bleistift → die Bleistift[e]',
+      group: school-thing,
+    }
+  - {
+      id: die-kulis,
+      local: długopisy,
+      foreign: die Kulis,
+      explanation: 'der Kuli → die Kuli[s]',
+      group: school-thing,
+    }
+  - {
+      id: die-schultaschen,
+      local: tornistry,
+      foreign: die Schultaschen,
+      explanation: 'die Schultasche → die Schultasche[n]',
+      group: school-thing,
+    }
+  - {
+      id: die-buecher,
+      local: książki,
+      foreign: die Bücher,
+      explanation: 'das Buch → die B[ü]ch[er]',
+      group: school-thing,
+    }
   - {
       id: das-sind-meine-buecher,
       local: to są moje książki,

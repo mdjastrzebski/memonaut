@@ -19,6 +19,7 @@ import {
 import { useAnswer } from '@/components/exercises/use-answer';
 import { FastBonus } from '@/components/fast-bonus';
 import { GRADE_STYLES } from '@/components/grades';
+import { MarkedText } from '@/components/marked-text';
 import { SpecialCharacters } from '@/components/special-characters';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,7 +41,10 @@ interface TypedExerciseProps extends ExerciseProps {
   alternatives?: string[];
   /** The local word, or else the spoken hint, shown with the result with a flag. */
   meaning?: string;
-  /** Shown with the result instead of the meaning, e.g. "3² = 9". */
+  /**
+   * Shown with the result below the meaning, with parts in square brackets highlighted, e.g.
+   * "3² = 9" or "das Buch → die B[ü]ch[er]".
+   */
   explanation?: string;
   /** Extra context drawn large in the corner, e.g. "3". */
   hint?: string;
@@ -270,7 +274,7 @@ interface TypedFeedbackProps {
   answer: string;
   /** The local word, or else the spoken hint, shown with the result. */
   meaning?: string;
-  /** Shown instead of the meaning, e.g. "3² = 9". */
+  /** Shown below the meaning, e.g. "3² = 9". */
   explanation?: string;
   /** Marked in a right answer. */
   trickySpellings?: string[];
@@ -278,7 +282,7 @@ interface TypedFeedbackProps {
 
 /**
  * The result, with the answer to compare after a mistake or else with its tricky spellings marked,
- * and the word's meaning.
+ * and the word's meaning and explanation.
  */
 function TypedFeedback({
   grade,
@@ -297,20 +301,19 @@ function TypedFeedback({
       <div className="flex min-w-0 flex-col gap-1">
         {wrong && <AnswerComparison input={input} answer={answer} shake={grade === Rating.Again} />}
         {spelled && <SpelledAnswer answer={answer} trickySpellings={trickySpellings} />}
-        {explanation ? (
-          <p className={cn('font-display font-bold break-words', textSize)}>{explanation}</p>
-        ) : (
-          meaning && (
-            <p
-              className={cn('flex items-center gap-2 font-display font-bold break-words', textSize)}
-            >
-              <span aria-hidden className="shrink-0 leading-none">
-                🇵🇱
-              </span>
-              <span className="sr-only">means</span>
-              <span className="min-w-0">{meaning}</span>
-            </p>
-          )
+        {meaning && (
+          <p className={cn('flex items-center gap-2 font-display font-bold break-words', textSize)}>
+            <span aria-hidden className="shrink-0 leading-none">
+              🇵🇱
+            </span>
+            <span className="sr-only">means</span>
+            <span className="min-w-0">{meaning}</span>
+          </p>
+        )}
+        {explanation && (
+          <p className={cn('font-display font-bold break-words', textSize)}>
+            <MarkedText text={explanation} />
+          </p>
         )}
       </div>
     </FeedbackPanel>

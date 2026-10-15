@@ -22,6 +22,7 @@ export function DictationExercise(props: ExerciseProps) {
       {...props}
       answer={concept.foreign}
       meaning={concept.local ?? concept.spokenHint}
+      explanation={concept.explanation}
       prompt={
         <Button
           type="button"

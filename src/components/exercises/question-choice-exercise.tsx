@@ -1,5 +1,6 @@
 import { ChoiceExercise } from '@/components/exercises/choice-exercise';
 import { PromptWord, type ExerciseProps } from '@/components/exercises/exercise-parts';
+import { MarkedText } from '@/components/marked-text';
 import { shuffle } from '@/lib/shuffle';
 
 /**
@@ -20,7 +21,7 @@ export function QuestionChoiceExercise(props: ExerciseProps) {
       prompt={<PromptWord>{concept.question}</PromptWord>}
       answer={answer}
       pickOptions={() => shuffle([answer, ...choices])}
-      feedback={concept.explanation ?? answer}
+      feedback={concept.explanation ? <MarkedText text={concept.explanation} /> : answer}
     />
   );
 }
