@@ -678,3 +678,30 @@ test('the effort stats show with dev=1 in the URL, with each finished session lo
     window.history.pushState({}, '', '/');
   }
 });
+
+test('with dev=1 in the URL, a session can use only some exercise types', async () => {
+  const user = userEvent.setup();
+  const { unmount } = render(<App />);
+  expect(screen.queryByRole('group', { name: 'Exercise types (dev)' })).not.toBeInTheDocument();
+  unmount();
+
+  window.history.pushState({}, '', '/?dev=1');
+  try {
+    render(<App />);
+    await user.click(screen.getByRole('radio', { name: 'German' }));
+    await pickUnit(user, 'Kapitel 1');
+    const types = screen.getByRole('group', { name: 'Exercise types (dev)' });
+    for (const name of ['Recognition', 'Dictation', 'Translation choice', 'Translation']) {
+      await user.click(within(types).getByRole('checkbox', { name }));
+    }
+    // The last one left can't be unchecked.
+    expect(within(types).getByRole('checkbox', { name: 'Article' })).toBeDisabled();
+    expect(within(types).getByRole('checkbox', { name: 'Article' })).toBeChecked();
+
+    await user.click(screen.getByRole('button', { name: 'Start session' }));
+    expect(screen.getByText('Der, die or das?')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Ball');
+  } finally {
+    window.history.pushState({}, '', '/');
+  }
+});

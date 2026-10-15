@@ -72,6 +72,25 @@ export function getConceptExerciseTypes(deck: Deck, conceptId: string): Exercise
   return deck.conceptExerciseTypes?.[conceptId] ?? deck.exerciseTypes;
 }
 
+/**
+ * The Deck practised with only some of its Exercise Types, e.g. to try one out. Concepts left with
+ * none are left out. Exercise Types not in the Deck are ignored, and with none of its own left, the
+ * Deck stays as it is.
+ */
+export function withExerciseTypes(deck: Deck, exerciseTypes: ExerciseType[]): Deck {
+  const keep = (types: ExerciseType[]) => types.filter((type) => exerciseTypes.includes(type));
+  if (keep(deck.exerciseTypes).length === 0) return deck;
+  const conceptExerciseTypes = Object.fromEntries(
+    deck.conceptIds.map((conceptId) => [conceptId, keep(getConceptExerciseTypes(deck, conceptId))]),
+  );
+  return {
+    ...deck,
+    exerciseTypes: keep(deck.exerciseTypes),
+    conceptIds: deck.conceptIds.filter((conceptId) => conceptExerciseTypes[conceptId].length > 0),
+    conceptExerciseTypes,
+  };
+}
+
 /** A study day starts at 4 AM local time, like Anki's, so late-evening study counts as one day. */
 export const DAY_START_HOUR = 4;
 

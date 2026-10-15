@@ -47,6 +47,8 @@ interface SetupScreenProps {
   /** What a session started now would hold, at the learner's pace. */
   plan: SessionPlan | null;
   onStart: () => void;
+  /** Shown with `?dev=1`: which of the Deck's Exercise Types a session uses. */
+  exerciseTypePicker?: ExerciseTypePickerProps;
 }
 
 interface SessionPlan {
@@ -66,6 +68,7 @@ export function SetupScreen({
   onSessionMinutesChange,
   plan,
   onStart,
+  exerciseTypePicker,
 }: SetupScreenProps) {
   const [now] = useState(() => new Date());
   const subject = content.subjects.find((subject) => subject.id === deck.subjectId)!;
@@ -128,6 +131,7 @@ export function SetupScreen({
         </ChoiceGroup>
 
         <SessionLengthPicker value={sessionMinutes} onChange={onSessionMinutesChange} />
+        {exerciseTypePicker && <ExerciseTypePicker {...exerciseTypePicker} />}
       </div>
 
       <DeckOverview
@@ -582,6 +586,53 @@ function SessionLengthPicker({ value, onChange }: SessionLengthPickerProps) {
             {minutes} min
           </label>
         ))}
+      </div>
+    </ChoiceGroup>
+  );
+}
+
+interface ExerciseTypePickerProps {
+  /** The Deck's Exercise Types, easiest first. */
+  options: ExerciseType[];
+  selected: ExerciseType[];
+  onChange: (selected: ExerciseType[]) => void;
+}
+
+/** Checkboxes for which Exercise Types a session uses, at least one, e.g. to try one out. */
+function ExerciseTypePicker({ options, selected, onChange }: ExerciseTypePickerProps) {
+  return (
+    <ChoiceGroup legend="Exercise types (dev)">
+      <div className="flex flex-wrap gap-2">
+        {options.map((type) => {
+          const { label, Icon } = EXERCISES[type];
+          const checked = selected.includes(type);
+          const last = checked && selected.length === 1;
+          return (
+            <label
+              key={type}
+              className={cn(
+                'flex cursor-pointer items-center gap-2 rounded-xl border-2 border-line bg-card px-3 py-2 font-display font-bold shadow-sticker-sm transition-colors hover:bg-muted has-checked:bg-highlight has-checked:hover:bg-highlight has-focus-visible:ring-3 has-focus-visible:ring-ring/50',
+                last && 'cursor-not-allowed',
+              )}
+            >
+              <input
+                type="checkbox"
+                checked={checked}
+                disabled={last}
+                onChange={() =>
+                  onChange(
+                    checked
+                      ? selected.filter((other) => other !== type)
+                      : options.filter((other) => other === type || selected.includes(other)),
+                  )
+                }
+                className="sr-only"
+              />
+              <Icon aria-hidden className="size-4" />
+              {label}
+            </label>
+          );
+        })}
       </div>
     </ChoiceGroup>
   );
