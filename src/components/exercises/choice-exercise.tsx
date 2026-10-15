@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ContinueButton,
   ExerciseCard,
-  ExerciseSrsDetails,
+  ExerciseAdvanced,
   FeedbackPanel,
   type ExerciseProps,
 } from '@/components/exercises/exercise-parts';
@@ -13,7 +13,6 @@ import { FastBonus } from '@/components/fast-bonus';
 import { GRADE_STYLES } from '@/components/grades';
 import { Button } from '@/components/ui/button';
 import { FAST_CHOICE_MS, gradeChoice } from '@/exercises/multiple-choice';
-import { formatSeconds } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { Rating } from '@/srs/scheduler';
 
@@ -34,15 +33,15 @@ export interface ChoiceExerciseProps extends ExerciseProps {
   onListen?: () => void;
   /** Called once an option is picked, e.g. to read the word aloud. */
   onPicked?: () => void;
+  /** Draws an option, e.g. in its own color; as plain text if left out. */
+  renderOption?: (option: string) => ReactNode;
 }
 
 /** A multiple-choice exercise: the learner picks the right option for the prompt, also with keys 1–4. */
 export function ChoiceExercise({
-  session,
   card,
   onReview,
-  showSrsDetails,
-  onToggleSrsDetails,
+  advanced,
   question,
   prompt,
   answer,
@@ -51,6 +50,7 @@ export function ChoiceExercise({
   hint,
   onListen,
   onPicked,
+  renderOption = (option) => option,
 }: ChoiceExerciseProps) {
   const { answered: picked, check, submit, now } = useAnswer(onReview);
   const continueRef = useRef<HTMLButtonElement>(null);
@@ -90,7 +90,14 @@ export function ChoiceExercise({
         <p className="relative mb-1 text-sm font-semibold text-muted-foreground">{question}</p>
         <div className="relative mb-6 flex items-center gap-4">{prompt}</div>
 
-        <div role="group" aria-label="Options" className="relative grid gap-3 sm:grid-cols-2">
+        <div
+          role="group"
+          aria-label="Options"
+          className={cn(
+            'relative grid gap-3',
+            options.length === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2',
+          )}
+        >
           {options.map((option, index) => {
             const right = option === answer;
             const chosen = option === picked?.input;
@@ -120,7 +127,7 @@ export function ChoiceExercise({
                 >
                   {index + 1}
                 </span>
-                <span className="min-w-0 break-words">{option}</span>
+                <span className="min-w-0 break-words">{renderOption(option)}</span>
               </Button>
             );
           })}
@@ -155,15 +162,7 @@ export function ChoiceExercise({
         )}
       </ExerciseCard>
 
-      <ExerciseSrsDetails
-        session={session}
-        card={card}
-        now={now}
-        result={picked?.result}
-        rules={`right within ${formatSeconds(FAST_CHOICE_MS)} → Easy · right → Good · wrong → Again`}
-        open={showSrsDetails}
-        onToggle={onToggleSrsDetails}
-      />
+      {advanced && <ExerciseAdvanced card={card} now={now} result={picked?.result} {...advanced} />}
     </div>
   );
 }

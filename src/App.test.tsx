@@ -3,9 +3,11 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import App from './App';
-import { content } from './data/content';
 import type { LanguageConcept } from './domain/types';
 import { FAST_CHOICE_MS } from './exercises/multiple-choice';
+import { DEFAULT_POINTS_PER_MINUTE } from './session/effort';
+import { getConceptExerciseTypes } from './session/session';
+import { testContent as content } from './test/content';
 
 // jsdom has no speech synthesis; record what would be read aloud instead.
 const spoken: string[] = [];
@@ -65,7 +67,7 @@ function unitTile(name: string) {
 async function startEssentialsSession(user: ReturnType<typeof userEvent.setup>) {
   render(<App />);
   await user.click(screen.getByRole('radio', { name: 'German' }));
-  // At the default pace, 20 minutes fits a dictation of 40 words.
+  // At the default pace, 20 minutes fits a dictation of every Essentials word.
   await user.click(screen.getByRole('radio', { name: '20 min' }));
   await user.click(screen.getByRole('button', { name: 'Start session' }));
 }
@@ -164,34 +166,49 @@ test('rates a wrong answer as Again and shows it next to the answer', async () =
   expect(progress()).toBeGreaterThan(0);
 });
 
-test('SRS details start collapsed and stay expanded across exercises', async () => {
+test('the Advanced panel shows only with dev=1, starts collapsed and stays expanded', async () => {
   const user = userEvent.setup();
-  await startEssentialsSession(user);
+  const { unmount } = render(<App />);
+  await user.click(screen.getByRole('radio', { name: 'German' }));
+  await user.click(screen.getByRole('button', { name: 'Start session' }));
+  expect(screen.queryByRole('button', { name: 'Advanced' })).not.toBeInTheDocument();
+  unmount();
 
-  const toggle = () => screen.getByRole('button', { name: 'SRS details' });
-  expect(toggle()).toHaveAttribute('aria-expanded', 'false');
-  expect(screen.queryByText('Rating preview')).not.toBeInTheDocument();
+  window.history.pushState({}, '', '/?dev=1');
+  try {
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: 'Start session' }));
+    const toggle = () => screen.getByRole('button', { name: 'Advanced' });
+    const panel = () => screen.getByRole('region', { name: 'Advanced' });
+    expect(toggle()).toHaveAttribute('aria-expanded', 'false');
+    expect(panel()).not.toHaveTextContent('Difficulty');
 
-  await user.click(toggle());
-  expect(toggle()).toHaveAttribute('aria-expanded', 'true');
-  expect(screen.getByText('Rating preview')).toBeInTheDocument();
+    await user.click(toggle());
+    expect(panel()).toHaveTextContent('StateNew');
+    expect(panel()).toHaveTextContent('Reps0Lapses0Last review—Next review—');
+    await user.hover(within(panel()).getByRole('button', { name: 'Lapses' }));
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('forgotten once learned');
+    expect(panel()).not.toHaveTextContent('Answer');
 
-  await user.hover(screen.getByRole('button', { name: 'Stability' }));
-  expect(await screen.findByRole('tooltip')).toHaveTextContent(
-    'Days until recall probability drops to 90%.',
-  );
+    const input = screen.getByRole('textbox', { name: 'Answer' });
+    expect(input).toHaveFocus();
+    await user.type(input, 'falsch{Enter}');
+    // The answer's rating, and what it changes.
+    expect(panel()).toHaveTextContent('StateNew → Learning');
+    // Again while learning is a review, but not a lapse.
+    expect(panel()).toHaveTextContent('Reps0 → 1Lapses0 → 0Last review— → now');
+    expect(panel()).toHaveTextContent(/Next review— → in \d+m/);
+    expect(panel()).toHaveTextContent(/AnswerAgain · /);
+    await retypeAnswer(user);
 
-  const input = screen.getByRole('textbox', { name: 'Answer' });
-  expect(input).toHaveFocus();
-  await user.type(input, 'falsch{Enter}');
-  await retypeAnswer(user);
-
-  expect(progress()).toBeGreaterThan(0);
-  expect(toggle()).toHaveAttribute('aria-expanded', 'true');
-  expect(screen.getByText('Rating preview')).toBeInTheDocument();
+    expect(progress()).toBeGreaterThan(0);
+    expect(toggle()).toHaveAttribute('aria-expanded', 'true');
+  } finally {
+    window.history.pushState({}, '', '/');
+  }
 });
 
-test('ending the session shows results with SRS details collapsed', async () => {
+test('ending the session shows results with the Advanced panel collapsed', async () => {
   const user = userEvent.setup();
   await startEssentialsSession(user);
 
@@ -202,12 +219,18 @@ test('ending the session shows results with SRS details collapsed', async () => 
   expect(screen.getByText(/Session results/)).toBeInTheDocument();
   // The missed word comes back soonest, so it leads the list.
   expect(sessionWords()[0]).toHaveTextContent('Learning');
+  // The word comes before its meaning.
+  const { foreign, local } = essentialConcepts[0];
+  expect(sessionWords()[0]).toHaveTextContent(`${foreign}${local}`);
   expect(screen.getByText('New words').nextSibling).toHaveTextContent('1');
   expect(screen.getByText('Repeated words').nextSibling).toHaveTextContent('0');
-  expect(screen.queryByText('Review log')).not.toBeInTheDocument();
+  const toggle = screen.getByRole('button', { name: 'Advanced' });
+  expect(toggle).toHaveAttribute('aria-expanded', 'false');
 
-  await user.click(screen.getByRole('button', { name: 'SRS details' }));
-  expect(screen.getByText('Review log')).toBeInTheDocument();
+  await user.click(toggle);
+  const cards = within(screen.getByRole('region', { name: 'Advanced' })).getByRole('table');
+  expect(cards).toHaveTextContent('StateDifficultyRepsLapsesNext review');
+  expect(cards).toHaveTextContent('Learning');
 });
 
 test('typing after the answer box loses focus types into it, and Enter checks the answer', async () => {
@@ -300,9 +323,10 @@ test('a word moves on to translation once its dictation graduates', async () => 
   expect(dictations).toBe(essentialsSize);
   expect(screen.getByText(/Session results/)).toBeInTheDocument();
 
-  // Every word was practised today, so its unlocked translation only fills the room left.
+  // Every word was practised today, so its unlocked translation only fills the room left. 5 minutes
+  // fit 8 of them, at 2.5 points answered twice, leaving no room to review dictations ahead.
   await user.click(screen.getByRole('button', { name: 'Start a new session' }));
-  await user.click(screen.getByRole('radio', { name: '10 min' }));
+  await user.click(screen.getByRole('radio', { name: '5 min' }));
   await user.click(screen.getByRole('button', { name: 'Start session' }));
   const { local, foreign } = currentConcept();
   expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(local);
@@ -408,7 +432,7 @@ test('setup offers each subject with its core set selected first', async () => {
   const selected = screen.getByRole('region', { name: 'Selected set' });
   expect(within(selected).getByRole('heading', { name: 'Essentials' })).toBeInTheDocument();
   expect(within(selected).getByText('Words', { selector: 'dt' }).nextSibling).toHaveTextContent(
-    '46',
+    String(essentialsSize),
   );
   expect(within(selected).queryByRole('list', { name: 'Words in set' })).not.toBeInTheDocument();
 });
@@ -420,17 +444,22 @@ test('picking a unit shows its stats and words, and starts a session of it', asy
   await user.click(screen.getByRole('radio', { name: 'German' }));
   await pickUnit(user, 'Kapitel 0');
 
-  const size = content.decks.find((deck) => deck.id === 'german/kapitel-0')!.conceptIds.length;
+  const deck = content.decks.find((deck) => deck.id === 'german/kapitel-0')!;
+  const size = deck.conceptIds.length;
+  const cards = deck.conceptIds.reduce(
+    (total, conceptId) => total + getConceptExerciseTypes(deck, conceptId).length,
+    0,
+  );
   const selected = screen.getByRole('region', { name: 'Selected set' });
   expect(within(selected).getByText('Words', { selector: 'dt' }).nextSibling).toHaveTextContent(
     String(size),
   );
-  expect(within(selected).getByText(`Exercises: ${size * 4}`)).toBeInTheDocument();
+  expect(within(selected).getByText(`Exercises: ${cards}`)).toBeInTheDocument();
 
   await user.click(within(selected).getByRole('button', { name: 'Words' }));
   const words = within(selected).getByRole('list', { name: 'Words in set' });
   expect(within(words).getAllByRole('listitem')).toHaveLength(size);
-  expect(words).toHaveTextContent('der Hamburger');
+  expect(words).toHaveTextContent('wort 1');
   expect(within(words).getAllByRole('button', { name: 'New' })).toHaveLength(size);
 
   await user.click(within(selected).getByRole('button', { name: 'Start session' }));
@@ -578,17 +607,18 @@ test('a session holds as many exercises as fit in the minutes chosen, 10 by defa
   const user = userEvent.setup();
   render(<App />);
 
-  // At the default 8 points a minute, a new word's recognition takes 1 point, answered twice.
+  // At the default pace, a new word's recognition takes 1 point, answered twice.
+  const fit = (minutes: number) => Math.floor((minutes * DEFAULT_POINTS_PER_MINUTE) / 2);
   await user.click(screen.getByRole('radio', { name: 'German' }));
   await pickUnit(user, 'Kapitel 0');
   expect(screen.getByRole('radio', { name: '10 min' })).toBeChecked();
-  expect(screen.getByText('40 exercises · about 10m')).toBeInTheDocument();
+  expect(screen.getByText(`${fit(10)} exercises · about 10m`)).toBeInTheDocument();
 
   await user.click(screen.getByRole('radio', { name: '5 min' }));
-  expect(screen.getByText('20 exercises · about 5m')).toBeInTheDocument();
+  expect(screen.getByText(`${fit(5)} exercises · about 5m`)).toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: 'Start session' }));
   await finishSession(user);
-  expect(sessionWords()).toHaveLength(20);
+  expect(sessionWords()).toHaveLength(fit(5));
   expect(screen.getByText('planned 5m')).toBeInTheDocument();
 
   // A unit with fewer words than fit takes less time.
@@ -604,7 +634,8 @@ test('Polish practises spelling with dictation only', async () => {
 
   await user.click(screen.getByRole('radio', { name: 'Polish' }));
   expect(unitTile('Trudne słówka')).toBeChecked();
-  // At the default 8 points a minute, a new word's dictation takes 2 points, answered twice.
+  // At the default pace, a new word's dictation takes 2 points, answered twice.
+  const fit = Math.floor((5 * DEFAULT_POINTS_PER_MINUTE) / 4);
   await user.click(screen.getByRole('radio', { name: '5 min' }));
   await user.click(screen.getByRole('button', { name: 'Start session' }));
   expect(screen.getByRole('group', { name: 'Special characters' })).toHaveTextContent('ż');
@@ -617,9 +648,9 @@ test('Polish practises spelling with dictation only', async () => {
     dictations++;
   }
 
-  expect(dictations).toBe(10);
+  expect(dictations).toBe(fit);
   expect(screen.getByText(/Session results/)).toBeInTheDocument();
-  expect(sessionWords()).toHaveLength(10);
+  expect(sessionWords()).toHaveLength(fit);
 });
 
 test('remembers the subject, set and words per session after a reload', async () => {
@@ -667,6 +698,33 @@ test('the effort stats show with dev=1 in the URL, with each finished session lo
     await user.click(toggle);
     expect(screen.getByRole('table', { name: 'Exercise types' })).toHaveTextContent('Dictation');
     expect(screen.getByRole('table', { name: 'Sessions' })).toHaveTextContent('german/core');
+  } finally {
+    window.history.pushState({}, '', '/');
+  }
+});
+
+test('with dev=1 in the URL, a session can use only some exercise types', async () => {
+  const user = userEvent.setup();
+  const { unmount } = render(<App />);
+  expect(screen.queryByRole('group', { name: 'Exercise types (dev)' })).not.toBeInTheDocument();
+  unmount();
+
+  window.history.pushState({}, '', '/?dev=1');
+  try {
+    render(<App />);
+    await user.click(screen.getByRole('radio', { name: 'German' }));
+    await pickUnit(user, 'Kapitel 1');
+    const types = screen.getByRole('group', { name: 'Exercise types (dev)' });
+    for (const name of ['Recognition', 'Dictation', 'Translation choice', 'Translation']) {
+      await user.click(within(types).getByRole('checkbox', { name }));
+    }
+    // The last one left can't be unchecked.
+    expect(within(types).getByRole('checkbox', { name: 'Article' })).toBeDisabled();
+    expect(within(types).getByRole('checkbox', { name: 'Article' })).toBeChecked();
+
+    await user.click(screen.getByRole('button', { name: 'Start session' }));
+    expect(screen.getByText('Der, die or das?')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Ball');
   } finally {
     window.history.pushState({}, '', '/');
   }

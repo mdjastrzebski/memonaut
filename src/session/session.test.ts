@@ -17,6 +17,7 @@ import {
   getEffortDone,
   getSessionProgress,
   submitReview,
+  withExerciseTypes,
 } from './session';
 
 const concepts: Concept[] = [
@@ -307,4 +308,23 @@ test('tells the effort planned and the effort of the answers given', () => {
     now: start,
   });
   expect(getEffortDone(answered)).toBe(2);
+});
+
+test('a deck can be practised with only some of its exercise types', () => {
+  const nouns: Deck = {
+    ...deck,
+    exerciseTypes: ['dictation', 'article-choice-de', 'translation'],
+    conceptExerciseTypes: { two: ['dictation', 'translation'] },
+  };
+  const articles = withExerciseTypes(nouns, ['article-choice-de']);
+  // A new concept starts with the only type left; one without it is left out.
+  expect(articles).toMatchObject({ exerciseTypes: ['article-choice-de'], conceptIds: ['one'] });
+  expect(pick({}, start, undefined, articles)).toEqual(['one:article-choice-de']);
+
+  expect(withExerciseTypes(nouns, ['translation', 'question-type']).conceptIds).toEqual([
+    'one',
+    'two',
+  ]);
+  // With none of the deck's own types, it's practised as it is.
+  expect(withExerciseTypes(nouns, ['question-type'])).toBe(nouns);
 });

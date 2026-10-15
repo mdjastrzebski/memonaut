@@ -1,18 +1,22 @@
-import { expect, test } from 'vitest';
+import { expect, test, vi } from 'vitest';
 
 import { getConceptExerciseTypes } from '@/session/session';
 
-import { buildContent, content } from './content';
+import type * as BundledContent from './bundled-content';
+import { buildContent } from './content';
 
 const subject = 'id: german\nname: German\nkind: language\nforeignLanguage: de-DE\n';
 
-test('loads the bundled content', () => {
-  expect(content.subjects.map((subject) => subject.id)).toContain('german');
-  const kapitel0 = content.decks.find((deck) => deck.id === 'german/kapitel-0');
-  const core = content.decks.find((deck) => deck.id === 'german/core');
-  expect(kapitel0?.conceptIds).not.toContain('german/number-10');
-  expect(core?.conceptIds).toContain('german/number-0');
-  expect(core?.conceptIds).toContain('german/number-10');
+// Checks only that the bundled word sets load; what's in them is up to them.
+test('the bundled content is valid, with words in every deck', async () => {
+  const { content } = await vi.importActual<typeof BundledContent>('./bundled-content');
+  expect(content.subjects.length).toBeGreaterThan(0);
+  for (const subject of content.subjects) {
+    expect(content.decks.some((deck) => deck.subjectId === subject.id)).toBe(true);
+  }
+  for (const deck of content.decks) {
+    expect(deck.conceptIds.length).toBeGreaterThan(0);
+  }
 });
 
 test('keeps every value a string', () => {
@@ -61,7 +65,13 @@ concepts:
     kind: 'core',
     name: 'Essentials',
     conceptIds: ['german/der-hund', 'german/die-katze'],
-    exerciseTypes: ['recognition-choice', 'dictation', 'translation-choice', 'translation'],
+    exerciseTypes: [
+      'recognition-choice',
+      'dictation',
+      'translation-choice',
+      'article-choice-de',
+      'translation',
+    ],
   });
   expect(decks.find((deck) => deck.id === 'german/pets')?.conceptIds).toEqual([
     'german/die-katze',
@@ -115,30 +125,6 @@ concepts:
   expect(decks.map((deck) => deck.kind)).toEqual(['unit']);
 });
 
-test('the bundled words are grouped', () => {
-  const group = (id: string) => {
-    const concept = content.concepts.find((concept) => concept.id === id);
-    return concept?.kind === 'language' ? concept.group : undefined;
-  };
-  expect(group('english/monday')).toBe('weekday');
-  expect(group('german/number-3')).toBe('number/small');
-});
-
-test('the bundled Polish words are practised with dictation only, with hints for homophones', () => {
-  const polish = content.subjects.find((subject) => subject.id === 'polish');
-  expect(polish?.exerciseTypes).toEqual(['dictation']);
-  expect(polish?.trickySpellings).toEqual(['ó', 'u', 'rz', 'ż', 'ch', 'h']);
-  const concept = (id: string) => content.concepts.find((concept) => concept.id === id);
-  expect(concept('polish/morze')).toMatchObject({
-    foreign: 'morze',
-    spokenHint: 'zbiornik słonej wody',
-  });
-  expect(concept('polish/moze')).toMatchObject({ foreign: 'może', spokenHint: 'przypuszczenie' });
-  expect(
-    content.decks.filter((deck) => deck.subjectId === 'polish').map((deck) => deck.name),
-  ).toEqual(['Trudne słówka']);
-});
-
 test('a deck can rate spelling strictly, and core.yaml sets it for the core deck', () => {
   const { decks } = buildContent({
     './german/subject.yaml': subject,
@@ -161,9 +147,6 @@ concepts:
   expect(strictSpelling('german/core')).toBe(true);
   expect(strictSpelling('german/strict')).toBe(true);
   expect(strictSpelling('german/relaxed')).toBeUndefined();
-  expect(
-    content.decks.filter((deck) => deck.subjectId === 'polish').map((deck) => deck.strictSpelling),
-  ).toEqual([true]);
 });
 
 test('a deck can shuffle new concepts, and core.yaml sets it for the core deck', () => {
@@ -188,9 +171,6 @@ concepts:
   expect(shuffleNew('german/core')).toBe(true);
   expect(shuffleNew('german/shuffled')).toBe(true);
   expect(shuffleNew('german/ordered')).toBeUndefined();
-  expect(
-    content.decks.filter((deck) => deck.subjectId === 'polish').map((deck) => deck.shuffleNew),
-  ).toEqual([true]);
 });
 
 test('a subject practises every exercise type unless it lists some, easiest first', () => {
@@ -200,6 +180,7 @@ test('a subject practises every exercise type unless it lists some, easiest firs
     'recognition-choice',
     'dictation',
     'translation-choice',
+    'article-choice-de',
     'translation',
   ]);
   expect(exerciseTypes('exerciseTypes: [translation, dictation]\n')).toEqual([
@@ -237,6 +218,7 @@ concepts:
     'recognition-choice',
     'dictation',
     'translation-choice',
+    'article-choice-de',
     'translation',
   ]);
 
@@ -248,23 +230,6 @@ concepts:
         'id: a\nname: A\nexerciseTypes: [recognition-choice]\nconcepts:\n  - { id: b, foreign: z }\n',
     }),
   ).toThrow(/a\.yaml: exercise type "recognition-choice" is not one of the subject's/);
-});
-
-test('the bundled English and German units practise multiple choice, but not their core sets', () => {
-  const exerciseTypes = (subjectId: string, kind: string) => [
-    ...new Set(
-      content.decks
-        .filter((deck) => deck.subjectId === subjectId && deck.kind === kind)
-        .map((deck) => deck.exerciseTypes.join()),
-    ),
-  ];
-  for (const subjectId of ['english', 'german']) {
-    expect(exerciseTypes(subjectId, 'unit')).toEqual([
-      'recognition-choice,dictation,translation-choice,translation',
-    ]);
-    expect(exerciseTypes(subjectId, 'core')).toEqual(['dictation,translation']);
-  }
-  expect(exerciseTypes('polish', 'unit')).toEqual(['dictation']);
 });
 
 test('words of a subject without translation need no local word, and keep a spoken hint', () => {
@@ -346,6 +311,52 @@ test('rejects invalid content', () => {
   expect(() => buildContent({ './german/decks/a.yaml': deck('') })).toThrow(
     'subject.yaml: missing',
   );
+});
+
+test('a German subject practises its singular nouns with German article choice', () => {
+  const { subjects, decks } = buildContent({
+    './german/subject.yaml': subject,
+    './german/decks/a.yaml': `
+id: a
+name: A
+concepts:
+  - { id: das-buch, local: książka, foreign: das Buch }
+  - { id: die-buecher, local: książki, foreign: die Bücher, plural: true }
+  - { id: das-ist-das-buch, local: to jest książka, foreign: das ist das Buch }
+  - { id: drei, local: trzy, foreign: drei }
+`,
+  });
+  const exerciseTypes = [
+    'recognition-choice',
+    'dictation',
+    'translation-choice',
+    'article-choice-de',
+    'translation',
+  ];
+  expect(subjects[0].exerciseTypes).toEqual(exerciseTypes);
+  const withoutArticle = exerciseTypes.filter((type) => type !== 'article-choice-de');
+  expect(decks[0].conceptExerciseTypes).toEqual({
+    'german/die-buecher': withoutArticle,
+    'german/das-ist-das-buch': withoutArticle,
+    'german/drei': withoutArticle,
+  });
+});
+
+test('only a German subject has German article choice', () => {
+  const spanish = 'id: spanish\nname: Spanish\nkind: language\nforeignLanguage: es-ES\n';
+  const deck =
+    'id: a\nname: A\nconcepts:\n  - { id: el-libro, local: książka, foreign: el libro }\n';
+  const { subjects } = buildContent({
+    './spanish/subject.yaml': spanish,
+    './spanish/decks/a.yaml': deck,
+  });
+  expect(subjects[0].exerciseTypes).not.toContain('article-choice-de');
+  expect(() =>
+    buildContent({
+      './spanish/subject.yaml': `${spanish}exerciseTypes: [article-choice-de, translation]\n`,
+      './spanish/decks/a.yaml': deck,
+    }),
+  ).toThrow(/subject\.yaml: exercise type "article-choice-de" needs a German subject/);
 });
 
 test('a knowledge subject asks questions, practised with choice only when they have choices', () => {

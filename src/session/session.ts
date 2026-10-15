@@ -1,4 +1,13 @@
-import type { Card, Concept, Deck, ExerciseType, Review, SubjectKind } from '@/domain/types';
+import type {
+  Card,
+  Concept,
+  Deck,
+  ExerciseType,
+  Review,
+  Subject,
+  SubjectKind,
+} from '@/domain/types';
+import { getGermanNoun, isGerman } from '@/exercises/german-articles';
 import type { AnswerIssue } from '@/exercises/type-answer';
 import { shuffle } from '@/lib/shuffle';
 import { getCardEffort, getReviewEffort } from '@/session/effort';
@@ -21,6 +30,7 @@ export const EXERCISE_TYPES: ExerciseType[] = [
   'recognition-choice',
   'dictation',
   'translation-choice',
+  'article-choice-de',
   'translation',
   'question-choice',
   'question-type',
@@ -28,18 +38,57 @@ export const EXERCISE_TYPES: ExerciseType[] = [
 
 /** The Exercise Types each kind of Subject can use, easiest first. */
 export const KIND_EXERCISE_TYPES: Record<SubjectKind, ExerciseType[]> = {
-  language: ['recognition-choice', 'dictation', 'translation-choice', 'translation'],
+  language: [
+    'recognition-choice',
+    'dictation',
+    'translation-choice',
+    'article-choice-de',
+    'translation',
+  ],
   knowledge: ['question-choice', 'question-type'],
 };
 
-/** Whether a Concept can be practised with an Exercise Type: question choice needs choices. */
-export function canPractise(concept: Concept, exerciseType: ExerciseType): boolean {
-  return exerciseType !== 'question-choice' || (concept.kind === 'knowledge' && !!concept.choices);
+/**
+ * Whether a Concept can be practised with an Exercise Type: question choice needs choices, and
+ * German article choice a German singular noun with its article, e.g. "das Buch".
+ */
+export function canPractise(
+  concept: Concept,
+  exerciseType: ExerciseType,
+  subject: Subject,
+): boolean {
+  switch (exerciseType) {
+    case 'question-choice':
+      return concept.kind === 'knowledge' && !!concept.choices;
+    case 'article-choice-de':
+      return concept.kind === 'language' && isGerman(subject) && !!getGermanNoun(concept);
+    default:
+      return true;
+  }
 }
 
 /** How a Concept is practised in a Deck, easiest first. */
 export function getConceptExerciseTypes(deck: Deck, conceptId: string): ExerciseType[] {
   return deck.conceptExerciseTypes?.[conceptId] ?? deck.exerciseTypes;
+}
+
+/**
+ * The Deck practised with only some of its Exercise Types, e.g. to try one out. Concepts left with
+ * none are left out. Exercise Types not in the Deck are ignored, and with none of its own left, the
+ * Deck stays as it is.
+ */
+export function withExerciseTypes(deck: Deck, exerciseTypes: ExerciseType[]): Deck {
+  const keep = (types: ExerciseType[]) => types.filter((type) => exerciseTypes.includes(type));
+  if (keep(deck.exerciseTypes).length === 0) return deck;
+  const conceptExerciseTypes = Object.fromEntries(
+    deck.conceptIds.map((conceptId) => [conceptId, keep(getConceptExerciseTypes(deck, conceptId))]),
+  );
+  return {
+    ...deck,
+    exerciseTypes: keep(deck.exerciseTypes),
+    conceptIds: deck.conceptIds.filter((conceptId) => conceptExerciseTypes[conceptId].length > 0),
+    conceptExerciseTypes,
+  };
 }
 
 /** A study day starts at 4 AM local time, like Anki's, so late-evening study counts as one day. */

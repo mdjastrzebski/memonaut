@@ -9,8 +9,8 @@ import { SetupScreen } from '@/components/setup-screen';
 import { SummaryScreen } from '@/components/summary-screen';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { content } from '@/data/content';
-import type { Card, Deck } from '@/domain/types';
+import { content } from '@/data/bundled-content';
+import type { Card, Deck, ExerciseType } from '@/domain/types';
 import { useActiveTime } from '@/lib/use-active-time';
 import { cn } from '@/lib/utils';
 import {
@@ -29,6 +29,7 @@ import {
   submitReview,
   type Session,
   type SubmitReviewInput,
+  withExerciseTypes,
 } from '@/session/session';
 
 export default function App() {
@@ -50,9 +51,11 @@ export default function App() {
   const [lastUnitIds, setLastUnitIds] = useState(initialChoice.lastUnitIds);
   const [ended, setEnded] = useState(false);
   const [showSpecialCharacters, setShowSpecialCharacters] = useState(false);
-  const [showSrsDetails, setShowSrsDetails] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   // `?dev=1` in the URL shows tools for tuning the app, such as the effort stats.
   const [devMode] = useState(() => new URLSearchParams(window.location.search).get('dev') === '1');
+  // In dev mode, Exercise Types left out of sessions, e.g. all but one to try it out.
+  const [skippedTypes, setSkippedTypes] = useState<ExerciseType[]>([]);
 
   const subject = content.subjects.find((subject) => subject.id === deck.subjectId)!;
   const finished = session !== null && (ended || !getCurrentCard(session));
@@ -60,11 +63,12 @@ export default function App() {
   const allCards = session ? { ...cards, ...session.cards } : cards;
   const getActiveMs = useActiveTime(exercising);
   const pace = paces[subject.id];
+  const exerciseTypes = deck.exerciseTypes.filter((type) => !skippedTypes.includes(type));
 
   // As many Cards, in their usual order, as are expected to fit in the minutes picked.
   const planSession = () =>
     createSession({
-      deck,
+      deck: devMode ? withExerciseTypes(deck, exerciseTypes) : deck,
       concepts: content.concepts,
       cards: allCards,
       maxEffort: sessionMinutes * pace,
@@ -165,6 +169,20 @@ export default function App() {
               onSessionMinutesChange={setSessionMinutes}
               plan={plan && { cardCount: plan.queue.length, minutes: plan.effort / pace }}
               onStart={start}
+              exerciseTypePicker={
+                devMode
+                  ? {
+                      options: deck.exerciseTypes,
+                      selected: exerciseTypes.length > 0 ? exerciseTypes : deck.exerciseTypes,
+                      // Skips only the Deck's own, keeping others' as they were picked.
+                      onChange: (selected) =>
+                        setSkippedTypes([
+                          ...skippedTypes.filter((type) => !deck.exerciseTypes.includes(type)),
+                          ...deck.exerciseTypes.filter((type) => !selected.includes(type)),
+                        ]),
+                    }
+                  : undefined
+              }
             />
             {devMode && <EffortStatsPanel subjects={content.subjects} paces={paces} />}
           </>
@@ -175,8 +193,6 @@ export default function App() {
             activeMs={getActiveMs()}
             plannedMinutes={session.effort / (sessionLog?.pointsPerMinute ?? pace)}
             onNewSession={goHome}
-            showSrsDetails={showSrsDetails}
-            onToggleSrsDetails={() => setShowSrsDetails((show) => !show)}
           />
         ) : (
           <ExerciseScreen
@@ -187,8 +203,11 @@ export default function App() {
             subjectConcepts={content.concepts.filter((concept) => concept.subjectId === subject.id)}
             showSpecialCharacters={showSpecialCharacters}
             onToggleSpecialCharacters={() => setShowSpecialCharacters((show) => !show)}
-            showSrsDetails={showSrsDetails}
-            onToggleSrsDetails={() => setShowSrsDetails((show) => !show)}
+            advanced={
+              devMode
+                ? { open: showAdvanced, onToggle: () => setShowAdvanced((show) => !show) }
+                : undefined
+            }
           />
         )}
       </main>

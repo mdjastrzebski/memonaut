@@ -19,7 +19,7 @@ concepts:
   - { id: wer-ist-das, local: kto to jest?, foreign: wer ist das? }
   #- { id: ich-bin-10-jahre-alt, local: mam 10 lat, foreign: ich bin 10 Jahre alt }
   # Przybory szkolne, zawsze z rodzajnikiem. Przybory do pisania są rodzaju męskiego, rzeczowniki na -e zwykle żeńskiego.
-  - { id: die-schulsachen, local: przybory szkolne, foreign: die Schulsachen }
+  - { id: die-schulsachen, local: przybory szkolne, foreign: die Schulsachen, plural: true }
   # Pozostałe przedmioty osobiste i zwierzęta.
   - { id: der-schreibtisch, local: biurko, foreign: der Schreibtisch, group: thing/personal }
   - {
@@ -266,6 +266,7 @@ concepts:
       foreign: die Kulis,
       explanation: 'der Kuli → die Kuli[s]',
       group: thing/plural,
+      plural: true,
     }
   - {
       id: die-handys,
@@ -273,6 +274,7 @@ concepts:
       foreign: die Handys,
       explanation: 'das Handy → die Handy[s]',
       group: thing/plural,
+      plural: true,
     }
   - {
       id: die-fotos,
@@ -280,6 +282,7 @@ concepts:
       foreign: die Fotos,
       explanation: 'das Foto → die Foto[s]',
       group: thing/plural,
+      plural: true,
     }
   - {
       id: die-radiergummis,
@@ -287,6 +290,7 @@ concepts:
       foreign: die Radiergummis,
       explanation: 'der Radiergummi → die Radiergummi[s]',
       group: thing/plural,
+      plural: true,
     }
   - {
       id: die-computer,
@@ -294,6 +298,7 @@ concepts:
       foreign: die Computer,
       explanation: 'der Computer → [die] Computer, bez końcówki',
       group: thing/plural,
+      plural: true,
     }
   - {
       id: die-anspitzer,
@@ -301,6 +306,7 @@ concepts:
       foreign: die Anspitzer,
       explanation: 'der Anspitzer → [die] Anspitzer, bez końcówki',
       group: thing/plural,
+      plural: true,
     }
   - {
       id: die-marker,
@@ -308,6 +314,7 @@ concepts:
       foreign: die Marker,
       explanation: 'der Marker → [die] Marker, bez końcówki',
       group: thing/plural,
+      plural: true,
     }
   - {
       id: die-maeppchen,
@@ -315,6 +322,7 @@ concepts:
       foreign: die Mäppchen,
       explanation: 'das Mäppchen → [die] Mäppchen, bez końcówki',
       group: thing/plural,
+      plural: true,
     }
   - {
       id: die-schueler,
@@ -322,6 +330,7 @@ concepts:
       foreign: die Schüler,
       explanation: 'der Schüler → [die] Schüler, bez końcówki',
       group: person/plural,
+      plural: true,
     }
   - {
       id: die-lampen,
@@ -329,6 +338,7 @@ concepts:
       foreign: die Lampen,
       explanation: 'die Lampe → die Lampe[n]',
       group: thing/plural,
+      plural: true,
     }
   - {
       id: die-brillen,
@@ -336,6 +346,7 @@ concepts:
       foreign: die Brillen,
       explanation: 'die Brille → die Brille[n]',
       group: thing/plural,
+      plural: true,
     }
   - {
       id: die-scheren,
@@ -343,6 +354,7 @@ concepts:
       foreign: die Scheren,
       explanation: 'die Schere → die Schere[n]',
       group: thing/plural,
+      plural: true,
     }
   - {
       id: die-schultaschen,
@@ -350,6 +362,7 @@ concepts:
       foreign: die Schultaschen,
       explanation: 'die Schultasche → die Schultasche[n]',
       group: thing/plural,
+      plural: true,
     }
   - {
       id: die-sprachen,
@@ -357,6 +370,7 @@ concepts:
       foreign: die Sprachen,
       explanation: 'die Sprache → die Sprache[n]',
       group: person/plural,
+      plural: true,
     }
   - {
       id: die-lehrerinnen,
@@ -364,6 +378,7 @@ concepts:
       foreign: die Lehrerinnen,
       explanation: 'die Lehrerin → die Lehrerin[nen]',
       group: person/plural,
+      plural: true,
     }
   - {
       id: die-bleistifte,
@@ -371,6 +386,7 @@ concepts:
       foreign: die Bleistifte,
       explanation: 'der Bleistift → die Bleistift[e]',
       group: thing/plural,
+      plural: true,
     }
   - {
       id: die-buntstifte,
@@ -378,6 +394,7 @@ concepts:
       foreign: die Buntstifte,
       explanation: 'der Buntstift → die Buntstift[e]',
       group: thing/plural,
+      plural: true,
     }
   - {
       id: die-hefte,
@@ -385,6 +402,7 @@ concepts:
       foreign: die Hefte,
       explanation: 'das Heft → die Heft[e]',
       group: thing/plural,
+      plural: true,
     }
   - {
       id: die-lineale,
@@ -392,6 +410,7 @@ concepts:
       foreign: die Lineale,
       explanation: 'das Lineal → die Lineal[e]',
       group: thing/plural,
+      plural: true,
     }
   - {
       id: die-baelle,
@@ -399,6 +418,7 @@ concepts:
       foreign: die Bälle,
       explanation: 'der Ball → die B[ä]ll[e]',
       group: thing/plural,
+      plural: true,
     }
   - {
       id: die-rucksaecke,
@@ -406,6 +426,7 @@ concepts:
       foreign: die Rucksäcke,
       explanation: 'der Rucksack → die Rucks[ä]ck[e]',
       group: thing/plural,
+      plural: true,
     }
   - {
       id: die-kinder,
@@ -413,6 +434,7 @@ concepts:
       foreign: die Kinder,
       explanation: 'das Kind → die Kind[er]',
       group: person/plural,
+      plural: true,
     }
   - {
       id: die-buecher,
@@ -420,6 +442,7 @@ concepts:
       foreign: die Bücher,
       explanation: 'das Buch → die B[ü]ch[er]',
       group: thing/plural,
+      plural: true,
     }
   - {
       id: die-taschentuecher,
@@ -427,6 +450,7 @@ concepts:
       foreign: die Taschentücher,
       explanation: 'das Taschentuch → die Taschent[ü]ch[er]',
       group: thing/plural,
+      plural: true,
     }
   - {
       id: das-sind-meine-buecher,
