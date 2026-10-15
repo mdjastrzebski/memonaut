@@ -86,6 +86,24 @@ export function gradeAnswer(
   return result(Rating.Hard, issues);
 }
 
+/**
+ * Rates a typed answer against each of several right ones, e.g. "hundert" or "einhundert", and
+ * keeps the best rating, the earliest answer on a tie. Returns the answer it was rated against.
+ */
+export function gradeAnyAnswer(
+  answers: string[],
+  input: string,
+  elapsedMs: number,
+  options?: GradeOptions,
+): { answer: string; result: AnswerResult } {
+  let best: { answer: string; result: AnswerResult } | undefined;
+  for (const answer of answers) {
+    const result = gradeAnswer(answer, input, elapsedMs, options);
+    if (!best || result.grade > best.result.grade) best = { answer, result };
+  }
+  return best!;
+}
+
 /** "9", "-3", "2,5" or "1000". */
 function isNumber(value: string): boolean {
   return /^-?\d+([.,]\d+)?$/.test(value);

@@ -63,6 +63,25 @@ test('leaves out concepts that would be right too, and repeated words', () => {
   expect(options.toSorted()).toEqual(['big', 'small']);
 });
 
+test('leaves out concepts whose foreign word is an alternative answer', () => {
+  const hundert = { ...concept('100', 'sto', 'hundert'), alternatives: ['einhundert'] };
+  const einhundert = concept('100-too', 'sto (całe)', 'einhundert');
+  expect(
+    pickChoices(hundert, {
+      side: 'foreign',
+      deckConcepts: [einhundert, drei],
+      subjectConcepts: [],
+    }).toSorted(),
+  ).toEqual(['drei', 'hundert']);
+  expect(
+    pickChoices(einhundert, {
+      side: 'foreign',
+      deckConcepts: [hundert, drei],
+      subjectConcepts: [],
+    }).toSorted(),
+  ).toEqual(['drei', 'einhundert']);
+});
+
 test('offers others of the group first, from the subject too, then fills up from the deck', () => {
   const day = (id: string, local: string) => ({ ...concept(id, local, id), group: 'weekday' });
   const monday = day('Monday', 'poniedziałek');

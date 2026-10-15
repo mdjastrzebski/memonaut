@@ -19,11 +19,12 @@ import {
 import { useAnswer } from '@/components/exercises/use-answer';
 import { FastBonus } from '@/components/fast-bonus';
 import { GRADE_STYLES } from '@/components/grades';
+import { MarkedText } from '@/components/marked-text';
 import { SpecialCharacters } from '@/components/special-characters';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { splitTrickySpellings } from '@/exercises/tricky-spellings';
-import { getFastLimitMs, gradeAnswer } from '@/exercises/type-answer';
+import { getFastLimitMs, gradeAnyAnswer } from '@/exercises/type-answer';
 import { formatSeconds } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { Rating, type Grade } from '@/srs/scheduler';
@@ -36,9 +37,14 @@ interface TypedExerciseProps extends ExerciseProps {
   prompt: ReactNode;
   /** What to type, e.g. the foreign word. */
   answer: string;
+  /** Other right answers, e.g. "einhundert" for "hundert". */
+  alternatives?: string[];
   /** The local word, or else the spoken hint, shown with the result with a flag. */
   meaning?: string;
-  /** Shown with the result instead of the meaning, e.g. "3² = 9". */
+  /**
+   * Shown with the result below the meaning, with parts in square brackets highlighted, e.g.
+   * "3² = 9" or "das Buch → die B[ü]ch[er]".
+   */
   explanation?: string;
   /** Extra context drawn large in the corner, e.g. "3". */
   hint?: string;
@@ -61,6 +67,7 @@ export function TypedExercise({
   onToggleSrsDetails,
   prompt,
   answer,
+  alternatives = [],
   meaning,
   explanation,
   hint,
@@ -69,6 +76,8 @@ export function TypedExercise({
   const { answered: checked, check, submit, now } = useAnswer(onReview);
   const [input, setInput] = useState('');
   const [retyped, setRetyped] = useState('');
+  // The right answer the input was rated against: the closest one when there are several.
+  const [rightAnswer, setRightAnswer] = useState(answer);
   const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const pendingCaret = useRef<number | null>(null);
@@ -112,14 +121,18 @@ export function TypedExercise({
   const fastLimitMs = getFastLimitMs(answer);
   // After a wrong or almost-right answer, the learner types the right one before moving on.
   const retyping = checked !== null && (grade === Rating.Hard || grade === Rating.Again);
-  const retypedCorrectly = retyping && retyped === answer;
+  const retypedCorrectly = retyping && retyped === rightAnswer;
   const [value, setValue] = retyping ? [retyped, setRetyped] : [input, setInput];
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     if (!checked) {
       if (input.trim() === '') return;
-      check(input, (elapsedMs) => gradeAnswer(answer, input, elapsedMs, { strict }));
+      check(input, (elapsedMs) => {
+        const best = gradeAnyAnswer([answer, ...alternatives], input, elapsedMs, { strict });
+        setRightAnswer(best.answer);
+        return best.result;
+      });
       onChecked?.();
     } else if (!retyping || retypedCorrectly) {
       submit();
@@ -139,7 +152,7 @@ export function TypedExercise({
     <TypedFeedback
       grade={checked.result.grade}
       input={checked.input}
-      answer={answer}
+      answer={rightAnswer}
       meaning={meaning}
       explanation={explanation}
       trickySpellings={subject.trickySpellings}
@@ -173,7 +186,7 @@ export function TypedExercise({
                     retypedCorrectly && GRADE_STYLES[Rating.Good].tint,
                   )}
                 />
-                <RetypeGuide answer={answer} typed={retyped} />
+                <RetypeGuide answer={rightAnswer} typed={retyped} />
               </div>
             </>
           ) : (
@@ -261,7 +274,7 @@ interface TypedFeedbackProps {
   answer: string;
   /** The local word, or else the spoken hint, shown with the result. */
   meaning?: string;
-  /** Shown instead of the meaning, e.g. "3² = 9". */
+  /** Shown below the meaning, e.g. "3² = 9". */
   explanation?: string;
   /** Marked in a right answer. */
   trickySpellings?: string[];
@@ -269,7 +282,7 @@ interface TypedFeedbackProps {
 
 /**
  * The result, with the answer to compare after a mistake or else with its tricky spellings marked,
- * and the word's meaning.
+ * and the word's meaning and explanation.
  */
 function TypedFeedback({
   grade,
@@ -288,20 +301,19 @@ function TypedFeedback({
       <div className="flex min-w-0 flex-col gap-1">
         {wrong && <AnswerComparison input={input} answer={answer} shake={grade === Rating.Again} />}
         {spelled && <SpelledAnswer answer={answer} trickySpellings={trickySpellings} />}
-        {explanation ? (
-          <p className={cn('font-display font-bold break-words', textSize)}>{explanation}</p>
-        ) : (
-          meaning && (
-            <p
-              className={cn('flex items-center gap-2 font-display font-bold break-words', textSize)}
-            >
-              <span aria-hidden className="shrink-0 leading-none">
-                🇵🇱
-              </span>
-              <span className="sr-only">means</span>
-              <span className="min-w-0">{meaning}</span>
-            </p>
-          )
+        {meaning && (
+          <p className={cn('flex items-center gap-2 font-display font-bold break-words', textSize)}>
+            <span aria-hidden className="shrink-0 leading-none">
+              🇵🇱
+            </span>
+            <span className="sr-only">means</span>
+            <span className="min-w-0">{meaning}</span>
+          </p>
+        )}
+        {explanation && (
+          <p className={cn('font-display font-bold break-words', textSize)}>
+            <MarkedText text={explanation} />
+          </p>
         )}
       </div>
     </FeedbackPanel>

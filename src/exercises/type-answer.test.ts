@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 
 import { Rating } from '@/srs/scheduler';
 
-import { getFastLimitMs, gradeAnswer, normalizePunctuation } from './type-answer';
+import { getFastLimitMs, gradeAnswer, gradeAnyAnswer, normalizePunctuation } from './type-answer';
 
 const SLOW = 60_000;
 
@@ -124,4 +124,24 @@ test('a number must be exact, as one digit off is a wrong result', () => {
   expect(gradeAnswer('49', ' 49 ', 1000).grade).toBe(Rating.Easy);
   // Words still forgive a letter off.
   expect(gradeAnswer('neun', 'nein', 1000).grade).toBe(Rating.Hard);
+});
+
+describe('several right answers', () => {
+  test('rates against the closest one', () => {
+    expect(gradeAnyAnswer(['hundert', 'einhundert'], 'einhundert', SLOW)).toMatchObject({
+      answer: 'einhundert',
+      result: { grade: Rating.Good },
+    });
+    expect(gradeAnyAnswer(['hundert', 'einhundert'], 'einhundrt', SLOW)).toMatchObject({
+      answer: 'einhundert',
+      result: { grade: Rating.Hard, issues: ['typo'] },
+    });
+  });
+
+  test('keeps the first one when none is close', () => {
+    expect(gradeAnyAnswer(['hundert', 'einhundert'], 'tausend', SLOW)).toMatchObject({
+      answer: 'hundert',
+      result: { grade: Rating.Again },
+    });
+  });
 });

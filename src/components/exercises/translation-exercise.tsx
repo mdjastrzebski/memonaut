@@ -16,7 +16,9 @@ export function TranslationExercise(props: ExerciseProps) {
       hint={concept.hint}
       prompt={<PromptWord>{concept.local}</PromptWord>}
       answer={concept.foreign}
+      alternatives={concept.alternatives}
       meaning={concept.local}
+      explanation={concept.explanation}
       onChecked={() => speak(concept.foreign, subject.foreignLanguage)}
     />
   );

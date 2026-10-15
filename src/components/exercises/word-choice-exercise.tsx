@@ -1,5 +1,6 @@
 import { ChoiceExercise, type ChoiceExerciseProps } from '@/components/exercises/choice-exercise';
 import { getLanguageProps } from '@/components/exercises/language-props';
+import { MarkedText } from '@/components/marked-text';
 import type { LanguageConcept } from '@/domain/types';
 import { pickChoices, type ChoiceSide } from '@/exercises/multiple-choice';
 
@@ -40,6 +41,12 @@ export function WordChoiceExercise({ side, ...props }: WordChoiceExerciseProps) 
           </span>
           <span className="sr-only">means</span>
           <span>{concept.local}</span>
+          {concept.explanation && (
+            <MarkedText
+              text={concept.explanation}
+              className="basis-full text-lg text-muted-foreground"
+            />
+          )}
         </>
       }
     />
