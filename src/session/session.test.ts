@@ -14,6 +14,7 @@ import {
   countDueToday,
   createSession,
   getCurrentCard,
+  getEffortDone,
   getSessionProgress,
   submitReview,
 } from './session';
@@ -269,4 +270,41 @@ test('counts words due before the next study day, or with an exercise type unloc
       morning,
     ),
   ).toBe(2);
+});
+
+test('picks cards in the usual order while their effort fits, but at least one', () => {
+  // A new card's dictation is 2 points, answered twice: 4 points each.
+  expect(pick({}, start, undefined, deck)).toEqual(['one:dictation', 'two:dictation']);
+  expect(Object.keys(createSession({ deck, concepts, maxEffort: 8, now: start }).cards)).toEqual([
+    'one:dictation',
+    'two:dictation',
+  ]);
+  expect(Object.keys(createSession({ deck, concepts, maxEffort: 7, now: start }).cards)).toEqual([
+    'one:dictation',
+  ]);
+  expect(Object.keys(createSession({ deck, concepts, maxEffort: 1, now: start }).cards)).toEqual([
+    'one:dictation',
+  ]);
+});
+
+test('fits fewer typed exercises than multiple choice ones in the same effort', () => {
+  const count = (exerciseTypes: ExerciseType[]) =>
+    Object.keys(
+      createSession({ deck: { ...deck, exerciseTypes }, concepts, maxEffort: 5, now: start }).cards,
+    ).length;
+  expect(count(['recognition-choice'])).toBe(2);
+  expect(count(['translation'])).toBe(1);
+});
+
+test('tells the effort planned and the effort of the answers given', () => {
+  const session = createSession({ deck, concepts, now: start });
+  expect(session.effort).toBe(8);
+  const answered = submitReview(session, {
+    input: 'eins',
+    elapsedMs: 1000,
+    issues: [],
+    rating: Rating.Good,
+    now: start,
+  });
+  expect(getEffortDone(answered)).toBe(2);
 });

@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 
 import { AppMenu } from '@/components/app-menu';
+import { EffortStatsPanel } from '@/components/effort-stats-panel';
 import { ExerciseScreen } from '@/components/exercise-screen';
 import { SessionProgress } from '@/components/session-progress';
-import { loadSetupChoice, saveSetupChoice, type SessionSize } from '@/components/setup-choice';
+import { loadSetupChoice, saveSetupChoice } from '@/components/setup-choice';
 import { SetupScreen } from '@/components/setup-screen';
 import { SummaryScreen } from '@/components/summary-screen';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -12,10 +13,19 @@ import { content } from '@/data/content';
 import type { Card, Deck } from '@/domain/types';
 import { useActiveTime } from '@/lib/use-active-time';
 import { cn } from '@/lib/utils';
+import {
+  appendEffortLog,
+  finishSessionLog,
+  startSessionLog,
+  type SessionLog,
+} from '@/progress/effort-log';
+import { loadPace, savePace } from '@/progress/pace-storage';
 import { loadProgress, saveProgress } from '@/progress/progress-storage';
+import { updatePace } from '@/session/effort';
 import {
   createSession,
   getCurrentCard,
+  getEffortDone,
   submitReview,
   type Session,
   type SubmitReviewInput,
@@ -30,28 +40,43 @@ export default function App() {
   const [cards, setCards] = useState<Record<string, Card>>(() =>
     Object.assign({}, ...content.subjects.map((subject) => loadProgress(subject.id))),
   );
-  const [sessionSize, setSessionSize] = useState<SessionSize>(initialChoice.sessionSize);
+  const [sessionMinutes, setSessionMinutes] = useState(initialChoice.sessionMinutes);
+  // Effort points per minute in each Subject, measured after each session.
+  const [paces, setPaces] = useState<Record<string, number>>(() =>
+    Object.fromEntries(content.subjects.map((subject) => [subject.id, loadPace(subject.id)])),
+  );
+  // The current session's plan, and once it's over its answers, logged to tune the effort points.
+  const [sessionLog, setSessionLog] = useState<SessionLog | null>(null);
   const [lastUnitIds, setLastUnitIds] = useState(initialChoice.lastUnitIds);
   const [ended, setEnded] = useState(false);
   const [showSpecialCharacters, setShowSpecialCharacters] = useState(false);
   const [showSrsDetails, setShowSrsDetails] = useState(false);
+  // `?dev=1` in the URL shows tools for tuning the app, such as the effort stats.
+  const [devMode] = useState(() => new URLSearchParams(window.location.search).get('dev') === '1');
 
   const subject = content.subjects.find((subject) => subject.id === deck.subjectId)!;
   const finished = session !== null && (ended || !getCurrentCard(session));
   const exercising = session !== null && !finished;
   const allCards = session ? { ...cards, ...session.cards } : cards;
   const getActiveMs = useActiveTime(exercising);
+  const pace = paces[subject.id];
+
+  // As many Cards, in their usual order, as are expected to fit in the minutes picked.
+  const planSession = () =>
+    createSession({
+      deck,
+      concepts: content.concepts,
+      cards: allCards,
+      maxEffort: sessionMinutes * pace,
+    });
+  // What the next session would hold, shown on the setup screen.
+  const plan = session === null ? planSession() : null;
 
   const start = () => {
     setCards(allCards);
-    setSession(
-      createSession({
-        deck,
-        concepts: content.concepts,
-        cards: allCards,
-        maxCards: sessionSize,
-      }),
-    );
+    const planned = planSession();
+    setSession(planned);
+    setSessionLog(startSessionLog(planned, sessionMinutes, pace));
     setEnded(false);
     // Open by default for languages that need special characters, e.g. German umlauts.
     setShowSpecialCharacters((subject.specialCharacters?.length ?? 0) > 0);
@@ -64,11 +89,29 @@ export default function App() {
     const cardId = next.reviews.at(-1)?.cardId;
     if (cardId) saveProgress(session.deck.subjectId, [next.cards[cardId]]);
     setSession(next);
+    if (!getCurrentCard(next)) measurePace(next);
+  };
+
+  // Once a session is over, its points per active minute tune the pace the next one is planned with.
+  const measurePace = (over: Session) => {
+    const { subjectId } = over.deck;
+    const activeMs = getActiveMs();
+    const updated = updatePace(paces[subjectId], getEffortDone(over), activeMs);
+    savePace(subjectId, updated);
+    setPaces({ ...paces, [subjectId]: updated });
+    if (sessionLog) appendEffortLog(finishSessionLog(sessionLog, over, activeMs, updated));
+  };
+
+  const end = () => {
+    if (!session) return;
+    setEnded(true);
+    measurePace(session);
   };
 
   // Back to the setup screen; mid-session it asks first, since leaving ends the session.
   const goHome = () => {
     if (exercising && !window.confirm('Leave this session? Your answers so far are saved.')) return;
+    if (exercising && session) measurePace(session);
     setCards(allCards);
     setSession(null);
   };
@@ -79,8 +122,8 @@ export default function App() {
   };
 
   useEffect(
-    () => saveSetupChoice({ deck, sessionSize, lastUnitIds }),
-    [deck, sessionSize, lastUnitIds],
+    () => saveSetupChoice({ deck, sessionMinutes, lastUnitIds }),
+    [deck, sessionMinutes, lastUnitIds],
   );
 
   return (
@@ -106,26 +149,31 @@ export default function App() {
           {exercising && session && <SessionProgress session={session} />}
           <div className="ml-auto flex items-center gap-2">
             <ThemeToggle />
-            <AppMenu onEnd={exercising ? () => setEnded(true) : undefined} />
+            <AppMenu onEnd={exercising ? end : undefined} />
           </div>
         </header>
 
         {session === null ? (
-          <SetupScreen
-            content={content}
-            cards={cards}
-            deck={deck}
-            lastUnitIds={lastUnitIds}
-            onSelectDeck={selectDeck}
-            sessionSize={sessionSize}
-            onSessionSizeChange={setSessionSize}
-            onStart={start}
-          />
+          <>
+            <SetupScreen
+              content={content}
+              cards={cards}
+              deck={deck}
+              lastUnitIds={lastUnitIds}
+              onSelectDeck={selectDeck}
+              sessionMinutes={sessionMinutes}
+              onSessionMinutesChange={setSessionMinutes}
+              plan={plan && { cardCount: plan.queue.length, minutes: plan.effort / pace }}
+              onStart={start}
+            />
+            {devMode && <EffortStatsPanel subjects={content.subjects} paces={paces} />}
+          </>
         ) : finished ? (
           <SummaryScreen
             session={session}
             subjectKind={subject.kind}
             activeMs={getActiveMs()}
+            plannedMinutes={session.effort / (sessionLog?.pointsPerMinute ?? pace)}
             onNewSession={goHome}
             showSrsDetails={showSrsDetails}
             onToggleSrsDetails={() => setShowSrsDetails((show) => !show)}

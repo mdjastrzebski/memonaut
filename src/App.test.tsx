@@ -65,7 +65,8 @@ function unitTile(name: string) {
 async function startEssentialsSession(user: ReturnType<typeof userEvent.setup>) {
   render(<App />);
   await user.click(screen.getByRole('radio', { name: 'German' }));
-  await user.click(screen.getByRole('radio', { name: '100' }));
+  // At the default pace, 20 minutes fits a dictation of every word.
+  await user.click(screen.getByRole('radio', { name: '20 min' }));
   await user.click(screen.getByRole('button', { name: 'Start session' }));
 }
 
@@ -299,7 +300,7 @@ test('a word moves on to translation once its dictation graduates', async () => 
 
   // Every word was practised today, so its unlocked translation only fills the room left.
   await user.click(screen.getByRole('button', { name: 'Start a new session' }));
-  await user.click(screen.getByRole('radio', { name: '10' }));
+  await user.click(screen.getByRole('radio', { name: '10 min' }));
   await user.click(screen.getByRole('button', { name: 'Start session' }));
   const { local, foreign } = currentConcept();
   expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(local);
@@ -438,11 +439,14 @@ test('picking a unit shows its stats and words, and starts a session of it', asy
 
 test('a unit unlocks recognition choice, dictation, translation choice, then translation', async () => {
   vi.useFakeTimers({ toFake: ['Date'], now: new Date(2026, 0, 5, 10) });
+  // 4 points a minute: 5 minutes fit 10 new words' recognition, at 1 point answered twice, and
+  // 10 minutes their dictation, at 2 points answered twice.
+  localStorage.setItem('memonaut:pace', JSON.stringify({ german: 4 }));
   const user = userEvent.setup();
   render(<App />);
   await user.click(screen.getByRole('radio', { name: 'German' }));
   await pickUnit(user, 'Kapitel 0');
-  await user.click(screen.getByRole('radio', { name: '10' }));
+  await user.click(screen.getByRole('radio', { name: '5 min' }));
   await user.click(screen.getByRole('button', { name: 'Start session' }));
   const concepts = content.concepts.filter(
     (concept): concept is LanguageConcept =>
@@ -450,17 +454,20 @@ test('a unit unlocks recognition choice, dictation, translation choice, then tra
   );
   const options = () =>
     within(screen.getByRole('group', { name: 'Options' })).getAllByRole('button');
-  // Each next exercise type unlocks on the next study day, before any new word.
-  const startNewSession = async (now: Date) => {
+  // Each next exercise type unlocks on the next study day, before any new word. The minutes are
+  // picked to fit just the unlocked ones.
+  const startNewSession = async (now: Date, minutes: string) => {
     expect(screen.getByText(/Session results/)).toBeInTheDocument();
     vi.setSystemTime(now);
     await user.click(screen.getByRole('button', { name: 'Start a new session' }));
+    await user.click(screen.getByRole('radio', { name: minutes }));
     await user.click(screen.getByRole('button', { name: 'Start session' }));
   };
 
   // Recognition: the German word is shown and read aloud; its meaning is picked with a number key.
   // A right pick is rated Good, so each word comes back once more before it graduates. Only the
-  // first is picked really fast: it's rated Easy and graduates at once.
+  // first is picked really fast: it's rated Easy and graduates at once. Under a minute passes in
+  // all, too short to measure the pace, so the next session is planned at the same one.
   let recognitions = 0;
   while (screen.queryByText('What does it mean?')) {
     const foreign = screen.getByRole('heading', { level: 2 }).textContent;
@@ -468,7 +475,7 @@ test('a unit unlocks recognition choice, dictation, translation choice, then tra
     const { local } = concepts.find((concept) => concept.foreign === foreign)!;
     expect(options()).toHaveLength(4);
     const index = options().findIndex((option) => option.textContent?.endsWith(local!));
-    if (recognitions > 0) vi.setSystemTime(Date.now() + FAST_CHOICE_MS + 1000);
+    if (recognitions > 0) vi.setSystemTime(Date.now() + FAST_CHOICE_MS + 1);
     await user.keyboard(String(index + 1));
     expect(screen.getByRole('status')).toHaveTextContent(recognitions === 0 ? 'Easy' : 'Good');
     expect(screen.getByRole('status')).toHaveTextContent(`${foreign}=means${local}`);
@@ -477,14 +484,14 @@ test('a unit unlocks recognition choice, dictation, translation choice, then tra
   }
   expect(recognitions).toBe(19);
 
-  await startNewSession(new Date(2026, 0, 6, 10));
+  await startNewSession(new Date(2026, 0, 6, 10), '10 min');
   for (let i = 0; i < 10; i++) {
     await user.type(screen.getByRole('textbox', { name: 'Answer' }), `${spoken.at(-1)}{Enter}`);
     await user.keyboard('{Enter}');
   }
 
   // Before the recognitions are due again at 10 AM.
-  await startNewSession(new Date(2026, 0, 7, 5));
+  await startNewSession(new Date(2026, 0, 7, 5), '5 min');
   // Translation choice: a wrong pick is rated Again, and the German word is read aloud.
   expect(screen.getByText('Which word is it?')).toBeInTheDocument();
   const local = screen.getByRole('heading', { level: 2 }).textContent;
@@ -565,23 +572,28 @@ test('words practised in a session show their status, with details on hover', as
   expect(tooltip).toHaveTextContent('Translation: not practised yet');
 });
 
-test('a session practises 10 exercises by default, or as many as chosen', async () => {
+test('a session holds as many exercises as fit in the minutes chosen, 10 by default', async () => {
   const user = userEvent.setup();
   render(<App />);
 
+  // At the default 8 points a minute, a new word's recognition takes 1 point, answered twice.
   await user.click(screen.getByRole('radio', { name: 'German' }));
   await pickUnit(user, 'Kapitel 0');
-  expect(screen.getByRole('radio', { name: '10' })).toBeChecked();
+  expect(screen.getByRole('radio', { name: '10 min' })).toBeChecked();
+  expect(screen.getByText('40 exercises · about 10m')).toBeInTheDocument();
 
-  await user.click(screen.getByRole('button', { name: 'Start session' }));
-  await finishSession(user);
-  expect(sessionWords()).toHaveLength(10);
-
-  await user.click(screen.getByRole('button', { name: 'Start a new session' }));
-  await user.click(screen.getByRole('radio', { name: '20' }));
+  await user.click(screen.getByRole('radio', { name: '5 min' }));
+  expect(screen.getByText('20 exercises · about 5m')).toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: 'Start session' }));
   await finishSession(user);
   expect(sessionWords()).toHaveLength(20);
+  expect(screen.getByText('planned 5m')).toBeInTheDocument();
+
+  // A unit with fewer words than fit takes less time.
+  await user.click(screen.getByRole('button', { name: 'Start a new session' }));
+  await pickUnit(user, 'Kapitel 1');
+  await user.click(screen.getByRole('radio', { name: '20 min' }));
+  expect(screen.getByText(/exercises · about (\d+)m/).textContent).not.toMatch(/about 20m/);
 });
 
 test('Polish practises spelling with dictation only', async () => {
@@ -590,7 +602,8 @@ test('Polish practises spelling with dictation only', async () => {
 
   await user.click(screen.getByRole('radio', { name: 'Polish' }));
   expect(unitTile('Trudne słówka')).toBeChecked();
-  await user.click(screen.getByRole('radio', { name: '10' }));
+  // At the default 8 points a minute, a new word's dictation takes 2 points, answered twice.
+  await user.click(screen.getByRole('radio', { name: '5 min' }));
   await user.click(screen.getByRole('button', { name: 'Start session' }));
   expect(screen.getByRole('group', { name: 'Special characters' })).toHaveTextContent('ż');
 
@@ -613,11 +626,46 @@ test('remembers the subject, set and words per session after a reload', async ()
 
   await user.click(screen.getByRole('radio', { name: 'German' }));
   await pickUnit(user, 'Kapitel 0');
-  await user.click(screen.getByRole('radio', { name: '20' }));
+  await user.click(screen.getByRole('radio', { name: '20 min' }));
   unmount();
   render(<App />);
 
   expect(screen.getByRole('radio', { name: 'German' })).toBeChecked();
   expect(unitTile('Kapitel 0')).toBeChecked();
-  expect(screen.getByRole('radio', { name: '20' })).toBeChecked();
+  expect(screen.getByRole('radio', { name: '20 min' })).toBeChecked();
+});
+
+test('the effort stats show with dev=1 in the URL, with each finished session logged', async () => {
+  const user = userEvent.setup();
+  const { unmount } = render(<App />);
+  expect(screen.queryByRole('region', { name: 'Effort stats' })).not.toBeInTheDocument();
+  unmount();
+
+  window.history.pushState({}, '', '/?dev=1');
+  try {
+    render(<App />);
+    expect(screen.getByRole('button', { name: /Effort stats/ })).toHaveTextContent(
+      '0 sessions logged',
+    );
+
+    await user.click(screen.getByRole('radio', { name: 'German' }));
+    await user.click(screen.getByRole('button', { name: 'Start session' }));
+    for (let i = 0; i < 2; i++) {
+      await user.type(
+        screen.getByRole('textbox', { name: 'Answer' }),
+        `${currentConcept().foreign}{Enter}`,
+      );
+      await user.keyboard('{Enter}');
+    }
+    await finishSession(user);
+    await user.click(screen.getByRole('button', { name: 'Start a new session' }));
+
+    const toggle = screen.getByRole('button', { name: /Effort stats/ });
+    expect(toggle).toHaveTextContent('1 session logged');
+    await user.click(toggle);
+    expect(screen.getByRole('table', { name: 'Exercise types' })).toHaveTextContent('Dictation');
+    expect(screen.getByRole('table', { name: 'Sessions' })).toHaveTextContent('german/core');
+  } finally {
+    window.history.pushState({}, '', '/');
+  }
 });

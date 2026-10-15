@@ -52,7 +52,17 @@ In multiple choice, the wrong options are other words of the Deck, or of the Sub
 
 A Concept unlocks Exercise Types one at a time, in its Deck's order: a new Concept starts with the first one, and the next one unlocks once the previous Card graduates to Review. Cards already started stay in play. A Concept practises one Exercise Type per study day where it can: once one of its Cards was reviewed today, its other Cards wait. A study day starts at 4 AM local time, like Anki's, so late-evening study counts as one day.
 
-A session holds up to a chosen number of Cards (10, 20, 50 or 100), filled in this order:
+A session takes about a chosen number of minutes (5, 10, 15 or 20). Each Card is worth **effort points** for how long it's expected to take, so a session holds fewer typed exercises than multiple choice ones:
+
+- one answer is worth 1 point in `recognition-choice` and `translation-choice`, 1.5 in `question-choice`, 2 in `dictation` and 2.5 in `translation` and `question-type`
+- times the Card's difficulty: from 0.8 for the easiest (FSRS difficulty 1) to 1.25 for the hardest (10); a new Card counts as average
+- times how often it's expected to be answered in the session: twice for a new Card (its learning step), 1.5 times for one still learning, and for a due one once, plus once more if it's forgotten
+
+The minutes become points at the learner's pace in the Subject, 8 points a minute to start with. Cards are picked in the order below while their points fit, but at least one: the points decide only how many Cards a session holds, never which come first, and nothing changes once it started. When a session is over, finished or left early, the points of the answers given per active minute move the pace toward what was measured, halfway for a session of 10 minutes or more and less for a shorter one, so the next session's estimate fits better. Sessions under a minute don't count. The setup screen shows how many exercises fit and about how long they take; the results compare the time taken with the time planned.
+
+To tune the points, each session's plan and answers are logged in the browser (`memonaut:effort-log`, the latest 100 sessions). With `?dev=1` in the URL, the setup screen shows an **Effort stats** panel: the time each answer took per point by Exercise Type and by difficulty, with suggested points that would even them out; how often Cards were answered against what was expected; and each session's planned time against the time it took. The log can be downloaded as JSON or cleared there.
+
+A session's Cards are picked in this order:
 
 1. due Cards, most overdue first; of a Concept's due Cards, the one most likely forgotten, the easier type on a tie
 2. the next unlocked Exercise Type of a started Concept, easiest type first, then in Deck order
@@ -75,7 +85,7 @@ Words are read aloud by the browser's voice, which varies a lot by device. Optio
 
 ## Content
 
-Learning content lives in YAML files under `src/data/`, one folder per Subject. Only what to learn is stored there; learning state is kept separately, in the browser's localStorage under one key per Subject (`memonaut:progress:<subject>`), keyed by Concept id and Exercise Type. Each Card's FSRS state is stored compactly. Saving only replaces the Cards that changed, so progress for words no longer in any Deck is kept, and data from a newer app version is never overwritten.
+Learning content lives in YAML files under `src/data/`, one folder per Subject. Only what to learn is stored there; learning state is kept separately, in the browser's localStorage under one key per Subject (`memonaut:progress:<subject>`), keyed by Concept id and Exercise Type. The learner's pace in each Subject is kept under `memonaut:pace`. Each Card's FSRS state is stored compactly. Saving only replaces the Cards that changed, so progress for words no longer in any Deck is kept, and data from a newer app version is never overwritten.
 
 ```yaml
 # src/data/german/decks/kapitel-0.yaml
