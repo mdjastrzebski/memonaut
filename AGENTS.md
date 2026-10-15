@@ -38,3 +38,5 @@ A Deck without `shuffleNew: true` introduces new Concepts in file order, so orde
 - Keep like words together in short sections, each with a comment saying what it teaches.
 
 A shuffled Deck, like the Polish spelling sets, doesn't need this.
+
+Write German nouns with their article, e.g. `das Buch`, so they're practised with article choice, and mark plurals with `plural: true`, e.g. `die Bücher`, as their article tells no gender.

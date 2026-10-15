@@ -258,10 +258,13 @@ test('the bundled English and German units practise multiple choice, but not the
         .map((deck) => deck.exerciseTypes.join()),
     ),
   ];
+  expect(exerciseTypes('english', 'unit')).toEqual([
+    'recognition-choice,dictation,translation-choice,translation',
+  ]);
+  expect(exerciseTypes('german', 'unit')).toEqual([
+    'recognition-choice,dictation,translation-choice,article-choice,translation',
+  ]);
   for (const subjectId of ['english', 'german']) {
-    expect(exerciseTypes(subjectId, 'unit')).toEqual([
-      'recognition-choice,dictation,translation-choice,translation',
-    ]);
     expect(exerciseTypes(subjectId, 'core')).toEqual(['dictation,translation']);
   }
   expect(exerciseTypes('polish', 'unit')).toEqual(['dictation']);
@@ -346,6 +349,51 @@ test('rejects invalid content', () => {
   expect(() => buildContent({ './german/decks/a.yaml': deck('') })).toThrow(
     'subject.yaml: missing',
   );
+});
+
+test('a subject with articles practises its singular nouns with article choice', () => {
+  const { subjects, decks } = buildContent({
+    './german/subject.yaml': `${subject}articles: [der, die, das]\n`,
+    './german/decks/a.yaml': `
+id: a
+name: A
+concepts:
+  - { id: das-buch, local: książka, foreign: das Buch }
+  - { id: die-buecher, local: książki, foreign: die Bücher, plural: true }
+  - { id: das-ist-das-buch, local: to jest książka, foreign: das ist das Buch }
+  - { id: drei, local: trzy, foreign: drei }
+`,
+  });
+  const exerciseTypes = [
+    'recognition-choice',
+    'dictation',
+    'translation-choice',
+    'article-choice',
+    'translation',
+  ];
+  expect(subjects[0]).toMatchObject({ articles: ['der', 'die', 'das'], exerciseTypes });
+  const withoutArticle = exerciseTypes.filter((type) => type !== 'article-choice');
+  expect(decks[0].conceptExerciseTypes).toEqual({
+    'german/die-buecher': withoutArticle,
+    'german/das-ist-das-buch': withoutArticle,
+    'german/drei': withoutArticle,
+  });
+});
+
+test('a subject without articles has no article choice', () => {
+  const deck =
+    'id: a\nname: A\nconcepts:\n  - { id: das-buch, local: książka, foreign: das Buch }\n';
+  const { subjects } = buildContent({
+    './german/subject.yaml': subject,
+    './german/decks/a.yaml': deck,
+  });
+  expect(subjects[0].exerciseTypes).not.toContain('article-choice');
+  expect(() =>
+    buildContent({
+      './german/subject.yaml': `${subject}exerciseTypes: [article-choice, translation]\n`,
+      './german/decks/a.yaml': deck,
+    }),
+  ).toThrow(/subject\.yaml: exercise type "article-choice" needs articles/);
 });
 
 test('a knowledge subject asks questions, practised with choice only when they have choices', () => {

@@ -43,7 +43,7 @@ function renderExercise(conceptId: string, strictSpelling = true, exerciseTypes?
       ...deck,
       conceptIds: [conceptId],
       strictSpelling,
-      ...(exerciseTypes && { exerciseTypes }),
+      ...(exerciseTypes && { exerciseTypes, conceptExerciseTypes: undefined }),
     },
     concepts: content.concepts,
   });
@@ -168,4 +168,19 @@ test('translation takes an alternative answer, and compares a mistake with the c
   expect(screen.getByRole('status')).toHaveTextContent('einhundert');
   await user.type(screen.getByRole('textbox', { name: 'Retype answer' }), 'einhundert');
   expect(screen.getByRole('button', { name: /continue/i })).toBeEnabled();
+});
+
+test('article choice shows the noun without its article, and reads the word once picked', async () => {
+  const user = userEvent.setup();
+  renderExercise('german/das-buch', false, ['article-choice']);
+  expect(screen.getByRole('heading', { name: 'Buch' })).toBeInTheDocument();
+  const options = within(screen.getByRole('group', { name: 'Options' })).getAllByRole('button');
+  expect(options.map((option) => option.textContent?.slice(1))).toEqual(['der', 'die', 'das']);
+  expect(utterances).toEqual([]);
+
+  await user.keyboard('1');
+  const status = screen.getByRole('status');
+  expect(status).toHaveTextContent('Again');
+  expect(status).toHaveTextContent('das Buch');
+  expect(utterances.map((utterance) => utterance.text)).toEqual(['das Buch']);
 });

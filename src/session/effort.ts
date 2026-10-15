@@ -9,6 +9,7 @@ export const EXERCISE_EFFORT: Record<ExerciseType, number> = {
   'recognition-choice': 1,
   'dictation': 2,
   'translation-choice': 1,
+  'article-choice': 1,
   'translation': 2.5,
   'question-choice': 1.5,
   'question-type': 2.5,

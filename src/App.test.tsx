@@ -6,6 +6,7 @@ import App from './App';
 import { content } from './data/content';
 import type { LanguageConcept } from './domain/types';
 import { FAST_CHOICE_MS } from './exercises/multiple-choice';
+import { getConceptExerciseTypes } from './session/session';
 
 // jsdom has no speech synthesis; record what would be read aloud instead.
 const spoken: string[] = [];
@@ -420,12 +421,17 @@ test('picking a unit shows its stats and words, and starts a session of it', asy
   await user.click(screen.getByRole('radio', { name: 'German' }));
   await pickUnit(user, 'Kapitel 0');
 
-  const size = content.decks.find((deck) => deck.id === 'german/kapitel-0')!.conceptIds.length;
+  const deck = content.decks.find((deck) => deck.id === 'german/kapitel-0')!;
+  const size = deck.conceptIds.length;
+  const cards = deck.conceptIds.reduce(
+    (total, conceptId) => total + getConceptExerciseTypes(deck, conceptId).length,
+    0,
+  );
   const selected = screen.getByRole('region', { name: 'Selected set' });
   expect(within(selected).getByText('Words', { selector: 'dt' }).nextSibling).toHaveTextContent(
     String(size),
   );
-  expect(within(selected).getByText(`Exercises: ${size * 4}`)).toBeInTheDocument();
+  expect(within(selected).getByText(`Exercises: ${cards}`)).toBeInTheDocument();
 
   await user.click(within(selected).getByRole('button', { name: 'Words' }));
   const words = within(selected).getByRole('list', { name: 'Words in set' });

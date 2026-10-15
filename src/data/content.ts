@@ -33,19 +33,21 @@ const subjectFields = {
   trickySpellings: z.array(z.string().min(1)).optional(),
 };
 
-/** Every Exercise Type of its kind if left out. */
+/** Every Exercise Type of its kind the Subject can use if left out; see `getSubject`. */
 const subjectExerciseTypes = (kind: SubjectKind) =>
   exerciseTypes
     .refine((listed) => listed.every((type) => KIND_EXERCISE_TYPES[kind].includes(type)), {
       message: `Use exercise types of a ${kind} subject: ${KIND_EXERCISE_TYPES[kind].join(', ')}`,
     })
-    .default(KIND_EXERCISE_TYPES[kind]);
+    .optional();
 
 const subjectSchema = z.discriminatedUnion('kind', [
   z.strictObject({
     ...subjectFields,
     kind: z.literal('language'),
     foreignLanguage: z.string(),
+    /** For article choice, e.g. der, die and das. */
+    articles: z.array(z.string().regex(/^\S+$/, 'Use one word')).min(2).optional(),
     exerciseTypes: subjectExerciseTypes('language'),
   }),
   z.strictObject({
@@ -68,6 +70,11 @@ const CONCEPT_FIELDS = {
     explanation: z.string().min(1).optional(),
     /** Groups like Concepts of the Subject, e.g. "weekday", for multiple choice. */
     group: group.optional(),
+    /** A plural noun, which skips article choice. */
+    plural: z
+      .literal('true')
+      .transform(() => true)
+      .optional(),
   },
   knowledge: {
     question: z.string().min(1),
@@ -139,7 +146,7 @@ export function buildContent(files: Record<string, string>): Content {
     if (!(subjectPath in files)) {
       throw new Error(`${subjectPath}: missing`);
     }
-    const subject = read(subjectPath, files[subjectPath], subjectSchema);
+    const subject = getSubject(subjectPath, read(subjectPath, files[subjectPath], subjectSchema));
     if (content.subjects.some((other) => other.id === subject.id)) {
       throw new Error(`${subjectPath}: duplicate subject id "${subject.id}"`);
     }
@@ -193,7 +200,7 @@ export function buildContent(files: Record<string, string>): Content {
       const fewer: Record<string, ExerciseType[]> = {};
       for (const conceptId of conceptIds) {
         const concept = concepts.get(conceptId)!;
-        const types = exerciseTypes.filter((type) => canPractise(concept, type));
+        const types = exerciseTypes.filter((type) => canPractise(concept, type, subject));
         if (types.length === 0) {
           throw new Error(`${path}: concept "${conceptId}" fits none of the deck's exercise types`);
         }
@@ -259,6 +266,21 @@ export function buildContent(files: Record<string, string>): Content {
   }
 
   return content;
+}
+
+/**
+ * The Subject with its Exercise Types: every one of its kind if left out, but article choice only
+ * with articles.
+ */
+function getSubject(path: string, fields: z.infer<typeof subjectSchema>): Subject {
+  const articles = fields.kind === 'language' ? fields.articles : undefined;
+  if (fields.exerciseTypes?.includes('article-choice') && !articles) {
+    throw new Error(`${path}: exercise type "article-choice" needs articles`);
+  }
+  const exerciseTypes =
+    fields.exerciseTypes ??
+    KIND_EXERCISE_TYPES[fields.kind].filter((type) => type !== 'article-choice' || articles);
+  return { ...fields, exerciseTypes };
 }
 
 function isSameConcept(a: Concept, b: Concept): boolean {

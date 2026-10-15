@@ -90,7 +90,14 @@ export function ChoiceExercise({
         <p className="relative mb-1 text-sm font-semibold text-muted-foreground">{question}</p>
         <div className="relative mb-6 flex items-center gap-4">{prompt}</div>
 
-        <div role="group" aria-label="Options" className="relative grid gap-3 sm:grid-cols-2">
+        <div
+          role="group"
+          aria-label="Options"
+          className={cn(
+            'relative grid gap-3',
+            options.length === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2',
+          )}
+        >
           {options.map((option, index) => {
             const right = option === answer;
             const chosen = option === picked?.input;

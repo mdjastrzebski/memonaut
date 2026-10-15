@@ -32,6 +32,11 @@ export interface LanguageSubject extends SubjectBase {
   kind: 'language';
   /** BCP 47 tag of the language being learned, used to read words aloud, e.g. "de-DE". */
   foreignLanguage: string;
+  /**
+   * Optional articles that tell a noun's gender, e.g. "der", "die" and "das" in German, in the order
+   * offered in article choice. Only a Subject with them is practised with article choice.
+   */
+  articles?: string[];
 }
 
 export interface KnowledgeSubject extends SubjectBase {
@@ -108,6 +113,10 @@ export interface LanguageConcept extends ConceptBase {
    * wrong options, then those of each wider group.
    */
   group?: string;
+  /**
+   * Marks a plural noun, e.g. "die Bücher". Its article tells no gender, so it skips article choice.
+   */
+  plural?: boolean;
 }
 
 /** A question of a knowledge Subject, asked one way only. */
@@ -134,6 +143,7 @@ export interface KnowledgeConcept extends ConceptBase {
  * - recognition-choice: see and hear the foreign word and pick the local one from a few options
  * - dictation: hear the foreign word and type how it's spelled
  * - translation-choice: see the local word and pick the foreign one from a few options
+ * - article-choice: see a noun without its article, e.g. "Buch", and pick the article, e.g. "das"
  * - translation: see the local word and type the foreign one
  * - question-choice: see a knowledge question and pick its answer from a few options
  * - question-type: see a knowledge question and type its answer
@@ -142,6 +152,7 @@ export type ExerciseType =
   | 'recognition-choice'
   | 'dictation'
   | 'translation-choice'
+  | 'article-choice'
   | 'translation'
   | 'question-choice'
   | 'question-type';

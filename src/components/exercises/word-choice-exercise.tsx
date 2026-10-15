@@ -33,22 +33,27 @@ export function WordChoiceExercise({ side, ...props }: WordChoiceExerciseProps) 
       {...props}
       answer={concept[side]!}
       pickOptions={pickOptions}
-      feedback={
-        <>
-          <span>{concept.foreign}</span>
-          <span aria-hidden className="text-muted-foreground">
-            =
-          </span>
-          <span className="sr-only">means</span>
-          <span>{concept.local}</span>
-          {concept.explanation && (
-            <MarkedText
-              text={concept.explanation}
-              className="basis-full text-lg text-muted-foreground"
-            />
-          )}
-        </>
-      }
+      feedback={<WordFeedback concept={concept} />}
     />
+  );
+}
+
+/** A word and its meaning, with its explanation, shown with the result. */
+export function WordFeedback({ concept }: { concept: LanguageConcept }) {
+  return (
+    <>
+      <span>{concept.foreign}</span>
+      <span aria-hidden className="text-muted-foreground">
+        =
+      </span>
+      <span className="sr-only">means</span>
+      <span>{concept.local}</span>
+      {concept.explanation && (
+        <MarkedText
+          text={concept.explanation}
+          className="basis-full text-lg text-muted-foreground"
+        />
+      )}
+    </>
   );
 }
