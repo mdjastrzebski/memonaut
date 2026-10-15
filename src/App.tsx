@@ -9,7 +9,7 @@ import { SetupScreen } from '@/components/setup-screen';
 import { SummaryScreen } from '@/components/summary-screen';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { content } from '@/data/content';
+import { content } from '@/data/bundled-content';
 import type { Card, Deck } from '@/domain/types';
 import { useActiveTime } from '@/lib/use-active-time';
 import { cn } from '@/lib/utils';

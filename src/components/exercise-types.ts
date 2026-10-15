@@ -16,7 +16,7 @@ export const EXERCISES: Record<ExerciseType, { label: string; Icon: LucideIcon }
   'recognition-choice': { label: 'Recognition', Icon: Eye },
   'dictation': { label: 'Dictation', Icon: Volume2 },
   'translation-choice': { label: 'Translation choice', Icon: ListChecks },
-  'article-choice': { label: 'Article', Icon: Tag },
+  'article-choice-de': { label: 'Article', Icon: Tag },
   'translation': { label: 'Translation', Icon: Languages },
   'question-choice': { label: 'Question choice', Icon: SquareCheckBig },
   'question-type': { label: 'Question', Icon: CircleHelp },

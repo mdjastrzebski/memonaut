@@ -2,6 +2,7 @@ import { parse } from 'yaml';
 import { z } from 'zod';
 
 import type { Concept, Deck, ExerciseType, Subject, SubjectKind } from '@/domain/types';
+import { isGerman } from '@/exercises/german-articles';
 import { canPractise, EXERCISE_TYPES, KIND_EXERCISE_TYPES } from '@/session/session';
 
 const id = z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'Use lowercase letters, digits and dashes');
@@ -46,12 +47,6 @@ const subjectSchema = z.discriminatedUnion('kind', [
     ...subjectFields,
     kind: z.literal('language'),
     foreignLanguage: z.string(),
-    /** Singular articles for article choice, e.g. der, die and das, or el and la. */
-    articles: z
-      .array(z.string().regex(/^\S+$/, 'Use one word'))
-      .min(2)
-      .refine((articles) => new Set(articles).size === articles.length, 'Use each article once')
-      .optional(),
     exerciseTypes: subjectExerciseTypes('language'),
   }),
   z.strictObject({
@@ -74,7 +69,7 @@ const CONCEPT_FIELDS = {
     explanation: z.string().min(1).optional(),
     /** Groups like Concepts of the Subject, e.g. "weekday", for multiple choice. */
     group: group.optional(),
-    /** A plural noun, which skips article choice. */
+    /** A plural noun, which skips German article choice. */
     plural: z
       .literal('true')
       .transform(() => true)
@@ -273,18 +268,19 @@ export function buildContent(files: Record<string, string>): Content {
 }
 
 /**
- * The Subject with its Exercise Types: every one of its kind if left out, but article choice only
- * with articles.
+ * The Subject with its Exercise Types: every one of its kind if left out, but German article choice
+ * only in German.
  */
 function getSubject(path: string, fields: z.infer<typeof subjectSchema>): Subject {
-  const articles = fields.kind === 'language' ? fields.articles : undefined;
-  if (fields.exerciseTypes?.includes('article-choice') && !articles) {
-    throw new Error(`${path}: exercise type "article-choice" needs articles`);
+  const subject = { ...fields, exerciseTypes: KIND_EXERCISE_TYPES[fields.kind] };
+  const german = isGerman(subject);
+  if (fields.exerciseTypes?.includes('article-choice-de') && !german) {
+    throw new Error(`${path}: exercise type "article-choice-de" needs a German subject`);
   }
   const exerciseTypes =
     fields.exerciseTypes ??
-    KIND_EXERCISE_TYPES[fields.kind].filter((type) => type !== 'article-choice' || articles);
-  return { ...fields, exerciseTypes };
+    subject.exerciseTypes.filter((type) => type !== 'article-choice-de' || german);
+  return { ...subject, exerciseTypes };
 }
 
 function isSameConcept(a: Concept, b: Concept): boolean {
@@ -310,7 +306,3 @@ function checkUnique(seen: Set<string>, id: string, message: string) {
   }
   seen.add(id);
 }
-
-export const content = buildContent(
-  import.meta.glob<string>('./*/**/*.yaml', { query: '?raw', import: 'default', eager: true }),
-);

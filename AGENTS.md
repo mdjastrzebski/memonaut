@@ -18,7 +18,7 @@ Memonaut is a spaced-repetition learning web app for school kids. See [README.md
 - `src/exercises/`: answer checking per Exercise Type
 - `src/session/`: pure study-session logic (queue, reviews)
 - `src/progress/`: learning progress saved in localStorage
-- `src/data/`: learning content as YAML (`<subject>/subject.yaml`, `<subject>/decks/*.yaml`), loaded and validated by `content.ts`
+- `src/data/`: learning content as YAML (`<subject>/subject.yaml`, `<subject>/decks/*.yaml`), validated by `content.ts` and loaded by `bundled-content.ts`
 - `src/components/`: React screens; `ui/` holds shadcn/ui components
 - `src/components/exercises/`: one component per Exercise Type, built on shared typed and multiple-choice bodies
 
@@ -27,6 +27,7 @@ Memonaut is a spaced-repetition learning web app for school kids. See [README.md
 - Import from `src` with the `@/` alias, e.g. `@/lib/utils`.
 - Add shadcn/ui components with `pnpm dlx shadcn@latest add <component>`; they land in `src/components/ui/`.
 - Put tests next to the code as `*.test.ts(x)`, using Vitest and Testing Library.
+- Tests never depend on the bundled word sets: use `testContent` from `@/test/content`, which also stands in for `@/data/bundled-content`, or build small content inline with `buildContent`.
 
 ## Writing Decks
 
@@ -39,4 +40,4 @@ A Deck without `shuffleNew: true` introduces new Concepts in file order, so orde
 
 A shuffled Deck, like the Polish spelling sets, doesn't need this.
 
-In a Subject with `articles`, e.g. German, write nouns with their article, e.g. `das Buch`, so they're practised with article choice, and mark plurals whose article is also a singular one with `plural: true`, e.g. `die Bücher`, as it tells no gender.
+Write German nouns with their article, e.g. `das Buch`, so they're practised with German article choice, and mark plurals with `plural: true`, e.g. `die Bücher`, as their article tells no gender.

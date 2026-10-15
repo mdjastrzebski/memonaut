@@ -4,5 +4,3 @@ kind: language
 emoji: 🇩🇪
 foreignLanguage: de-DE
 specialCharacters: [ä, ö, ü, ß, Ä, Ö, Ü, ẞ]
-# Nouns like "das Buch" are also practised with article choice.
-articles: [der, die, das]

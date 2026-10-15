@@ -2,10 +2,10 @@ import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
-import { content } from '@/data/content';
-import type { ExerciseType } from '@/domain/types';
+import type { Concept, ExerciseType } from '@/domain/types';
 import { HINT_DELAY_MS } from '@/lib/speech';
 import { createSession } from '@/session/session';
+import { testContent as content } from '@/test/content';
 
 import { ExerciseScreen } from './exercise-screen';
 
@@ -33,7 +33,12 @@ afterEach(() => {
 });
 
 /** Its first exercise, in a bundled unit deck holding only it. */
-function renderExercise(conceptId: string, strictSpelling = true, exerciseTypes?: ExerciseType[]) {
+function renderExercise(
+  conceptId: string,
+  strictSpelling = true,
+  exerciseTypes?: ExerciseType[],
+  subjectConcepts: Concept[] = [],
+) {
   const deck = content.decks.find(
     (deck) => deck.kind === 'unit' && deck.conceptIds.includes(conceptId),
   )!;
@@ -52,7 +57,7 @@ function renderExercise(conceptId: string, strictSpelling = true, exerciseTypes?
       session={session}
       onReview={() => {}}
       subject={subject}
-      subjectConcepts={[]}
+      subjectConcepts={subjectConcepts}
       showSpecialCharacters={false}
       onToggleSpecialCharacters={() => {}}
       showSrsDetails={false}
@@ -170,9 +175,9 @@ test('translation takes an alternative answer, and compares a mistake with the c
   expect(screen.getByRole('button', { name: /continue/i })).toBeEnabled();
 });
 
-test('article choice shows the noun without its article, and reads the word once picked', async () => {
+test('German article choice shows the noun without its article, and reads the word once picked', async () => {
   const user = userEvent.setup();
-  renderExercise('german/das-buch', false, ['article-choice']);
+  renderExercise('german/das-buch', false, ['article-choice-de']);
   expect(screen.getByRole('heading', { name: 'Buch' })).toBeInTheDocument();
   const options = within(screen.getByRole('group', { name: 'Options' })).getAllByRole('button');
   expect(options.map((option) => option.textContent?.slice(1))).toEqual(['der', 'die', 'das']);
@@ -183,4 +188,18 @@ test('article choice shows the noun without its article, and reads the word once
   expect(status).toHaveTextContent('Again');
   expect(status).toHaveTextContent('das Buch');
   expect(utterances.map((utterance) => utterance.text)).toEqual(['das Buch']);
+});
+
+test('German article choice tells what gives the article away', async () => {
+  const user = userEvent.setup();
+  renderExercise('german/der-fussball', false, ['article-choice-de'], content.concepts);
+  await user.keyboard('1');
+  expect(screen.getByRole('status')).toHaveTextContent('der Fußball jak der Ball');
+});
+
+test('German article choice shows a rule from the ending, or the word explanation instead', async () => {
+  const user = userEvent.setup();
+  renderExercise('german/das-maeppchen', false, ['article-choice-de']);
+  await user.keyboard('3');
+  expect(screen.getByRole('status')).toHaveTextContent('na -chen → zawsze das');
 });

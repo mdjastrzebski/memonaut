@@ -7,7 +7,7 @@ import type {
   Subject,
   SubjectKind,
 } from '@/domain/types';
-import { getArticleNoun } from '@/exercises/article';
+import { getGermanNoun, isGerman } from '@/exercises/german-articles';
 import type { AnswerIssue } from '@/exercises/type-answer';
 import { shuffle } from '@/lib/shuffle';
 import { getCardEffort, getReviewEffort } from '@/session/effort';
@@ -30,7 +30,7 @@ export const EXERCISE_TYPES: ExerciseType[] = [
   'recognition-choice',
   'dictation',
   'translation-choice',
-  'article-choice',
+  'article-choice-de',
   'translation',
   'question-choice',
   'question-type',
@@ -42,7 +42,7 @@ export const KIND_EXERCISE_TYPES: Record<SubjectKind, ExerciseType[]> = {
     'recognition-choice',
     'dictation',
     'translation-choice',
-    'article-choice',
+    'article-choice-de',
     'translation',
   ],
   knowledge: ['question-choice', 'question-type'],
@@ -50,7 +50,7 @@ export const KIND_EXERCISE_TYPES: Record<SubjectKind, ExerciseType[]> = {
 
 /**
  * Whether a Concept can be practised with an Exercise Type: question choice needs choices, and
- * article choice a singular noun with one of its Subject's articles, e.g. "das Buch".
+ * German article choice a German singular noun with its article, e.g. "das Buch".
  */
 export function canPractise(
   concept: Concept,
@@ -60,12 +60,8 @@ export function canPractise(
   switch (exerciseType) {
     case 'question-choice':
       return concept.kind === 'knowledge' && !!concept.choices;
-    case 'article-choice':
-      return (
-        concept.kind === 'language' &&
-        subject.kind === 'language' &&
-        !!getArticleNoun(concept, subject.articles)
-      );
+    case 'article-choice-de':
+      return concept.kind === 'language' && isGerman(subject) && !!getGermanNoun(concept);
     default:
       return true;
   }
