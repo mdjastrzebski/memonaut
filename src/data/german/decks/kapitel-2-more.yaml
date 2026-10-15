@@ -1,5 +1,6 @@
 id: kapitel-2-more
 name: Kapitel 2 (more)
+disabled: true
 concepts:
   # Zaimki, potrzebne do odmiany czasowników.
   - { id: ich, local: ja, foreign: ich, group: pronoun, core: true }

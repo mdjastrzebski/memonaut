@@ -112,6 +112,42 @@ concepts:
   ]);
 });
 
+test('a disabled deck is left out, with its concepts unless another deck has them', () => {
+  const { decks, concepts } = buildContent({
+    './german/subject.yaml': subject,
+    './german/decks/animals.yaml': `
+id: animals
+name: Animals
+disabled: true
+concepts:
+  - { id: der-hund, local: pies, foreign: der Hund, core: true }
+  - { id: die-katze, local: kot, foreign: die Katze, core: true }
+  - { id: die-maus, local: mysz, foreign: die Maus }
+`,
+    './german/decks/pets.yaml': `
+id: pets
+name: Pets
+concepts:
+  - { id: die-katze, local: kot, foreign: die Katze, core: true }
+`,
+  });
+  expect(decks.map((deck) => [deck.id, deck.conceptIds])).toEqual([
+    ['german/pets', ['german/die-katze']],
+    ['german/core', ['german/die-katze']],
+  ]);
+  expect(concepts.map((concept) => concept.id)).toEqual(['german/die-katze']);
+});
+
+test('a disabled deck is still checked', () => {
+  expect(() =>
+    buildContent({
+      './german/subject.yaml': subject,
+      './german/decks/animals.yaml':
+        'id: animals\nname: Animals\ndisabled: true\nconcepts:\n  - { id: a, foreign: y }\n',
+    }),
+  ).toThrow('needs a local word');
+});
+
 test('has no core deck when no concept is marked core', () => {
   const { decks } = buildContent({
     './german/subject.yaml': subject,
