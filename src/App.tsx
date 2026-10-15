@@ -51,7 +51,7 @@ export default function App() {
   const [lastUnitIds, setLastUnitIds] = useState(initialChoice.lastUnitIds);
   const [ended, setEnded] = useState(false);
   const [showSpecialCharacters, setShowSpecialCharacters] = useState(false);
-  const [showSrsDetails, setShowSrsDetails] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   // `?dev=1` in the URL shows tools for tuning the app, such as the effort stats.
   const [devMode] = useState(() => new URLSearchParams(window.location.search).get('dev') === '1');
   // In dev mode, Exercise Types left out of sessions, e.g. all but one to try it out.
@@ -193,8 +193,6 @@ export default function App() {
             activeMs={getActiveMs()}
             plannedMinutes={session.effort / (sessionLog?.pointsPerMinute ?? pace)}
             onNewSession={goHome}
-            showSrsDetails={showSrsDetails}
-            onToggleSrsDetails={() => setShowSrsDetails((show) => !show)}
           />
         ) : (
           <ExerciseScreen
@@ -205,8 +203,11 @@ export default function App() {
             subjectConcepts={content.concepts.filter((concept) => concept.subjectId === subject.id)}
             showSpecialCharacters={showSpecialCharacters}
             onToggleSpecialCharacters={() => setShowSpecialCharacters((show) => !show)}
-            showSrsDetails={showSrsDetails}
-            onToggleSrsDetails={() => setShowSrsDetails((show) => !show)}
+            advanced={
+              devMode
+                ? { open: showAdvanced, onToggle: () => setShowAdvanced((show) => !show) }
+                : undefined
+            }
           />
         )}
       </main>

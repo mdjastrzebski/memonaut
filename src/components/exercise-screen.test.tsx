@@ -60,8 +60,6 @@ function renderExercise(
       subjectConcepts={subjectConcepts}
       showSpecialCharacters={false}
       onToggleSpecialCharacters={() => {}}
-      showSrsDetails={false}
-      onToggleSrsDetails={() => {}}
     />,
   );
 }

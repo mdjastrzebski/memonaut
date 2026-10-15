@@ -3,14 +3,14 @@ import type { ComponentProps, ReactNode } from 'react';
 
 import { Burst } from '@/components/burst';
 import { GRADE_ICONS, GRADE_STYLES } from '@/components/grades';
-import { CardStats, RatingPreview, SrsDetails, StateBadge } from '@/components/srs-stats';
+import { AdvancedPanel, StateBadge } from '@/components/srs-stats';
 import { Button } from '@/components/ui/button';
 import type { Card, Concept, Subject } from '@/domain/types';
 import type { AnswerResult } from '@/exercises/type-answer';
-import { formatDuration, formatSeconds } from '@/lib/format';
+import { formatNumber, formatRelative, formatSeconds } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { LEARN_AHEAD_MS, type Session, type SubmitReviewInput } from '@/session/session';
-import { previewReview, Rating, ratingName, type Grade } from '@/srs/scheduler';
+import type { Session, SubmitReviewInput } from '@/session/session';
+import { previewReview, Rating, ratingName, State, type Grade } from '@/srs/scheduler';
 
 /** What every Exercise Type's component gets: the Card to practise and the screen's settings. */
 export interface ExerciseProps {
@@ -24,8 +24,13 @@ export interface ExerciseProps {
   subjectConcepts: Concept[];
   showSpecialCharacters: boolean;
   onToggleSpecialCharacters: () => void;
-  showSrsDetails: boolean;
-  onToggleSrsDetails: () => void;
+  /** The Advanced panel with the scheduler's view, only with `?dev=1`. */
+  advanced?: AdvancedToggle;
+}
+
+export interface AdvancedToggle {
+  open: boolean;
+  onToggle: () => void;
 }
 
 interface ExerciseCardProps {
@@ -118,65 +123,58 @@ export function EnterHint() {
   return <p className="-mt-2 text-center text-xs text-muted-foreground">or press Enter</p>;
 }
 
-interface ExerciseSrsDetailsProps {
-  session: Session;
+interface ExerciseAdvancedProps extends AdvancedToggle {
   card: Card;
   now: Date;
   /** The answer's rating, once given. */
   result?: AnswerResult;
-  /** How the Exercise Type rates answers. */
-  rules: string;
-  open: boolean;
-  onToggle: () => void;
 }
 
-/** The scheduler's view of the exercise's Card, for the curious. */
-export function ExerciseSrsDetails({
-  session,
-  card,
-  now,
-  result,
-  rules,
-  open,
-  onToggle,
-}: ExerciseSrsDetailsProps) {
-  const preview = previewReview(card.srs, now);
-  const earlierReviews = session.reviews.filter((review) => review.cardId === card.id);
+/**
+ * The scheduler's view of the exercise's Card, in short: its state and difficulty, and when it was
+ * last and is next reviewed, changed by the answer once given.
+ */
+export function ExerciseAdvanced({ card, now, result, open, onToggle }: ExerciseAdvancedProps) {
+  const before = card.srs;
+  const after = result && previewReview(before, now)[result.grade].card;
+  const isNew = before.state === State.New;
+  const change = (from: ReactNode, to: ReactNode | undefined) => (
+    <>
+      {from}
+      {to !== undefined && <> → {to}</>}
+    </>
+  );
+  const rows: [label: string, value: ReactNode][] = [
+    [
+      'State',
+      change(<StateBadge state={before.state} />, after && <StateBadge state={after.state} />),
+    ],
+    [
+      'Difficulty',
+      change(
+        isNew ? '—' : formatNumber(before.difficulty, 1),
+        after && formatNumber(after.difficulty, 1),
+      ),
+    ],
+    ['Last review', before.last_review ? formatRelative(before.last_review, now) : '—'],
+    ['Next review', after || !isNew ? formatRelative((after ?? before).due, now) : '—'],
+  ];
+  if (result) {
+    rows.push(['Answer', `${ratingName(result.grade)} · ${formatSeconds(result.elapsedMs)}`]);
+  }
 
   return (
-    <SrsDetails open={open} onToggle={onToggle}>
-      {result && (
-        <p>
-          Rated <span className="font-semibold text-foreground">{ratingName(result.grade)}</span> ·{' '}
-          {formatSeconds(result.elapsedMs)} · comes back in{' '}
-          {formatDuration(preview[result.grade].card.due.getTime() - now.getTime())}
-        </p>
-      )}
-
-      <div>
-        <h3 className="mb-2 font-medium text-foreground">Card memory state (before review)</h3>
-        <CardStats card={card.srs} now={now} />
-      </div>
-
-      {earlierReviews.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span>Earlier this session:</span>
-          {earlierReviews.map((review, index) => (
-            <span key={index} className="flex items-center gap-1">
-              {ratingName(review.rating)} → <StateBadge state={review.srsAfter.state} />
-            </span>
-          ))}
-        </div>
-      )}
-
-      <div>
-        <h3 className="font-medium text-foreground">Rating preview</h3>
-        <p>
-          Rated automatically: {rules}. Cards due within {formatDuration(LEARN_AHEAD_MS)} come back
-          in this session.
-        </p>
-        <RatingPreview card={card.srs} now={now} highlight={result?.grade} />
-      </div>
-    </SrsDetails>
+    <AdvancedPanel open={open} onToggle={onToggle}>
+      <dl className="flex flex-wrap gap-x-6 gap-y-3">
+        {rows.map(([label, value]) => (
+          <div key={label} className="flex flex-col gap-0.5">
+            <dt>{label}</dt>
+            <dd className="flex items-center gap-1 font-medium text-foreground tabular-nums">
+              {value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </AdvancedPanel>
   );
 }

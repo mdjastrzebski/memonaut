@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ContinueButton,
   ExerciseCard,
-  ExerciseSrsDetails,
+  ExerciseAdvanced,
   FeedbackPanel,
   type ExerciseProps,
 } from '@/components/exercises/exercise-parts';
@@ -13,7 +13,6 @@ import { FastBonus } from '@/components/fast-bonus';
 import { GRADE_STYLES } from '@/components/grades';
 import { Button } from '@/components/ui/button';
 import { FAST_CHOICE_MS, gradeChoice } from '@/exercises/multiple-choice';
-import { formatSeconds } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { Rating } from '@/srs/scheduler';
 
@@ -40,11 +39,9 @@ export interface ChoiceExerciseProps extends ExerciseProps {
 
 /** A multiple-choice exercise: the learner picks the right option for the prompt, also with keys 1–4. */
 export function ChoiceExercise({
-  session,
   card,
   onReview,
-  showSrsDetails,
-  onToggleSrsDetails,
+  advanced,
   question,
   prompt,
   answer,
@@ -165,15 +162,7 @@ export function ChoiceExercise({
         )}
       </ExerciseCard>
 
-      <ExerciseSrsDetails
-        session={session}
-        card={card}
-        now={now}
-        result={picked?.result}
-        rules={`right within ${formatSeconds(FAST_CHOICE_MS)} → Easy · right → Good · wrong → Again`}
-        open={showSrsDetails}
-        onToggle={onToggleSrsDetails}
-      />
+      {advanced && <ExerciseAdvanced card={card} now={now} result={picked?.result} {...advanced} />}
     </div>
   );
 }

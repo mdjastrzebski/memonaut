@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { CONCEPT_NOUNS, getConceptText } from '@/components/concept-text';
 import { EXERCISES } from '@/components/exercise-types';
 import { getProgress, GRADE_STYLES, PROGRESS_LABELS, type Progress } from '@/components/grades';
-import { SrsDetails, StateBadge } from '@/components/srs-stats';
+import { AdvancedPanel, StateBadge } from '@/components/srs-stats';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -15,19 +15,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type { Card, Review, SubjectKind } from '@/domain/types';
-import {
-  formatDuration,
-  formatNumber,
-  formatPercent,
-  formatRelative,
-  formatSeconds,
-} from '@/lib/format';
+import { formatDuration, formatNumber, formatPercent, formatRelative } from '@/lib/format';
 import { playCompleted } from '@/lib/sounds';
 import { cn } from '@/lib/utils';
 import { getEffortDone, type Session } from '@/session/session';
-import { getRetrievability, GRADES, Rating, ratingName, State, type Grade } from '@/srs/scheduler';
-
-const DAY = 24 * 60 * 60 * 1000;
+import { GRADES, Rating, State, type Grade } from '@/srs/scheduler';
 
 /** Learner-facing names for the ratings. */
 const GRADE_LABELS: Record<Grade, string> = {
@@ -53,8 +45,6 @@ interface SummaryScreenProps {
   plannedMinutes: number;
   /** Goes back to the setup screen to choose the next session. */
   onNewSession: () => void;
-  showSrsDetails: boolean;
-  onToggleSrsDetails: () => void;
 }
 
 export function SummaryScreen({
@@ -63,10 +53,9 @@ export function SummaryScreen({
   activeMs,
   plannedMinutes,
   onNewSession,
-  showSrsDetails,
-  onToggleSrsDetails,
 }: SummaryScreenProps) {
   const [now] = useState(() => new Date());
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // The ref keeps StrictMode's second effect run from playing it twice.
   const played = useRef(false);
@@ -144,9 +133,9 @@ export function SummaryScreen({
         </Button>
       </div>
 
-      <SrsDetails open={showSrsDetails} onToggle={onToggleSrsDetails}>
-        <SessionSrsTables session={session} now={now} />
-      </SrsDetails>
+      <AdvancedPanel open={showAdvanced} onToggle={() => setShowAdvanced(!showAdvanced)}>
+        <SessionCards session={session} now={now} />
+      </AdvancedPanel>
     </div>
   );
 }
@@ -336,170 +325,40 @@ function WordRow({ session, card, now, style }: WordRowProps) {
   );
 }
 
-/** The scheduler's view of the session: card memory states, the review log and a glossary. */
-function SessionSrsTables({ session, now }: { session: Session; now: Date }) {
-  const cards = Object.values(session.cards);
-  const { reviews } = session;
-
+/** The scheduler's view of the session's Cards: state, difficulty and next review. */
+function SessionCards({ session, now }: { session: Session; now: Date }) {
   return (
-    <>
-      <div>
-        <h3 className="font-medium text-foreground">Cards</h3>
-        <p>
-          Memory state now. R +1d and R +7d show the forgetting curve: the chance of recall if you
-          don't review it for a day or a week.
-        </p>
-        <Table className="text-xs">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Concept</TableHead>
-              <TableHead>State</TableHead>
-              <TableHead className="text-right">Reps</TableHead>
-              <TableHead className="text-right">Lapses</TableHead>
-              <TableHead className="text-right">Stability</TableHead>
-              <TableHead className="text-right">Difficulty</TableHead>
-              <TableHead className="text-right">R now</TableHead>
-              <TableHead className="text-right">R +1d</TableHead>
-              <TableHead className="text-right">R +7d</TableHead>
-              <TableHead className="text-right">Due</TableHead>
+    <Table className="text-xs">
+      <TableHeader>
+        <TableRow>
+          <TableHead>Exercise</TableHead>
+          <TableHead>State</TableHead>
+          <TableHead className="text-right">Difficulty</TableHead>
+          <TableHead className="text-right">Next review</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {Object.values(session.cards).map((card) => {
+          const { prompt, answer } = getConceptText(session.concepts[card.conceptId]);
+          return (
+            <TableRow key={card.id} className="tabular-nums">
+              <TableCell>
+                {prompt && `${prompt} → `}
+                <span className="font-medium">{answer}</span> · {EXERCISES[card.exerciseType].label}
+              </TableCell>
+              <TableCell>
+                <StateBadge state={card.srs.state} />
+              </TableCell>
+              <TableCell className="text-right">
+                {card.srs.state === State.New ? '—' : formatNumber(card.srs.difficulty, 1)}
+              </TableCell>
+              <TableCell className="text-right">
+                {card.srs.state === State.New ? '—' : formatRelative(card.srs.due, now)}
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {cards.map((card) => {
-              const { prompt, answer } = getConceptText(session.concepts[card.conceptId]);
-              const isNew = card.srs.state === State.New;
-              const r = (offset: number) =>
-                isNew
-                  ? '—'
-                  : formatPercent(getRetrievability(card.srs, new Date(now.getTime() + offset)));
-              return (
-                <TableRow key={card.id} className="tabular-nums">
-                  <TableCell>
-                    {prompt && `${prompt} → `}
-                    <span className="font-medium">{answer}</span> ·{' '}
-                    {EXERCISES[card.exerciseType].label}
-                  </TableCell>
-                  <TableCell>
-                    <StateBadge state={card.srs.state} />
-                  </TableCell>
-                  <TableCell className="text-right">{card.srs.reps}</TableCell>
-                  <TableCell className="text-right">{card.srs.lapses}</TableCell>
-                  <TableCell className="text-right">
-                    {isNew ? '—' : formatNumber(card.srs.stability)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {isNew ? '—' : formatNumber(card.srs.difficulty)}
-                  </TableCell>
-                  <TableCell className="text-right">{r(0)}</TableCell>
-                  <TableCell className="text-right">{r(DAY)}</TableCell>
-                  <TableCell className="text-right">{r(7 * DAY)}</TableCell>
-                  <TableCell className="text-right">{formatRelative(card.srs.due, now)}</TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
-
-      <div>
-        <h3 className="font-medium text-foreground">Review log</h3>
-        <p>Every review in order, with the card's state before → after.</p>
-        <Table className="text-xs">
-          <TableHeader>
-            <TableRow>
-              <TableHead>#</TableHead>
-              <TableHead>At</TableHead>
-              <TableHead>Concept</TableHead>
-              <TableHead>Typed</TableHead>
-              <TableHead className="text-right">Time</TableHead>
-              <TableHead>Rating</TableHead>
-              <TableHead>State</TableHead>
-              <TableHead className="text-right">Stability</TableHead>
-              <TableHead className="text-right">Difficulty</TableHead>
-              <TableHead className="text-right">Next in</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {reviews.map((review, index) => {
-              const card = session.cards[review.cardId];
-              const { prompt, answer } = getConceptText(session.concepts[card.conceptId]);
-              const { log, srsAfter } = review;
-              const wasNew = log.state === State.New;
-              return (
-                <TableRow key={index} className="tabular-nums">
-                  <TableCell>{index + 1}</TableCell>
-                  <TableCell>
-                    +{formatDuration(log.review.getTime() - session.startedAt.getTime())}
-                  </TableCell>
-                  <TableCell>
-                    {prompt ?? answer} ·{EXERCISES[card.exerciseType].label}
-                  </TableCell>
-                  <TableCell className={GRADE_STYLES[review.rating].text}>
-                    {GRADE_STYLES[review.rating].mark} {review.input}
-                  </TableCell>
-                  <TableCell className="text-right">{formatSeconds(review.elapsedMs)}</TableCell>
-                  <TableCell>{ratingName(review.rating)}</TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    <StateBadge state={log.state} /> → <StateBadge state={srsAfter.state} />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {wasNew ? '—' : formatNumber(log.stability)} →{' '}
-                    {formatNumber(srsAfter.stability)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {wasNew ? '—' : formatNumber(log.difficulty)} →{' '}
-                    {formatNumber(srsAfter.difficulty)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formatDuration(srsAfter.due.getTime() - log.review.getTime())}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
-
-      <Glossary />
-    </>
-  );
-}
-
-function Glossary() {
-  const terms: [term: string, meaning: string][] = [
-    [
-      'Stability (S)',
-      'Days until recall probability falls to 90%. Each successful review raises it; the next interval is roughly S days, because the target retention is 90%.',
-    ],
-    [
-      'Difficulty (D)',
-      'How hard the card is for you, from 1 to 10. Again and Hard push it up, Easy pulls it down. Higher D means S grows more slowly.',
-    ],
-    [
-      'Retrievability (R)',
-      'Probability you recall the card right now. It starts at 100% after a review and decays along the forgetting curve. The higher S, the slower it decays.',
-    ],
-    [
-      'Learning steps',
-      'New cards are shown again after short steps (1m, then 10m) before they graduate to Review with an interval in days. Easy skips the steps.',
-    ],
-    [
-      'Lapse',
-      'Forgetting a card in Review (rating Again). It moves to Relearning with a 10m step, and its stability drops.',
-    ],
-  ];
-
-  return (
-    <div>
-      <h3 className="mb-2 font-medium text-foreground">How to read this</h3>
-      <dl className="grid gap-3 sm:grid-cols-2">
-        {terms.map(([term, meaning]) => (
-          <div key={term}>
-            <dt className="font-medium text-foreground">{term}</dt>
-            <dd>{meaning}</dd>
-          </div>
-        ))}
-      </dl>
-    </div>
+          );
+        })}
+      </TableBody>
+    </Table>
   );
 }

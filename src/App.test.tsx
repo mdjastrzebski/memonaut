@@ -165,34 +165,45 @@ test('rates a wrong answer as Again and shows it next to the answer', async () =
   expect(progress()).toBeGreaterThan(0);
 });
 
-test('SRS details start collapsed and stay expanded across exercises', async () => {
+test('the Advanced panel shows only with dev=1, starts collapsed and stays expanded', async () => {
   const user = userEvent.setup();
-  await startEssentialsSession(user);
+  const { unmount } = render(<App />);
+  await user.click(screen.getByRole('radio', { name: 'German' }));
+  await user.click(screen.getByRole('button', { name: 'Start session' }));
+  expect(screen.queryByRole('button', { name: 'Advanced' })).not.toBeInTheDocument();
+  unmount();
 
-  const toggle = () => screen.getByRole('button', { name: 'SRS details' });
-  expect(toggle()).toHaveAttribute('aria-expanded', 'false');
-  expect(screen.queryByText('Rating preview')).not.toBeInTheDocument();
+  window.history.pushState({}, '', '/?dev=1');
+  try {
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: 'Start session' }));
+    const toggle = () => screen.getByRole('button', { name: 'Advanced' });
+    const panel = () => screen.getByRole('region', { name: 'Advanced' });
+    expect(toggle()).toHaveAttribute('aria-expanded', 'false');
+    expect(panel()).not.toHaveTextContent('Difficulty');
 
-  await user.click(toggle());
-  expect(toggle()).toHaveAttribute('aria-expanded', 'true');
-  expect(screen.getByText('Rating preview')).toBeInTheDocument();
+    await user.click(toggle());
+    expect(panel()).toHaveTextContent('StateNew');
+    expect(panel()).toHaveTextContent('Last review—');
+    expect(panel()).not.toHaveTextContent('Answer');
 
-  await user.hover(screen.getByRole('button', { name: 'Stability' }));
-  expect(await screen.findByRole('tooltip')).toHaveTextContent(
-    'Days until recall probability drops to 90%.',
-  );
+    const input = screen.getByRole('textbox', { name: 'Answer' });
+    expect(input).toHaveFocus();
+    await user.type(input, 'falsch{Enter}');
+    // The answer's rating, and what it changes.
+    expect(panel()).toHaveTextContent('StateNew → Learning');
+    expect(panel()).toHaveTextContent(/Next reviewin \d+m/);
+    expect(panel()).toHaveTextContent(/AnswerAgain · /);
+    await retypeAnswer(user);
 
-  const input = screen.getByRole('textbox', { name: 'Answer' });
-  expect(input).toHaveFocus();
-  await user.type(input, 'falsch{Enter}');
-  await retypeAnswer(user);
-
-  expect(progress()).toBeGreaterThan(0);
-  expect(toggle()).toHaveAttribute('aria-expanded', 'true');
-  expect(screen.getByText('Rating preview')).toBeInTheDocument();
+    expect(progress()).toBeGreaterThan(0);
+    expect(toggle()).toHaveAttribute('aria-expanded', 'true');
+  } finally {
+    window.history.pushState({}, '', '/');
+  }
 });
 
-test('ending the session shows results with SRS details collapsed', async () => {
+test('ending the session shows results with the Advanced panel collapsed', async () => {
   const user = userEvent.setup();
   await startEssentialsSession(user);
 
@@ -205,10 +216,13 @@ test('ending the session shows results with SRS details collapsed', async () => 
   expect(sessionWords()[0]).toHaveTextContent('Learning');
   expect(screen.getByText('New words').nextSibling).toHaveTextContent('1');
   expect(screen.getByText('Repeated words').nextSibling).toHaveTextContent('0');
-  expect(screen.queryByText('Review log')).not.toBeInTheDocument();
+  const toggle = screen.getByRole('button', { name: 'Advanced' });
+  expect(toggle).toHaveAttribute('aria-expanded', 'false');
 
-  await user.click(screen.getByRole('button', { name: 'SRS details' }));
-  expect(screen.getByText('Review log')).toBeInTheDocument();
+  await user.click(toggle);
+  const cards = within(screen.getByRole('region', { name: 'Advanced' })).getByRole('table');
+  expect(cards).toHaveTextContent('StateDifficultyNext review');
+  expect(cards).toHaveTextContent('Learning');
 });
 
 test('typing after the answer box loses focus types into it, and Enter checks the answer', async () => {

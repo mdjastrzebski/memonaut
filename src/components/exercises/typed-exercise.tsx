@@ -12,7 +12,7 @@ import {
   ContinueButton,
   EnterHint,
   ExerciseCard,
-  ExerciseSrsDetails,
+  ExerciseAdvanced,
   FeedbackPanel,
   type ExerciseProps,
 } from '@/components/exercises/exercise-parts';
@@ -25,7 +25,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { splitTrickySpellings } from '@/exercises/tricky-spellings';
 import { getFastLimitMs, gradeAnyAnswer } from '@/exercises/type-answer';
-import { formatSeconds } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { Rating, type Grade } from '@/srs/scheduler';
 
@@ -63,8 +62,7 @@ export function TypedExercise({
   subject,
   showSpecialCharacters,
   onToggleSpecialCharacters,
-  showSrsDetails,
-  onToggleSrsDetails,
+  advanced,
   prompt,
   answer,
   alternatives = [],
@@ -253,17 +251,9 @@ export function TypedExercise({
         </form>
       </ExerciseCard>
 
-      <ExerciseSrsDetails
-        session={session}
-        card={card}
-        now={now}
-        result={checked?.result}
-        rules={`exact within ${formatSeconds(fastLimitMs)} → Easy · exact → Good · ${
-          strict ? 'wrong case' : 'wrong case, missing umlaut or one letter off'
-        } → Hard · otherwise → Again`}
-        open={showSrsDetails}
-        onToggle={onToggleSrsDetails}
-      />
+      {advanced && (
+        <ExerciseAdvanced card={card} now={now} result={checked?.result} {...advanced} />
+      )}
     </div>
   );
 }
