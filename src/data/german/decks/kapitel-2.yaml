@@ -158,6 +158,13 @@ concepts:
       core: true,
     }
   - {
+      id: number-33,
+      local: trzydzieści trzy,
+      foreign: dreiunddreißig,
+      hint: 33,
+      group: number/large,
+    }
+  - {
       id: number-36,
       local: trzydzieści sześć,
       foreign: sechsunddreißig,
@@ -173,6 +180,13 @@ concepts:
       core: true,
     }
   - {
+      id: number-42,
+      local: czterdzieści dwa,
+      foreign: zweiundvierzig,
+      hint: 42,
+      group: number/large,
+    }
+  - {
       id: number-50,
       local: pięćdziesiąt,
       foreign: fünfzig,
@@ -181,12 +195,33 @@ concepts:
       core: true,
     }
   - {
+      id: number-54,
+      local: pięćdziesiąt cztery,
+      foreign: vierundfünfzig,
+      hint: 54,
+      group: number/large,
+    }
+  - {
       id: number-60,
       local: sześćdziesiąt,
       foreign: sechzig,
       hint: 60,
       group: number/large,
       core: true,
+    }
+  - {
+      id: number-61,
+      local: sześćdziesiąt jeden,
+      foreign: einundsechzig,
+      hint: 61,
+      group: number/large,
+    }
+  - {
+      id: number-67,
+      local: sześćdziesiąt siedem,
+      foreign: siebenundsechzig,
+      hint: 67,
+      group: number/large,
     }
   - {
       id: number-70,
@@ -212,11 +247,32 @@ concepts:
       core: true,
     }
   - {
+      id: number-85,
+      local: osiemdziesiąt pięć,
+      foreign: fünfundachtzig,
+      hint: 85,
+      group: number/large,
+    }
+  - {
       id: number-90,
       local: dziewięćdziesiąt,
       foreign: neunzig,
       hint: 90,
       group: number/large,
       core: true,
+    }
+  - {
+      id: number-98,
+      local: dziewięćdziesiąt osiem,
+      foreign: achtundneunzig,
+      hint: 98,
+      group: number/large,
+    }
+  - {
+      id: number-99,
+      local: dziewięćdziesiąt dziewięć,
+      foreign: neunundneunzig,
+      hint: 99,
+      group: number/large,
     }
   - { id: number-100, local: sto, foreign: hundert, hint: 100, group: number/large, core: true }
