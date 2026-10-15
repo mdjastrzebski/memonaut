@@ -1,0 +1,222 @@
+id: kapitel-2
+name: Kapitel 2
+concepts:
+  # Przybory szkolne i rzeczy osobiste: zawsze z rodzajnikiem der, die, das.
+  - { id: der-bleistift, local: ołówek, foreign: der Bleistift, group: school-thing }
+  - { id: der-kuli, local: długopis, foreign: der Kuli, group: school-thing }
+  - { id: der-fueller, local: pióro, foreign: der Füller, group: school-thing }
+  - { id: der-buntstift, local: kredka, foreign: der Buntstift, group: school-thing }
+  - { id: der-radiergummi, local: gumka do mazania, foreign: der Radiergummi, group: school-thing }
+  - { id: der-spitzer, local: temperówka, foreign: der Spitzer, group: school-thing }
+  - { id: das-lineal, local: linijka, foreign: das Lineal, group: school-thing }
+  - { id: die-schere, local: nożyczki, foreign: die Schere, group: school-thing }
+  - { id: das-heft, local: zeszyt, foreign: das Heft, group: school-thing }
+  - { id: das-buch, local: książka, foreign: das Buch, group: school-thing }
+  - { id: das-federmaeppchen, local: piórnik, foreign: das Federmäppchen, group: school-thing }
+  - { id: die-schultasche, local: tornister, foreign: die Schultasche, group: school-thing }
+  - { id: der-rucksack, local: plecak, foreign: der Rucksack, group: school-thing }
+  - { id: das-handy, local: komórka, foreign: das Handy, group: school-thing }
+  - { id: die-uhr, local: zegarek, foreign: die Uhr, group: school-thing }
+  - { id: das-tablet, local: tablet, foreign: das Tablet }
+  - { id: der-laptop, local: laptop, foreign: der Laptop }
+  - { id: der-computer, local: komputer, foreign: der Computer }
+  # Liczba mnoga: zawsze die.
+  - { id: die-bleistifte, local: ołówki, foreign: die Bleistifte, group: school-thing }
+  - { id: die-hefte, local: zeszyty, foreign: die Hefte, group: school-thing }
+  - { id: die-buecher, local: książki, foreign: die Bücher, group: school-thing }
+  - { id: die-kulis, local: długopisy, foreign: die Kulis, group: school-thing }
+  - { id: die-schultaschen, local: tornistry, foreign: die Schultaschen, group: school-thing }
+  - { id: die-fueller, local: pióra, foreign: die Füller, group: school-thing }
+  - { id: das-wort, local: słowo, foreign: das Wort }
+  - { id: die-woerter, local: słowa, foreign: die Wörter }
+  - { id: die-filme, local: filmy, foreign: die Filme }
+  - { id: die-katzen, local: koty, foreign: die Katzen }
+  - { id: die-bananen, local: banany, foreign: die Bananen }
+  - { id: die-pandas, local: pandy, foreign: die Pandas }
+  - { id: die-comics, local: komiksy, foreign: die Comics }
+  - { id: die-computerspiele, local: gry komputerowe, foreign: die Computerspiele }
+  # Szkoła.
+  - { id: die-schule, local: szkoła, foreign: die Schule }
+  - { id: die-klasse, local: klasa, foreign: die Klasse }
+  - { id: der-lehrer, local: nauczyciel, foreign: der Lehrer, group: school-person }
+  - { id: die-lehrerin, local: nauczycielka, foreign: die Lehrerin, group: school-person }
+  - { id: der-schueler, local: uczeń, foreign: der Schüler, group: school-person }
+  - { id: die-schuelerin, local: uczennica, foreign: die Schülerin, group: school-person }
+  - { id: deutsch, local: język niemiecki, foreign: Deutsch }
+  - { id: die-lektion, local: lekcja, foreign: die Lektion }
+  - { id: das-kapitel, local: rozdział, foreign: das Kapitel }
+  - { id: die-uebung, local: ćwiczenie, foreign: die Übung }
+  # Do kogo coś należy, z kim ktoś jest związany: von.
+  - { id: die-mama, local: mama, foreign: die Mama }
+  - { id: der-papa, local: tata, foreign: der Papa }
+  - { id: die-schwester, local: siostra, foreign: die Schwester }
+  - { id: der-freund, local: przyjaciel, foreign: der Freund }
+  - { id: die-freundin, local: przyjaciółka, foreign: die Freundin }
+  - { id: die-familie, local: rodzina, foreign: die Familie }
+  - { id: was-ist-das, local: co to jest?, foreign: was ist das?, core: true }
+  - { id: wer-ist-das, local: kto to jest?, foreign: wer ist das? }
+  - { id: von-wem-ist-das-buch, local: czyja jest ta książka?, foreign: von wem ist das Buch? }
+  - {
+      id: das-ist-das-buch-von-thomas,
+      local: to jest książka Thomasa,
+      foreign: das ist das Buch von Thomas,
+    }
+  - {
+      id: das-ist-die-mama-von-thomas,
+      local: to jest mama Thomasa,
+      foreign: das ist die Mama von Thomas,
+    }
+  # mein, meine; dein, deine.
+  - { id: mein-bleistift, local: mój ołówek, foreign: mein Bleistift, group: possessive }
+  - { id: meine-schultasche, local: mój tornister, foreign: meine Schultasche, group: possessive }
+  - {
+      id: das-sind-meine-buecher,
+      local: to są moje książki,
+      foreign: das sind meine Bücher,
+      group: possessive,
+    }
+  - { id: dein-kuli, local: twój długopis, foreign: dein Kuli, group: possessive }
+  - { id: dein-buch, local: twoja książka, foreign: dein Buch, group: possessive }
+  - { id: deine-mama, local: twoja mama, foreign: deine Mama, group: possessive }
+  - { id: meine-schwester, local: moja siostra, foreign: meine Schwester }
+  - { id: er-ist-mein-freund, local: on jest moim przyjacielem, foreign: er ist mein Freund }
+  - {
+      id: sie-ist-meine-freundin,
+      local: ona jest moją przyjaciółką,
+      foreign: sie ist meine Freundin,
+    }
+  - { id: wie-ist-dein-name, local: jak masz na imię?, foreign: wie ist dein Name? }
+  - {
+      id: wie-ist-deine-telefonnummer,
+      local: jaki jest twój numer telefonu?,
+      foreign: wie ist deine Telefonnummer?,
+    }
+  - { id: meine-telefonnummer-ist, local: mój numer telefonu to, foreign: meine Telefonnummer ist }
+  # Pytania rozstrzygające: czasownik na początku, odpowiedź ja albo nein.
+  - { id: lernst-du-deutsch, local: czy uczysz się niemieckiego?, foreign: lernst du Deutsch? }
+  - { id: ist-das-dein-heft, local: czy to jest twój zeszyt?, foreign: ist das dein Heft? }
+  - { id: hast-du-ein-lineal, local: czy masz linijkę?, foreign: hast du ein Lineal? }
+  - { id: ist-alles-klar, local: czy wszystko jasne?, foreign: Ist alles klar? }
+  - { id: ja, local: tak, foreign: ja, core: true }
+  - { id: nein, local: nie, foreign: nein, core: true }
+  # Odmiana czasownika w liczbie pojedynczej.
+  - { id: ich, local: ja, foreign: ich, group: pronoun, core: true }
+  - { id: du, local: ty, foreign: du, group: pronoun, core: true }
+  - { id: er, local: on, foreign: er, group: pronoun, core: true }
+  - { id: sie, local: ona, foreign: sie, group: pronoun, core: true }
+  - { id: es, local: ono, foreign: es, group: pronoun, core: true }
+  - { id: ich-lerne, local: ja się uczę, foreign: ich lerne, group: lernen, core: true }
+  - { id: du-lernst, local: ty się uczysz, foreign: du lernst, group: lernen, core: true }
+  - { id: er-lernt, local: on się uczy, foreign: er lernt, group: lernen, core: true }
+  - { id: ich-habe, local: ja mam, foreign: ich habe, group: haben, core: true }
+  - { id: du-hast, local: ty masz, foreign: du hast, group: haben, core: true }
+  - { id: er-hat, local: on ma, foreign: er hat, group: haben, core: true }
+  - { id: ich-bin, local: ja jestem, foreign: ich bin, group: sein, core: true }
+  - { id: du-bist, local: ty jesteś, foreign: du bist, group: sein, core: true }
+  - { id: er-ist, local: on jest, foreign: er ist, group: sein, core: true }
+  - { id: sie-ist, local: ona jest, foreign: sie ist, group: sein, core: true }
+  - { id: ich-heisse, local: ja nazywam się, foreign: ich heiße, group: heissen, core: true }
+  - { id: du-heisst, local: ty nazywasz się, foreign: du heißt, group: heissen }
+  - { id: er-heisst, local: on nazywa się, foreign: er heißt, group: heissen }
+  - { id: sie-heisst, local: ona nazywa się, foreign: sie heißt, group: heissen }
+  - { id: ich-wohne, local: ja mieszkam, foreign: ich wohne }
+  # Liczby do 100: 0–20 z Kapitel 1, dziesiątki i przykłady „jedności + und + dziesiątki”.
+  - { id: number-0, local: zero, foreign: null, hint: 0, group: number/small }
+  - { id: number-1, local: jeden, foreign: eins, hint: 1, group: number/small }
+  - { id: number-2, local: dwa, foreign: zwei, hint: 2, group: number/small }
+  - { id: number-3, local: trzy, foreign: drei, hint: 3, group: number/small }
+  - { id: number-4, local: cztery, foreign: vier, hint: 4, group: number/small }
+  - { id: number-5, local: pięć, foreign: fünf, hint: 5, group: number/small }
+  - { id: number-6, local: sześć, foreign: sechs, hint: 6, group: number/small }
+  - { id: number-7, local: siedem, foreign: sieben, hint: 7, group: number/small }
+  - { id: number-8, local: osiem, foreign: acht, hint: 8, group: number/small }
+  - { id: number-9, local: dziewięć, foreign: neun, hint: 9, group: number/small }
+  - { id: number-10, local: dziesięć, foreign: zehn, hint: 10, group: number/small }
+  - { id: number-11, local: jedenaście, foreign: elf, hint: 11, group: number/teens }
+  - { id: number-12, local: dwanaście, foreign: zwölf, hint: 12, group: number/teens }
+  - { id: number-13, local: trzynaście, foreign: dreizehn, hint: 13, group: number/teens }
+  - { id: number-14, local: czternaście, foreign: vierzehn, hint: 14, group: number/teens }
+  - { id: number-15, local: piętnaście, foreign: fünfzehn, hint: 15, group: number/teens }
+  - { id: number-16, local: szesnaście, foreign: sechzehn, hint: 16, group: number/teens }
+  - { id: number-17, local: siedemnaście, foreign: siebzehn, hint: 17, group: number/teens }
+  - { id: number-18, local: osiemnaście, foreign: achtzehn, hint: 18, group: number/teens }
+  - { id: number-19, local: dziewiętnaście, foreign: neunzehn, hint: 19, group: number/teens }
+  - { id: number-20, local: dwadzieścia, foreign: zwanzig, hint: 20, group: number/teens }
+  - {
+      id: number-21,
+      local: dwadzieścia jeden,
+      foreign: einundzwanzig,
+      hint: 21,
+      group: number/large,
+    }
+  - {
+      id: number-30,
+      local: trzydzieści,
+      foreign: dreißig,
+      hint: 30,
+      group: number/large,
+      core: true,
+    }
+  - {
+      id: number-36,
+      local: trzydzieści sześć,
+      foreign: sechsunddreißig,
+      hint: 36,
+      group: number/large,
+    }
+  - {
+      id: number-40,
+      local: czterdzieści,
+      foreign: vierzig,
+      hint: 40,
+      group: number/large,
+      core: true,
+    }
+  - {
+      id: number-50,
+      local: pięćdziesiąt,
+      foreign: fünfzig,
+      hint: 50,
+      group: number/large,
+      core: true,
+    }
+  - {
+      id: number-60,
+      local: sześćdziesiąt,
+      foreign: sechzig,
+      hint: 60,
+      group: number/large,
+      core: true,
+    }
+  - {
+      id: number-70,
+      local: siedemdziesiąt,
+      foreign: siebzig,
+      hint: 70,
+      group: number/large,
+      core: true,
+    }
+  - {
+      id: number-77,
+      local: siedemdziesiąt siedem,
+      foreign: siebenundsiebzig,
+      hint: 77,
+      group: number/large,
+    }
+  - {
+      id: number-80,
+      local: osiemdziesiąt,
+      foreign: achtzig,
+      hint: 80,
+      group: number/large,
+      core: true,
+    }
+  - {
+      id: number-90,
+      local: dziewięćdziesiąt,
+      foreign: neunzig,
+      hint: 90,
+      group: number/large,
+      core: true,
+    }
+  - { id: number-100, local: sto, foreign: hundert, hint: 100, group: number/large, core: true }
