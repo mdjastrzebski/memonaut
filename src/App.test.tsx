@@ -5,6 +5,7 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import App from './App';
 import type { LanguageConcept } from './domain/types';
 import { FAST_CHOICE_MS } from './exercises/multiple-choice';
+import { DEFAULT_POINTS_PER_MINUTE } from './session/effort';
 import { getConceptExerciseTypes } from './session/session';
 import { testContent as content } from './test/content';
 
@@ -66,7 +67,7 @@ function unitTile(name: string) {
 async function startEssentialsSession(user: ReturnType<typeof userEvent.setup>) {
   render(<App />);
   await user.click(screen.getByRole('radio', { name: 'German' }));
-  // At the default pace, 20 minutes fits a dictation of 40 words.
+  // At the default pace, 20 minutes fits a dictation of every Essentials word.
   await user.click(screen.getByRole('radio', { name: '20 min' }));
   await user.click(screen.getByRole('button', { name: 'Start session' }));
 }
@@ -606,17 +607,18 @@ test('a session holds as many exercises as fit in the minutes chosen, 10 by defa
   const user = userEvent.setup();
   render(<App />);
 
-  // At the default 8 points a minute, a new word's recognition takes 1 point, answered twice.
+  // At the default pace, a new word's recognition takes 1 point, answered twice.
+  const fit = (minutes: number) => Math.floor((minutes * DEFAULT_POINTS_PER_MINUTE) / 2);
   await user.click(screen.getByRole('radio', { name: 'German' }));
   await pickUnit(user, 'Kapitel 0');
   expect(screen.getByRole('radio', { name: '10 min' })).toBeChecked();
-  expect(screen.getByText('40 exercises · about 10m')).toBeInTheDocument();
+  expect(screen.getByText(`${fit(10)} exercises · about 10m`)).toBeInTheDocument();
 
   await user.click(screen.getByRole('radio', { name: '5 min' }));
-  expect(screen.getByText('20 exercises · about 5m')).toBeInTheDocument();
+  expect(screen.getByText(`${fit(5)} exercises · about 5m`)).toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: 'Start session' }));
   await finishSession(user);
-  expect(sessionWords()).toHaveLength(20);
+  expect(sessionWords()).toHaveLength(fit(5));
   expect(screen.getByText('planned 5m')).toBeInTheDocument();
 
   // A unit with fewer words than fit takes less time.
@@ -632,7 +634,8 @@ test('Polish practises spelling with dictation only', async () => {
 
   await user.click(screen.getByRole('radio', { name: 'Polish' }));
   expect(unitTile('Trudne słówka')).toBeChecked();
-  // At the default 8 points a minute, a new word's dictation takes 2 points, answered twice.
+  // At the default pace, a new word's dictation takes 2 points, answered twice.
+  const fit = Math.floor((5 * DEFAULT_POINTS_PER_MINUTE) / 4);
   await user.click(screen.getByRole('radio', { name: '5 min' }));
   await user.click(screen.getByRole('button', { name: 'Start session' }));
   expect(screen.getByRole('group', { name: 'Special characters' })).toHaveTextContent('ż');
@@ -645,9 +648,9 @@ test('Polish practises spelling with dictation only', async () => {
     dictations++;
   }
 
-  expect(dictations).toBe(10);
+  expect(dictations).toBe(fit);
   expect(screen.getByText(/Session results/)).toBeInTheDocument();
-  expect(sessionWords()).toHaveLength(10);
+  expect(sessionWords()).toHaveLength(fit);
 });
 
 test('remembers the subject, set and words per session after a reload', async () => {

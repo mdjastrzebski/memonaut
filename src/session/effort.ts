@@ -17,8 +17,11 @@ export const EXERCISE_EFFORT: Record<ExerciseType, number> = {
   'question-type': 2.5,
 };
 
-/** How many points a learner gets through per minute before any session was timed. */
-export const DEFAULT_POINTS_PER_MINUTE = 8;
+/**
+ * How many points a learner gets through per minute before any session was timed. Sessions
+ * planned at 8 took a child about 1.9 times as long as picked (10 minutes for 5, 18 for 10).
+ */
+export const DEFAULT_POINTS_PER_MINUTE = 4.2;
 
 /** Sessions shorter than this, in active time, are too short to tell the learner's pace. */
 const MIN_PACE_MS = 60_000;
