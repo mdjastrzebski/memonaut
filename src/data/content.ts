@@ -91,6 +91,8 @@ const deckSchema = (kind: SubjectKind) =>
   z.strictObject({
     id,
     name: z.string(),
+    /** Hides the Deck and leaves its Concepts out of the core Deck; it is still checked. */
+    disabled: flag,
     strictSpelling: flag,
     shuffleNew: flag,
     /** The Subject's if left out. */
@@ -131,7 +133,8 @@ export interface Content {
  *
  * A Concept may appear in several files, defined the same way in each. The Subject's core Deck
  * holds the Concepts of `core.yaml` followed by those marked `core` in any unit, each once, in the
- * order they first appear.
+ * order they first appear. A `disabled` unit is checked but left out, along with its Concepts, unless
+ * another Deck has them.
  *
  * Ids in the files are unique within a Subject; the built ids are prefixed with the Subject id,
  * e.g. `german/number-3`.
@@ -156,6 +159,8 @@ export function buildContent(files: Record<string, string>): Content {
     const concepts = new Map<string, Concept>();
     const deckIds = new Set<string>([CORE_DECK.id]);
     const coreIds = new Set<string>();
+    /** Concepts of the Decks built, as a disabled unit's are left out. */
+    const usedIds = new Set<string>();
     let coreStrictSpelling = false;
     let coreShuffleNew = false;
     let coreExerciseTypes = subject.exerciseTypes;
@@ -229,12 +234,14 @@ export function buildContent(files: Record<string, string>): Content {
       for (const { core, ...fields } of deck.concepts) {
         checkUnique(listed, fields.id, `${path}: concept listed twice`);
         addConcept(path, fields);
-        if (core) {
+        if (core && !deck.disabled) {
           coreIds.add(fields.id);
         }
       }
+      if (deck.disabled) continue;
       const exerciseTypes = getExerciseTypes(path, deck.exerciseTypes);
       const conceptIds = deck.concepts.map((concept) => concept.id);
+      conceptIds.forEach((conceptId) => usedIds.add(conceptId));
       content.decks.push({
         id: prefix(deck.id),
         subjectId: subject.id,
@@ -248,7 +255,8 @@ export function buildContent(files: Record<string, string>): Content {
       });
     }
 
-    content.concepts.push(...concepts.values());
+    coreIds.forEach((conceptId) => usedIds.add(conceptId));
+    content.concepts.push(...[...concepts].filter(([id]) => usedIds.has(id)).map(([, c]) => c));
     if (coreIds.size > 0) {
       content.decks.push({
         id: prefix(CORE_DECK.id),
