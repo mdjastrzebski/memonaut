@@ -24,7 +24,7 @@ import {
 } from '@/lib/format';
 import { playCompleted } from '@/lib/sounds';
 import { cn } from '@/lib/utils';
-import type { Session } from '@/session/session';
+import { getEffortDone, type Session } from '@/session/session';
 import { getRetrievability, GRADES, Rating, ratingName, State, type Grade } from '@/srs/scheduler';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -49,6 +49,8 @@ interface SummaryScreenProps {
   subjectKind: SubjectKind;
   /** Time spent practising, without the idle stretches. */
   activeMs: number;
+  /** How long the session was expected to take, at the learner's pace when it started. */
+  plannedMinutes: number;
   /** Goes back to the setup screen to choose the next session. */
   onNewSession: () => void;
   showSrsDetails: boolean;
@@ -59,6 +61,7 @@ export function SummaryScreen({
   session,
   subjectKind,
   activeMs,
+  plannedMinutes,
   onNewSession,
   showSrsDetails,
   onToggleSrsDetails,
@@ -80,8 +83,9 @@ export function SummaryScreen({
   const { newWords, repeatedWords } = countNewAndRepeatedWords(session);
   const noun = CONCEPT_NOUNS[subjectKind];
 
-  const stats: [label: string, value: string][] = [
-    ['Time', formatDuration(activeMs)],
+  const stats: [label: string, value: string, note?: string][] = [
+    ['Time', formatDuration(activeMs), `planned ${formatDuration(plannedMinutes * 60_000)}`],
+    ['Effort points', String(Math.round(getEffortDone(session)))],
     [`Repeated ${noun.many}`, String(repeatedWords)],
     [`New ${noun.many}`, String(newWords)],
   ];
@@ -102,8 +106,8 @@ export function SummaryScreen({
         </div>
       </section>
 
-      <dl className="grid grid-cols-3 gap-3">
-        {stats.map(([label, value], index) => (
+      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {stats.map(([label, value, note], index) => (
           <div
             key={label}
             className="animate-rise rounded-2xl border-2 border-line bg-card p-4 shadow-sticker-sm"
@@ -111,6 +115,7 @@ export function SummaryScreen({
           >
             <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
             <dd className="font-display text-3xl font-bold tabular-nums">{value}</dd>
+            {note && <dd className="text-xs text-muted-foreground">{note}</dd>}
           </div>
         ))}
       </dl>

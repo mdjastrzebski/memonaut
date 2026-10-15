@@ -15,7 +15,7 @@ import { useId, useState, type CSSProperties, type ReactNode } from 'react';
 import { CONCEPT_NOUNS, getConceptText, plural, type ConceptNoun } from '@/components/concept-text';
 import { EXERCISES } from '@/components/exercise-types';
 import { getProgress, getWordProgress, PROGRESS_LABELS, type Progress } from '@/components/grades';
-import { SESSION_SIZES, type SessionSize } from '@/components/setup-choice';
+import { SESSION_MINUTES } from '@/components/setup-choice';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -28,7 +28,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import type { Content } from '@/data/content';
 import { getSubjectDecks } from '@/data/decks';
 import type { Card, Concept, Deck, ExerciseType, Subject } from '@/domain/types';
-import { formatRelative } from '@/lib/format';
+import { formatDuration, formatRelative } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { countDueToday, getCardId, getConceptExerciseTypes } from '@/session/session';
 import { State, type FsrsCard } from '@/srs/scheduler';
@@ -42,9 +42,17 @@ interface SetupScreenProps {
   /** The unit last picked in each Subject, shown in the unit picker while the core set is selected. */
   lastUnitIds: Record<string, string>;
   onSelectDeck: (deck: Deck) => void;
-  sessionSize: SessionSize;
-  onSessionSizeChange: (size: SessionSize) => void;
+  sessionMinutes: number;
+  onSessionMinutesChange: (minutes: number) => void;
+  /** What a session started now would hold, at the learner's pace. */
+  plan: SessionPlan | null;
   onStart: () => void;
+}
+
+interface SessionPlan {
+  cardCount: number;
+  /** Expected active time; less than picked when the set has too little to practise. */
+  minutes: number;
 }
 
 /** Choose a Subject, then its core set or one of its units, and start a session. */
@@ -54,8 +62,9 @@ export function SetupScreen({
   deck,
   lastUnitIds,
   onSelectDeck,
-  sessionSize,
-  onSessionSizeChange,
+  sessionMinutes,
+  onSessionMinutesChange,
+  plan,
   onStart,
 }: SetupScreenProps) {
   const [now] = useState(() => new Date());
@@ -118,7 +127,7 @@ export function SetupScreen({
           </div>
         </ChoiceGroup>
 
-        <SessionSizePicker value={sessionSize} onChange={onSessionSizeChange} />
+        <SessionLengthPicker value={sessionMinutes} onChange={onSessionMinutesChange} />
       </div>
 
       <DeckOverview
@@ -127,6 +136,7 @@ export function SetupScreen({
         subject={subject}
         deck={deck}
         now={now}
+        plan={plan}
         onStart={onStart}
       />
     </div>
@@ -368,11 +378,12 @@ interface DeckOverviewProps {
   subject: Subject;
   deck: Deck;
   now: Date;
+  plan: SessionPlan | null;
   onStart: () => void;
 }
 
 /** What's in the selected Deck, how well each word is known, and the start button. */
-function DeckOverview({ content, cards, subject, deck, now, onStart }: DeckOverviewProps) {
+function DeckOverview({ content, cards, subject, deck, now, plan, onStart }: DeckOverviewProps) {
   const concepts = content.concepts.filter((concept) => deck.conceptIds.includes(concept.id));
   const words = concepts.map((concept) => ({
     concept,
@@ -436,9 +447,16 @@ function DeckOverview({ content, cards, subject, deck, now, onStart }: DeckOverv
         )}
       </div>
 
-      <Button variant="cta" className="h-14 rounded-2xl text-lg" onClick={onStart}>
-        <Rocket className="size-5" /> Start session
-      </Button>
+      <div className="flex flex-col gap-2">
+        <Button variant="cta" className="h-14 rounded-2xl text-lg" onClick={onStart}>
+          <Rocket className="size-5" /> Start session
+        </Button>
+        {plan && (
+          <p className="text-center text-sm text-muted-foreground">
+            {plural(plan.cardCount, 'exercise')} · about {formatDuration(plan.minutes * 60_000)}
+          </p>
+        )}
+      </div>
     </section>
   );
 }
@@ -539,29 +557,29 @@ function describeCard(srs: FsrsCard | undefined, now: Date): string {
   return `${progress}, back ${formatRelative(srs.due, now)}`;
 }
 
-interface SessionSizePickerProps {
-  value: SessionSize;
-  onChange: (size: SessionSize) => void;
+interface SessionLengthPickerProps {
+  value: number;
+  onChange: (minutes: number) => void;
 }
 
-/** Segmented buttons for the most exercises to practise in one session. */
-function SessionSizePicker({ value, onChange }: SessionSizePickerProps) {
+/** Segmented buttons for about how many minutes one session takes. */
+function SessionLengthPicker({ value, onChange }: SessionLengthPickerProps) {
   return (
-    <ChoiceGroup legend="Exercises per session">
+    <ChoiceGroup legend="Session length">
       <div className="grid max-w-md grid-cols-4 gap-1 rounded-2xl border-2 border-line bg-card p-1 shadow-sticker-sm">
-        {SESSION_SIZES.map((size) => (
+        {SESSION_MINUTES.map((minutes) => (
           <label
-            key={size}
+            key={minutes}
             className="cursor-pointer rounded-xl py-2.5 text-center font-display font-bold transition-colors hover:bg-muted has-checked:bg-highlight has-checked:hover:bg-highlight has-focus-visible:ring-3 has-focus-visible:ring-ring/50"
           >
             <input
               type="radio"
-              name="session-size"
-              checked={value === size}
-              onChange={() => onChange(size)}
+              name="session-length"
+              checked={value === minutes}
+              onChange={() => onChange(minutes)}
               className="sr-only"
             />
-            {size}
+            {minutes} min
           </label>
         ))}
       </div>

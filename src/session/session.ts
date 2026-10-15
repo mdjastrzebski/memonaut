@@ -1,6 +1,7 @@
 import type { Card, Concept, Deck, ExerciseType, Review, SubjectKind } from '@/domain/types';
 import type { AnswerIssue } from '@/exercises/type-answer';
 import { shuffle } from '@/lib/shuffle';
+import { getCardEffort, getReviewEffort } from '@/session/effort';
 import {
   createSrsCard,
   getRetrievability,
@@ -53,6 +54,8 @@ export interface Session {
   /** Card ids still to practise in this session; the first one is current. */
   queue: string[];
   reviews: Review[];
+  /** Effort points the picked Cards were expected to take. */
+  effort: number;
 }
 
 interface CreateSessionOptions {
@@ -62,6 +65,11 @@ interface CreateSessionOptions {
   cards?: Record<string, Card>;
   /** Practise at most this many Cards, picked in the order of `Step`. Everything if left out. */
   maxCards?: number;
+  /**
+   * Practise Cards, in the order of `Step`, while their expected effort points fit in this many,
+   * but at least one. It decides only how many are picked, never which come first.
+   */
+  maxEffort?: number;
   now?: Date;
   random?: () => number;
 }
@@ -92,6 +100,7 @@ export function createSession({
   concepts,
   cards: previous = {},
   maxCards = Infinity,
+  maxEffort = Infinity,
   now = new Date(),
   random = Math.random,
 }: CreateSessionOptions): Session {
@@ -121,7 +130,7 @@ export function createSession({
     }),
   );
   candidates.sort((a, b) => compareKeys(a.sortKey, b.sortKey));
-  const picked = candidates.slice(0, maxCards);
+  const picked = takeWithinEffort(candidates.slice(0, maxCards), maxEffort, now);
   // Grouped by Exercise Type so the queue below can keep them in order.
   const cards = exerciseTypes.flatMap((exerciseType) =>
     picked.map(({ card }) => card).filter((card) => card.exerciseType === exerciseType),
@@ -139,7 +148,22 @@ export function createSession({
       ),
     ),
     reviews: [],
+    effort: sumEffort(picked, now),
   };
+}
+
+/** The leading candidates whose expected effort fits in `maxEffort`, at least one. */
+function takeWithinEffort<T extends { card: Card }>(candidates: T[], maxEffort: number, now: Date) {
+  let total = 0;
+  const count = candidates.findIndex(({ card }) => {
+    total += getCardEffort(card, now);
+    return total > maxEffort;
+  });
+  return count === -1 ? candidates : candidates.slice(0, Math.max(count, 1));
+}
+
+function sumEffort(picked: { card: Card }[], now: Date): number {
+  return picked.reduce((total, { card }) => total + getCardEffort(card, now), 0);
 }
 
 /**
@@ -262,6 +286,14 @@ export function getSessionProgress(session: Session): number {
   const answeredInQueue = session.queue.filter((cardId) => answered.has(cardId)).length;
   const done = total - session.queue.length;
   return (done + answeredInQueue / 2) / total;
+}
+
+/** Effort points of the answers given so far. */
+export function getEffortDone(session: Session): number {
+  return session.reviews.reduce(
+    (total, review) => total + getReviewEffort(review, session.cards[review.cardId].exerciseType),
+    0,
+  );
 }
 
 export interface SubmitReviewInput {
