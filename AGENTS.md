@@ -27,3 +27,14 @@ Memonaut is a spaced-repetition learning web app for school kids. See [README.md
 - Import from `src` with the `@/` alias, e.g. `@/lib/utils`.
 - Add shadcn/ui components with `pnpm dlx shadcn@latest add <component>`; they land in `src/components/ui/`.
 - Put tests next to the code as `*.test.ts(x)`, using Vitest and Testing Library.
+
+## Writing Decks
+
+A Deck without `shuffleNew: true` introduces new Concepts in file order, so order its Concepts from easy to hard, so that earlier ones help with later ones:
+
+- Building blocks first: words before the phrases and sentences that use them, pronouns and infinitives before conjugated forms, singulars before plurals, a question before its answer.
+- Familiar words first: short words and words like Polish or English ones, then longer or new ones.
+- Regular before irregular, e.g. `lernen` before `haben`; within a rule, the simplest form first, e.g. plurals with `-s` before those with an umlaut.
+- Keep like words together in short sections, each with a comment saying what it teaches.
+
+A shuffled Deck, like the Polish spelling sets, doesn't need this.
