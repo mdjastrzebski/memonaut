@@ -60,6 +60,8 @@ const CONCEPT_FIELDS = {
   language: {
     local: z.string().min(1).optional(),
     foreign: z.string().min(1),
+    /** Other right answers in translation. */
+    alternatives: z.array(z.string().min(1)).min(1).optional(),
     hint: z.string().optional(),
     spokenHint: z.string().min(1).optional(),
     /** Groups like Concepts of the Subject, e.g. "weekday", for multiple choice. */

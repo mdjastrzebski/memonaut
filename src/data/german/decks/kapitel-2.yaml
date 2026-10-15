@@ -275,4 +275,12 @@ concepts:
       hint: 99,
       group: number/large,
     }
-  - { id: number-100, local: sto, foreign: hundert, hint: 100, group: number/large, core: true }
+  - {
+      id: number-100,
+      local: sto,
+      foreign: hundert,
+      alternatives: [einhundert],
+      hint: 100,
+      group: number/large,
+      core: true,
+    }

@@ -38,8 +38,8 @@ function getGroupPrefixes(group: string | undefined): string[] {
  * other days for "Monday", then those of each wider group, e.g. any "number/…" for one in
  * "number/small", then the rest; each from the Deck first, then the Subject.
  *
- * A Concept sharing the answer's local or foreign word is left out, as it would be right too, e.g.
- * "big" and "large" both for "duży".
+ * A Concept sharing the answer's local or foreign word, alternatives included, is left out, as it
+ * would be right too, e.g. "big" and "large" both for "duży".
  */
 export function pickChoices(
   answer: LanguageConcept,
@@ -53,10 +53,13 @@ export function pickChoices(
 ): string[] {
   const key = (value = '') => normalizeAnswer(value).toLowerCase();
   const taken = new Set([key(answer[side])]);
+  const foreignKeys = (concept: LanguageConcept) =>
+    [concept.foreign, ...(concept.alternatives ?? [])].map((word) => key(word));
+  const answerForeign = foreignKeys(answer);
   const isWrong = (concept: LanguageConcept) =>
     concept[side] !== undefined &&
     key(concept.local) !== key(answer.local) &&
-    key(concept.foreign) !== key(answer.foreign);
+    !foreignKeys(concept).some((word) => answerForeign.includes(word));
 
   const inGroup = (prefix: string) => (concept: LanguageConcept) =>
     `${concept.group ?? ''}/`.startsWith(prefix);

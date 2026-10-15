@@ -85,6 +85,11 @@ export interface LanguageConcept extends ConceptBase {
   local?: string;
   /** The word in the language being learned, e.g. "drei" or, for Polish spelling, "może". */
   foreign: string;
+  /**
+   * Optional other right answers in translation, e.g. "einhundert" for "hundert". Only `foreign` is
+   * read aloud and offered in multiple choice.
+   */
+  alternatives?: string[];
   /** Optional extra context shown with the word in translation, e.g. "3". */
   hint?: string;
   /**

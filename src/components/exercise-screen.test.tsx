@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import { content } from '@/data/content';
+import type { ExerciseType } from '@/domain/types';
 import { HINT_DELAY_MS } from '@/lib/speech';
 import { createSession } from '@/session/session';
 
@@ -32,13 +33,18 @@ afterEach(() => {
 });
 
 /** Its first exercise, in a bundled unit deck holding only it. */
-function renderExercise(conceptId: string, strictSpelling = true) {
+function renderExercise(conceptId: string, strictSpelling = true, exerciseTypes?: ExerciseType[]) {
   const deck = content.decks.find(
     (deck) => deck.kind === 'unit' && deck.conceptIds.includes(conceptId),
   )!;
   const subject = content.subjects.find((subject) => subject.id === deck.subjectId)!;
   const session = createSession({
-    deck: { ...deck, conceptIds: [conceptId], strictSpelling },
+    deck: {
+      ...deck,
+      conceptIds: [conceptId],
+      strictSpelling,
+      ...(exerciseTypes && { exerciseTypes }),
+    },
     concepts: content.concepts,
   });
   render(
@@ -151,4 +157,15 @@ test('a question with choices is picked first from its answer and its own wrong 
   expect(status).toHaveTextContent('2 · 3² = 18');
   expect(screen.queryByRole('button', { name: 'Listen again' })).not.toBeInTheDocument();
   expect(utterances).toEqual([]);
+});
+
+test('translation takes an alternative answer, and compares a mistake with the closest one', async () => {
+  const user = userEvent.setup();
+  renderExercise('german/number-100', false, ['translation']);
+
+  await user.type(screen.getByRole('textbox', { name: 'Answer' }), 'einhundrt{Enter}');
+  expect(screen.getByRole('status')).toHaveTextContent('Hard');
+  expect(screen.getByRole('status')).toHaveTextContent('einhundert');
+  await user.type(screen.getByRole('textbox', { name: 'Retype answer' }), 'einhundert');
+  expect(screen.getByRole('button', { name: /continue/i })).toBeEnabled();
 });

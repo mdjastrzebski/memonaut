@@ -23,7 +23,7 @@ import { SpecialCharacters } from '@/components/special-characters';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { splitTrickySpellings } from '@/exercises/tricky-spellings';
-import { getFastLimitMs, gradeAnswer } from '@/exercises/type-answer';
+import { getFastLimitMs, gradeAnyAnswer } from '@/exercises/type-answer';
 import { formatSeconds } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { Rating, type Grade } from '@/srs/scheduler';
@@ -36,6 +36,8 @@ interface TypedExerciseProps extends ExerciseProps {
   prompt: ReactNode;
   /** What to type, e.g. the foreign word. */
   answer: string;
+  /** Other right answers, e.g. "einhundert" for "hundert". */
+  alternatives?: string[];
   /** The local word, or else the spoken hint, shown with the result with a flag. */
   meaning?: string;
   /** Shown with the result instead of the meaning, e.g. "3² = 9". */
@@ -61,6 +63,7 @@ export function TypedExercise({
   onToggleSrsDetails,
   prompt,
   answer,
+  alternatives = [],
   meaning,
   explanation,
   hint,
@@ -69,6 +72,8 @@ export function TypedExercise({
   const { answered: checked, check, submit, now } = useAnswer(onReview);
   const [input, setInput] = useState('');
   const [retyped, setRetyped] = useState('');
+  // The right answer the input was rated against: the closest one when there are several.
+  const [rightAnswer, setRightAnswer] = useState(answer);
   const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const pendingCaret = useRef<number | null>(null);
@@ -112,14 +117,18 @@ export function TypedExercise({
   const fastLimitMs = getFastLimitMs(answer);
   // After a wrong or almost-right answer, the learner types the right one before moving on.
   const retyping = checked !== null && (grade === Rating.Hard || grade === Rating.Again);
-  const retypedCorrectly = retyping && retyped === answer;
+  const retypedCorrectly = retyping && retyped === rightAnswer;
   const [value, setValue] = retyping ? [retyped, setRetyped] : [input, setInput];
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     if (!checked) {
       if (input.trim() === '') return;
-      check(input, (elapsedMs) => gradeAnswer(answer, input, elapsedMs, { strict }));
+      check(input, (elapsedMs) => {
+        const best = gradeAnyAnswer([answer, ...alternatives], input, elapsedMs, { strict });
+        setRightAnswer(best.answer);
+        return best.result;
+      });
       onChecked?.();
     } else if (!retyping || retypedCorrectly) {
       submit();
@@ -139,7 +148,7 @@ export function TypedExercise({
     <TypedFeedback
       grade={checked.result.grade}
       input={checked.input}
-      answer={answer}
+      answer={rightAnswer}
       meaning={meaning}
       explanation={explanation}
       trickySpellings={subject.trickySpellings}
@@ -173,7 +182,7 @@ export function TypedExercise({
                     retypedCorrectly && GRADE_STYLES[Rating.Good].tint,
                   )}
                 />
-                <RetypeGuide answer={answer} typed={retyped} />
+                <RetypeGuide answer={rightAnswer} typed={retyped} />
               </div>
             </>
           ) : (

@@ -418,3 +418,16 @@ test('a subject needs a kind, and fields and exercise types of that kind', () =>
   );
   expect(math('kind: knowledge\n', '{ id: a, local: jeden, foreign: one }')).toThrow(/a\.yaml/);
 });
+
+test('a word can have alternative answers', () => {
+  const { concepts } = buildContent({
+    './german/subject.yaml': subject,
+    './german/decks/numbers.yaml': `
+id: numbers
+name: Numbers
+concepts:
+  - { id: number-100, local: sto, foreign: hundert, alternatives: [einhundert] }
+`,
+  });
+  expect(concepts[0]).toMatchObject({ foreign: 'hundert', alternatives: ['einhundert'] });
+});
