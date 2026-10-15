@@ -65,7 +65,7 @@ function unitTile(name: string) {
 async function startEssentialsSession(user: ReturnType<typeof userEvent.setup>) {
   render(<App />);
   await user.click(screen.getByRole('radio', { name: 'German' }));
-  // At the default pace, 20 minutes fits a dictation of every word.
+  // At the default pace, 20 minutes fits a dictation of 40 words.
   await user.click(screen.getByRole('radio', { name: '20 min' }));
   await user.click(screen.getByRole('button', { name: 'Start session' }));
 }
@@ -281,6 +281,8 @@ test('dictation reads the word aloud and shows its meaning only after checking',
 
 // Practises every word of the German core set through the whole app, so it takes a few seconds.
 test('a word moves on to translation once its dictation graduates', async () => {
+  // 12 points a minute: 20 minutes fit a dictation of up to 60 words, at 2 points answered twice.
+  localStorage.setItem('memonaut:pace', JSON.stringify({ german: 12 }));
   const user = userEvent.setup();
   await startEssentialsSession(user);
 
