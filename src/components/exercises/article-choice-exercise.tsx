@@ -7,7 +7,8 @@ import { speak } from '@/lib/speech';
 
 /**
  * Article choice: the learner sees a noun without its article, e.g. "Buch", with its meaning, and
- * picks the article from the Subject's, e.g. der, die or das, always in the same order. The word is
+ * picks the article from the Subject's, e.g. der, die or das in German or el or la in Spanish,
+ * always in the same order. The word is
  * read aloud only once they've picked, as hearing it would give the article away.
  */
 export function ArticleChoiceExercise(props: ExerciseProps) {

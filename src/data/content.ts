@@ -46,8 +46,12 @@ const subjectSchema = z.discriminatedUnion('kind', [
     ...subjectFields,
     kind: z.literal('language'),
     foreignLanguage: z.string(),
-    /** For article choice, e.g. der, die and das. */
-    articles: z.array(z.string().regex(/^\S+$/, 'Use one word')).min(2).optional(),
+    /** Singular articles for article choice, e.g. der, die and das, or el and la. */
+    articles: z
+      .array(z.string().regex(/^\S+$/, 'Use one word'))
+      .min(2)
+      .refine((articles) => new Set(articles).size === articles.length, 'Use each article once')
+      .optional(),
     exerciseTypes: subjectExerciseTypes('language'),
   }),
   z.strictObject({

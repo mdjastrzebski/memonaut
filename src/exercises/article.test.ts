@@ -22,6 +22,14 @@ describe('getArticleNoun', () => {
     expect(getArticleNoun({ foreign: 'das Buch' }, undefined)).toBeUndefined();
   });
 
+  it('works for any language with articles', () => {
+    expect(getArticleNoun({ foreign: 'la casa' }, ['el', 'la'])).toEqual({
+      article: 'la',
+      noun: 'casa',
+    });
+    expect(getArticleNoun({ foreign: 'los libros' }, ['el', 'la'])).toBeUndefined();
+  });
+
   it('skips phrases and plurals', () => {
     expect(getArticleNoun({ foreign: 'das ist das Buch' }, ARTICLES)).toBeUndefined();
     expect(getArticleNoun({ foreign: 'die Bücher', plural: true }, ARTICLES)).toBeUndefined();

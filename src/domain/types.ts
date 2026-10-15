@@ -33,8 +33,9 @@ export interface LanguageSubject extends SubjectBase {
   /** BCP 47 tag of the language being learned, used to read words aloud, e.g. "de-DE". */
   foreignLanguage: string;
   /**
-   * Optional articles that tell a noun's gender, e.g. "der", "die" and "das" in German, in the order
-   * offered in article choice. Only a Subject with them is practised with article choice.
+   * Optional singular articles that tell a noun's gender, in the order offered in article choice,
+   * e.g. "der", "die" and "das" in German or "el" and "la" in Spanish. Only a Subject with them is
+   * practised with article choice, e.g. not English or Polish.
    */
   articles?: string[];
 }

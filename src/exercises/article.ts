@@ -7,9 +7,10 @@ export interface ArticleNoun {
 }
 
 /**
- * The article and noun of a word that is one of `articles` followed by a single word, e.g. "das
- * Buch", for article choice. Phrases like "das ist das Buch" and plurals like "die Bücher" have
- * none.
+ * The article and noun of a word that is one of its Subject's `articles` followed by a single word,
+ * e.g. "das Buch" or "el libro", for article choice. Phrases like "das ist das Buch" have none, nor
+ * do plurals: those marked plural, like "die Bücher", whose article is also a singular one, and
+ * those whose article isn't among `articles`, like "los libros".
  */
 export function getArticleNoun(
   concept: Pick<LanguageConcept, 'foreign' | 'plural'>,

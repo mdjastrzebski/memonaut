@@ -380,6 +380,30 @@ concepts:
   });
 });
 
+test('article choice works for any language with articles, offered in their order', () => {
+  const { subjects, decks } = buildContent({
+    './spanish/subject.yaml':
+      'id: spanish\nname: Spanish\nkind: language\nforeignLanguage: es-ES\narticles: [el, la]\n',
+    './spanish/decks/a.yaml': `
+id: a
+name: A
+concepts:
+  - { id: el-libro, local: książka, foreign: el libro }
+  - { id: los-libros, local: książki, foreign: los libros }
+`,
+  });
+  expect(subjects[0]).toMatchObject({ articles: ['el', 'la'] });
+  expect(subjects[0].exerciseTypes).toContain('article-choice');
+  expect(decks[0].conceptExerciseTypes?.['spanish/el-libro']).toBeUndefined();
+  expect(decks[0].conceptExerciseTypes?.['spanish/los-libros']).not.toContain('article-choice');
+  expect(() =>
+    buildContent({
+      './spanish/subject.yaml':
+        'id: spanish\nname: Spanish\nkind: language\nforeignLanguage: es-ES\narticles: [el, el]\n',
+    }),
+  ).toThrow(/Use each article once/);
+});
+
 test('a subject without articles has no article choice', () => {
   const deck =
     'id: a\nname: A\nconcepts:\n  - { id: das-buch, local: książka, foreign: das Buch }\n';
