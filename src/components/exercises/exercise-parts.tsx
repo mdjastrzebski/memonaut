@@ -131,8 +131,9 @@ interface ExerciseAdvancedProps extends AdvancedToggle {
 }
 
 /**
- * The scheduler's view of the exercise's Card, in short: its state and difficulty, and when it was
- * last and is next reviewed, changed by the answer once given.
+ * The scheduler's view of the exercise's Card, in short: its state and difficulty, how often it was
+ * reviewed and forgotten, and when it was last and is next reviewed; once answered, each as
+ * before → after.
  */
 export function ExerciseAdvanced({ card, now, result, open, onToggle }: ExerciseAdvancedProps) {
   const before = card.srs;
@@ -156,8 +157,21 @@ export function ExerciseAdvanced({ card, now, result, open, onToggle }: Exercise
         after && formatNumber(after.difficulty, 1),
       ),
     ],
-    ['Last review', before.last_review ? formatRelative(before.last_review, now) : '—'],
-    ['Next review', after || !isNew ? formatRelative((after ?? before).due, now) : '—'],
+    // Every review, right or wrong.
+    ['Reps', change(before.reps, after?.reps)],
+    // Times forgotten once learned: Again in Review, not while still learning.
+    ['Lapses', change(before.lapses, after?.lapses)],
+    [
+      'Last review',
+      change(before.last_review ? formatRelative(before.last_review, now) : '—', after && 'now'),
+    ],
+    [
+      'Next review',
+      change(
+        isNew ? '—' : formatRelative(before.due, now),
+        after && formatRelative(after.due, now),
+      ),
+    ],
   ];
   if (result) {
     rows.push(['Answer', `${ratingName(result.grade)} · ${formatSeconds(result.elapsedMs)}`]);

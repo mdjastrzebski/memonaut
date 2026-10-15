@@ -184,7 +184,7 @@ test('the Advanced panel shows only with dev=1, starts collapsed and stays expan
 
     await user.click(toggle());
     expect(panel()).toHaveTextContent('StateNew');
-    expect(panel()).toHaveTextContent('Last review—');
+    expect(panel()).toHaveTextContent('Reps0Lapses0Last review—Next review—');
     expect(panel()).not.toHaveTextContent('Answer');
 
     const input = screen.getByRole('textbox', { name: 'Answer' });
@@ -192,7 +192,9 @@ test('the Advanced panel shows only with dev=1, starts collapsed and stays expan
     await user.type(input, 'falsch{Enter}');
     // The answer's rating, and what it changes.
     expect(panel()).toHaveTextContent('StateNew → Learning');
-    expect(panel()).toHaveTextContent(/Next reviewin \d+m/);
+    // Again while learning is a review, but not a lapse.
+    expect(panel()).toHaveTextContent('Reps0 → 1Lapses0 → 0Last review— → now');
+    expect(panel()).toHaveTextContent(/Next review— → in \d+m/);
     expect(panel()).toHaveTextContent(/AnswerAgain · /);
     await retypeAnswer(user);
 
@@ -221,7 +223,7 @@ test('ending the session shows results with the Advanced panel collapsed', async
 
   await user.click(toggle);
   const cards = within(screen.getByRole('region', { name: 'Advanced' })).getByRole('table');
-  expect(cards).toHaveTextContent('StateDifficultyNext review');
+  expect(cards).toHaveTextContent('StateDifficultyRepsLapsesNext review');
   expect(cards).toHaveTextContent('Learning');
 });
 

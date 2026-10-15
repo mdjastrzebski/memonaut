@@ -325,7 +325,7 @@ function WordRow({ session, card, now, style }: WordRowProps) {
   );
 }
 
-/** The scheduler's view of the session's Cards: state, difficulty and next review. */
+/** The scheduler's view of the session's Cards: state, difficulty, reviews, lapses and next review. */
 function SessionCards({ session, now }: { session: Session; now: Date }) {
   return (
     <Table className="text-xs">
@@ -334,6 +334,12 @@ function SessionCards({ session, now }: { session: Session; now: Date }) {
           <TableHead>Exercise</TableHead>
           <TableHead>State</TableHead>
           <TableHead className="text-right">Difficulty</TableHead>
+          <TableHead className="text-right" title="Every review, right or wrong">
+            Reps
+          </TableHead>
+          <TableHead className="text-right" title="Times forgotten once learned">
+            Lapses
+          </TableHead>
           <TableHead className="text-right">Next review</TableHead>
         </TableRow>
       </TableHeader>
@@ -352,6 +358,8 @@ function SessionCards({ session, now }: { session: Session; now: Date }) {
               <TableCell className="text-right">
                 {card.srs.state === State.New ? '—' : formatNumber(card.srs.difficulty, 1)}
               </TableCell>
+              <TableCell className="text-right">{card.srs.reps}</TableCell>
+              <TableCell className="text-right">{card.srs.lapses}</TableCell>
               <TableCell className="text-right">
                 {card.srs.state === State.New ? '—' : formatRelative(card.srs.due, now)}
               </TableCell>
