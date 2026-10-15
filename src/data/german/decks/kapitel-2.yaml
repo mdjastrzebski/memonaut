@@ -1,6 +1,9 @@
 id: kapitel-2
 name: Kapitel 2
 concepts:
+  # Tak i nie: krótkie odpowiedzi.
+  - { id: ja, local: tak, foreign: ja, core: true }
+  - { id: nein, local: nie, foreign: nein, core: true }
   # Pytania o siebie, z Kapitel 1.
   - { id: wer-bist-du, local: kim jesteś?, foreign: wer bist du? }
   - { id: wie-gehts-dir, local: jak się masz?, foreign: wie geht's dir? }
@@ -12,3 +15,105 @@ concepts:
   - { id: das-hobby, local: hobby, foreign: das Hobby }
   - { id: die-schulsache, local: rzecz szkolna, foreign: die Schulsache }
   - { id: die-welt, local: świat, foreign: die Welt }
+  # Początek zdania, do wskazywania rzeczy.
+  - { id: das-ist, local: to jest, foreign: das ist }
+  - { id: ist-das, local: czy to jest, foreign: ist das }
+  # Rodzina i przyjaciele.
+  - { id: die-mama, local: mama, foreign: die Mama }
+  - { id: der-papa, local: tata, foreign: der Papa }
+  - { id: das-kind, local: dziecko, foreign: das Kind }
+  - { id: die-familie, local: rodzina, foreign: die Familie }
+  - { id: der-freund, local: przyjaciel, foreign: der Freund }
+  - { id: die-freundin, local: przyjaciółka, foreign: die Freundin }
+  - { id: die-schwester, local: siostra, foreign: die Schwester }
+  # mein, dein przy der i das; meine, deine przy die.
+  - { id: mein, local: mój, foreign: mein, group: possessive }
+  - { id: dein, local: twój, foreign: dein, group: possessive }
+  - { id: meine-schwester, local: moja siostra, foreign: meine Schwester }
+  - { id: mein-freund, local: mój przyjaciel, foreign: mein Freund, group: possessive }
+  - { id: meine-freundin, local: moja przyjaciółka, foreign: meine Freundin, group: possessive }
+  - { id: meine-mama, local: moja mama, foreign: meine Mama, group: possessive }
+  - { id: mein-papa, local: mój tata, foreign: mein Papa, group: possessive }
+  # Słowa podobne do polskich i angielskich, rzeczy i zwierzęta.
+  - { id: das-foto, local: zdjęcie, foreign: das Foto, group: thing/personal }
+  - { id: der-computer, local: komputer, foreign: der Computer, group: thing/personal }
+  - { id: das-handy, local: komórka, foreign: das Handy, group: thing/personal }
+  - { id: das-kino, local: kino, foreign: das Kino, group: hobby }
+  - { id: das-konzert, local: koncert, foreign: das Konzert, group: hobby }
+  - { id: die-gitarre, local: gitara, foreign: die Gitarre }
+  - { id: die-schokolade, local: czekolada, foreign: die Schokolade }
+  - { id: der-ball, local: piłka, foreign: der Ball, group: thing/personal }
+  - {
+      id: die-lampe,
+      local: lampa,
+      foreign: die Lampe,
+      explanation: 'na -[e] → zwykle [die]',
+      group: thing/personal,
+    }
+  - { id: das-skateboard, local: deskorolka, foreign: das Skateboard, group: thing/personal }
+  - { id: das-stofftier, local: pluszak, foreign: das Stofftier, group: thing/personal }
+  - { id: der-rucksack, local: plecak, foreign: der Rucksack, group: thing/personal }
+  - {
+      id: die-brille,
+      local: okulary,
+      foreign: die Brille,
+      explanation: 'na -[e] → zwykle [die]',
+      group: thing/personal,
+    }
+  - { id: das-buch, local: książka, foreign: das Buch, group: thing/school }
+  - { id: der-hund, local: pies, foreign: der Hund, group: animal }
+  - { id: die-katze, local: kot, foreign: die Katze, group: animal }
+  # Przybory szkolne, zawsze z rodzajnikiem. Przybory do pisania są rodzaju męskiego, rzeczowniki na -e zwykle żeńskiego.
+  - { id: das-heft, local: zeszyt, foreign: das Heft, group: thing/school }
+  - {
+      id: der-kuli,
+      local: długopis,
+      foreign: der Kuli,
+      explanation: 'do pisania → [der]',
+      group: thing/school,
+    }
+  - {
+      id: der-marker,
+      local: zakreślacz,
+      foreign: der Marker,
+      explanation: 'do pisania → [der]',
+      group: thing/school,
+    }
+  - { id: das-lineal, local: linijka, foreign: das Lineal, group: thing/school }
+  - {
+      id: die-schere,
+      local: nożyczki,
+      foreign: die Schere,
+      explanation: 'na -[e] → zwykle [die]',
+      group: thing/school,
+    }
+  - {
+      id: der-bleistift,
+      local: ołówek,
+      foreign: der Bleistift,
+      explanation: 'do pisania → [der]',
+      group: thing/school,
+    }
+  - {
+      id: der-buntstift,
+      local: kredka,
+      foreign: der Buntstift,
+      explanation: 'do pisania → [der]',
+      group: thing/school,
+    }
+  - { id: der-anspitzer, local: temperówka, foreign: der Anspitzer, group: thing/school }
+  - { id: der-radiergummi, local: gumka do mazania, foreign: der Radiergummi, group: thing/school }
+  - {
+      id: das-federmaeppchen,
+      local: piórnik,
+      foreign: das Mäppchen,
+      alternatives: [das Federmäppchen],
+      group: thing/school,
+    }
+  - {
+      id: die-schultasche,
+      local: tornister,
+      foreign: die Schultasche,
+      explanation: 'na -[e] → zwykle [die]',
+      group: thing/school,
+    }

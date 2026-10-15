@@ -8,115 +8,26 @@ concepts:
   - { id: sie, local: ona, foreign: sie, group: pronoun, core: true }
   - { id: es, local: ono, foreign: es, group: pronoun, core: true }
   # Tak, nie, no jasne: krótkie odpowiedzi.
-  - { id: ja, local: tak, foreign: ja, core: true }
-  - { id: nein, local: nie, foreign: nein, core: true }
   # - { id: na-klar, local: no jasne, foreign: na klar }
   # Słowa podobne do polskich i angielskich, od nich najłatwiej zacząć.
-  # - { id: das-foto, local: zdjęcie, foreign: das Foto, group: thing/personal }
-  # - { id: der-computer, local: komputer, foreign: der Computer, group: thing/personal }
-  # - { id: das-handy, local: komórka, foreign: das Handy, group: thing/personal }
   # - { id: die-musik, local: muzyka, foreign: die Musik, group: hobby }
   # - { id: der-sport, local: sport, foreign: der Sport, group: hobby }
-  # - { id: das-kino, local: kino, foreign: das Kino, group: hobby }
-  # - { id: das-konzert, local: koncert, foreign: das Konzert, group: hobby }
-  # - { id: die-gitarre, local: gitara, foreign: die Gitarre }
-  # - { id: die-schokolade, local: czekolada, foreign: die Schokolade }
   # - { id: der-fussball, local: piłka nożna, foreign: der Fußball, group: hobby }
-  # - { id: der-ball, local: piłka, foreign: der Ball, group: thing/personal }
-  # - {
-  #     id: die-lampe,
-  #     local: lampa,
-  #     foreign: die Lampe,
-  #     explanation: 'na -[e] → zwykle [die]',
-  #     group: thing/personal,
-  #   }
-  # - { id: das-skateboard, local: deskorolka, foreign: das Skateboard, group: thing/personal }
   # Rodzina i przyjaciele.
-  - { id: die-mama, local: mama, foreign: die Mama }
-  - { id: der-papa, local: tata, foreign: der Papa }
-  - { id: die-familie, local: rodzina, foreign: die Familie }
-  - { id: das-kind, local: dziecko, foreign: das Kind }
-  - { id: der-freund, local: przyjaciel, foreign: der Freund }
-  - { id: die-freundin, local: przyjaciółka, foreign: die Freundin }
   # Pierwsze pytania: co to jest, kto to jest, i powtórka pytań o siebie z Kapitel 1.
   - { id: was-ist-das, local: co to jest?, foreign: was ist das?, core: true }
   - { id: wer-ist-das, local: kto to jest?, foreign: wer ist das? }
   #- { id: ich-bin-10-jahre-alt, local: mam 10 lat, foreign: ich bin 10 Jahre alt }
   # Przybory szkolne, zawsze z rodzajnikiem. Przybory do pisania są rodzaju męskiego, rzeczowniki na -e zwykle żeńskiego.
-  - { id: das-buch, local: książka, foreign: das Buch, group: thing/school }
-  - { id: das-heft, local: zeszyt, foreign: das Heft, group: thing/school }
-  - {
-      id: der-kuli,
-      local: długopis,
-      foreign: der Kuli,
-      explanation: 'do pisania → [der]',
-      group: thing/school,
-    }
-  - {
-      id: der-marker,
-      local: zakreślacz,
-      foreign: der Marker,
-      explanation: 'do pisania → [der]',
-      group: thing/school,
-    }
-  - { id: das-lineal, local: linijka, foreign: das Lineal, group: thing/school }
-  - {
-      id: die-schere,
-      local: nożyczki,
-      foreign: die Schere,
-      explanation: 'na -[e] → zwykle [die]',
-      group: thing/school,
-    }
-  - {
-      id: der-bleistift,
-      local: ołówek,
-      foreign: der Bleistift,
-      explanation: 'do pisania → [der]',
-      group: thing/school,
-    }
-  - {
-      id: der-buntstift,
-      local: kredka,
-      foreign: der Buntstift,
-      explanation: 'do pisania → [der]',
-      group: thing/school,
-    }
-  - { id: der-anspitzer, local: temperówka, foreign: der Anspitzer, group: thing/school }
-  - { id: der-radiergummi, local: gumka do mazania, foreign: der Radiergummi, group: thing/school }
-  - {
-      id: das-federmaeppchen,
-      local: piórnik,
-      foreign: das Mäppchen,
-      alternatives: [das Federmäppchen],
-      group: thing/school,
-    }
-  - {
-      id: die-schultasche,
-      local: tornister,
-      foreign: die Schultasche,
-      explanation: 'na -[e] → zwykle [die]',
-      group: thing/school,
-    }
   - { id: die-schulsachen, local: przybory szkolne, foreign: die Schulsachen }
   # Pozostałe przedmioty osobiste i zwierzęta.
-  - {
-      id: die-brille,
-      local: okulary,
-      foreign: die Brille,
-      explanation: 'na -[e] → zwykle [die]',
-      group: thing/personal,
-    }
-  - { id: der-rucksack, local: plecak, foreign: der Rucksack, group: thing/personal }
   - { id: der-schreibtisch, local: biurko, foreign: der Schreibtisch, group: thing/personal }
-  - { id: das-stofftier, local: pluszak, foreign: das Stofftier, group: thing/personal }
   - {
       id: das-taschentuch,
       local: chusteczka do nosa,
       foreign: das Taschentuch,
       group: thing/personal,
     }
-  - { id: der-hund, local: pies, foreign: der Hund, group: animal }
-  - { id: die-katze, local: kot, foreign: die Katze, group: animal }
   # Szkoła: -in tworzy formę żeńską.
   - { id: die-schule, local: szkoła, foreign: die Schule, explanation: 'na -[e] → zwykle [die]' }
   - { id: die-klasse, local: klasa, foreign: die Klasse, explanation: 'na -[e] → zwykle [die]' }
