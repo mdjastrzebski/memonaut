@@ -30,11 +30,27 @@ describe('getGermanNoun', () => {
       noun: 'Tasche',
     });
     expect(getGermanNoun({ foreign: 'Ihr Buch' })).toMatchObject({ options: ['Ihr', 'Ihre'] });
+    expect(getGermanNoun({ foreign: 'eine Lampe' })).toMatchObject({
+      options: ['ein', 'eine'],
+      articles: ['die'],
+    });
+    expect(getGermanNoun({ foreign: 'kein Problem' })).toMatchObject({
+      options: ['kein', 'keine'],
+      articles: ['der', 'das'],
+    });
+  });
+
+  it('splits a noun from dieser, diese or dieses', () => {
+    expect(getGermanNoun({ foreign: 'dieses Buch' })).toEqual({
+      determiner: 'dieses',
+      options: ['dieser', 'diese', 'dieses'],
+      articles: ['das'],
+      noun: 'Buch',
+    });
   });
 
   it('skips words without an article, phrases and plurals', () => {
     expect(getGermanNoun({ foreign: 'drei' })).toBeUndefined();
-    expect(getGermanNoun({ foreign: 'ein Buch' })).toBeUndefined();
     expect(getGermanNoun({ foreign: 'das ist' })).toBeUndefined();
     expect(getGermanNoun({ foreign: 'das ist das Buch' })).toBeUndefined();
     expect(getGermanNoun({ foreign: 'meine Telefonnummer ist' })).toBeUndefined();
@@ -104,5 +120,26 @@ describe('getCompoundHint', () => {
   it('skips the noun itself, and nouns with another article', () => {
     expect(getCompoundHint(noun('der Ball'), nouns)).toBeUndefined();
     expect(getCompoundHint(noun('die Ballbuch'), nouns)).toBeUndefined();
+  });
+
+  it('finds the noun with its article after another word', () => {
+    expect(getCompoundHint(noun('mein Ball'), nouns)).toEqual({
+      compound: 'mein Ball',
+      base: 'der Ball',
+    });
+    expect(getCompoundHint(noun('dieser Ball'), nouns)).toEqual({
+      compound: 'dieser Ball',
+      base: 'der Ball',
+    });
+    expect(getCompoundHint(noun('meine Schultasche'), nouns)).toEqual({
+      compound: 'meine Schul[tasche]',
+      base: 'die Tasche',
+    });
+    expect(getCompoundHint(noun('meine Ball'), nouns)).toBeUndefined();
+  });
+
+  it('takes only a noun with der, die or das as the base', () => {
+    expect(getCompoundHint(noun('der Fußball'), [{ foreign: 'mein Ball' }])).toBeUndefined();
+    expect(getCompoundHint(noun('der Fußball'), [{ foreign: 'dieser Ball' }])).toBeUndefined();
   });
 });

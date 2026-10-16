@@ -209,6 +209,22 @@ test('German article choice offers the forms of a possessive', async () => {
   expect(status).toHaveTextContent('na -e → zwykle die');
 });
 
+test("German article choice offers dieser, diese and dieses in their genders' colors", async () => {
+  const user = userEvent.setup();
+  renderExercise('german/dieses-buch', false, ['article-choice-de'], content.concepts);
+  expect(screen.getByText('Dieser, diese or dieses?')).toBeInTheDocument();
+  const options = within(screen.getByRole('group', { name: 'Options' })).getAllByRole('button');
+  expect(options.map((option) => option.textContent?.slice(1))).toEqual([
+    'dieser',
+    'diese',
+    'dieses',
+  ]);
+  expect(within(options[2]).getByText('dieses')).toHaveClass('text-emerald-600');
+
+  await user.keyboard('3');
+  expect(screen.getByRole('status')).toHaveTextContent('dieses Buch jak das Buch');
+});
+
 test('German article choice links a possessive to the noun with its article', async () => {
   const user = userEvent.setup();
   renderExercise('german/mein-ball', false, ['article-choice-de'], content.concepts);

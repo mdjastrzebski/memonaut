@@ -81,6 +81,7 @@ concepts:
   - { id: number-100, local: sto, foreign: hundert, alternatives: [einhundert], hint: 100 }
   - { id: mein-ball, local: moja piłka, foreign: mein Ball }
   - { id: meine-lampe, local: moja lampa, foreign: meine Lampe }
+  - { id: dieses-buch, local: ta książka, foreign: dieses Buch }
 `,
 
   './math/subject.yaml': `

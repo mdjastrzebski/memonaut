@@ -50,8 +50,8 @@ export const KIND_EXERCISE_TYPES: Record<SubjectKind, ExerciseType[]> = {
 
 /**
  * Whether a Concept can be practised with an Exercise Type: question choice needs choices, and
- * German article choice a German singular noun with its article or possessive, e.g. "das Buch" or
- * "meine Tasche".
+ * German article choice a German singular noun with its article, dieser, ein, kein or a possessive,
+ * e.g. "das Buch" or "meine Tasche".
  */
 export function canPractise(
   concept: Concept,
