@@ -55,8 +55,8 @@ export function getDeterminer(word: string): Omit<GermanNoun, 'noun'> | undefine
 
 /**
  * The noun of a word that is a German article, dieser, ein, kein or a possessive followed by one
- * capitalized word, e.g. "das Buch" or "meine Tasche", for article choice. Phrases like "das ist das Buch" have none, nor
- * do plurals marked plural, like "die Bücher", as their article tells no gender.
+ * capitalized word, e.g. "das Buch" or "meine Tasche", for article choice. Phrases like "das ist das
+ * Buch" have none, nor do plurals marked plural, like "die Bücher", as their article tells no gender.
  */
 export function getGermanNoun(
   concept: Pick<LanguageConcept, 'foreign' | 'plural'>,
