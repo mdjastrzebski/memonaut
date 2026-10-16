@@ -4,9 +4,28 @@ import type { LanguageConcept, Subject } from '@/domain/types';
 export const GERMAN_ARTICLES = ['der', 'die', 'das'] as const;
 export type GermanArticle = (typeof GERMAN_ARTICLES)[number];
 
-/** A German noun split from its article, e.g. "das" and "Buch" for "das Buch". */
+/**
+ * Possessives, each with its form for der and das nouns, and for die nouns, e.g. "mein Buch" and
+ * "meine Tasche". "Ihr" is the polite "your".
+ */
+const GERMAN_POSSESSIVES: [string, string][] = [
+  ['mein', 'meine'],
+  ['dein', 'deine'],
+  ['sein', 'seine'],
+  ['ihr', 'ihre'],
+  ['unser', 'unsere'],
+  ['euer', 'eure'],
+  ['Ihr', 'Ihre'],
+];
+
+/** A German noun split from the word before it, e.g. "das" and "Buch" for "das Buch". */
 export interface GermanNoun {
-  article: GermanArticle;
+  /** The word before the noun, the answer in article choice, e.g. "das" or "meine". */
+  determiner: string;
+  /** The words to pick from, in the order offered, e.g. der, die and das, or mein and meine. */
+  options: string[];
+  /** The articles the noun can take: one for der, die or das, and der or das for e.g. "mein". */
+  articles: GermanArticle[];
   noun: string;
 }
 
@@ -15,17 +34,32 @@ export function isGerman(subject: Subject): boolean {
   return subject.kind === 'language' && /^de(-|$)/i.test(subject.foreignLanguage);
 }
 
+/** What a word before a noun tells, e.g. the options and article for "meine"; none if not one. */
+export function getDeterminer(word: string): Omit<GermanNoun, 'noun'> | undefined {
+  if (GERMAN_ARTICLES.includes(word as GermanArticle)) {
+    return {
+      determiner: word,
+      options: [...GERMAN_ARTICLES],
+      articles: [word as GermanArticle],
+    };
+  }
+  const options = GERMAN_POSSESSIVES.find((forms) => forms.includes(word));
+  if (!options) return undefined;
+  return { determiner: word, options, articles: word === options[1] ? ['die'] : ['der', 'das'] };
+}
+
 /**
- * The article and noun of a word that is a German article followed by one capitalized word, e.g.
- * "das Buch", for article choice. Phrases like "das ist das Buch" have none, nor do plurals marked
- * plural, like "die Bücher", as their article tells no gender.
+ * The noun of a word that is a German article or possessive followed by one capitalized word, e.g.
+ * "das Buch" or "meine Tasche", for article choice. Phrases like "das ist das Buch" have none, nor
+ * do plurals marked plural, like "die Bücher", as their article tells no gender.
  */
 export function getGermanNoun(
   concept: Pick<LanguageConcept, 'foreign' | 'plural'>,
 ): GermanNoun | undefined {
   if (concept.plural) return undefined;
-  const match = /^(der|die|das) (\p{Lu}\p{L}*)$/u.exec(concept.foreign);
-  return match ? { article: match[1] as GermanArticle, noun: match[2] } : undefined;
+  const match = /^(\p{L}+) (\p{Lu}\p{L}*)$/u.exec(concept.foreign);
+  const determiner = match && getDeterminer(match[1]);
+  return determiner ? { ...determiner, noun: match[2] } : undefined;
 }
 
 /** An ending that tells a German noun's article, always or usually. */
@@ -60,7 +94,10 @@ export interface EndingHint {
 }
 
 /** The rule a noun's ending follows or breaks, e.g. -ung for "Zeitung", if any. */
-export function getEndingHint({ article, noun }: GermanNoun): EndingHint | undefined {
+export function getEndingHint({
+  articles,
+  noun,
+}: Pick<GermanNoun, 'articles' | 'noun'>): EndingHint | undefined {
   const word = noun.toLowerCase();
   const matches = ENDING_RULES.flatMap((rule) =>
     rule.endings
@@ -74,42 +111,49 @@ export function getEndingHint({ article, noun }: GermanNoun): EndingHint | undef
     ending,
     article: rule.article,
     usually: !!rule.usually,
-    follows: rule.article === article,
+    follows: articles.includes(rule.article),
   };
 }
 
-/** The noun a compound takes its article from, e.g. "der Ball" for "der Fußball". */
+/** The noun with der, die or das a noun takes its article from, e.g. "der Ball" for "der Fußball". */
 export interface CompoundHint {
-  /** The compound with its last part marked, e.g. "der Fuß[ball]". */
+  /** The noun with its last part marked if a compound, e.g. "der Fuß[ball]" or "mein Freund". */
   compound: string;
-  /** The noun its last part is, e.g. "der Ball". */
+  /** The noun with der, die or das it takes after, e.g. "der Ball" or "der Freund". */
   base: string;
 }
 
 /**
- * Its last part, when the noun is a compound ending in another noun of the Subject with the same
- * article, e.g. "der Ball" for "der Fußball". The longest such noun wins.
+ * Another noun of the Subject with der, die or das the noun takes its article from: the noun its
+ * last part is, when a compound, e.g. "der Ball" for "der Fußball", the longest such noun winning;
+ * or the noun itself, after a possessive, e.g. "der Freund" for "mein Freund".
  */
 export function getCompoundHint(
-  { article, noun }: GermanNoun,
+  { determiner, articles, noun }: GermanNoun,
   subjectConcepts: Pick<LanguageConcept, 'foreign' | 'plural'>[],
 ): CompoundHint | undefined {
   const word = noun.toLowerCase();
+  const withArticle = articles.length === 1 && determiner === articles[0];
   const base = subjectConcepts
     .map(getGermanNoun)
-    .filter(
-      (other): other is GermanNoun =>
-        !!other &&
-        other.article === article &&
-        other.noun.length >= 3 &&
-        word.length >= other.noun.length + 2 &&
-        word.endsWith(other.noun.toLowerCase()),
-    )
+    .filter((other): other is GermanNoun => {
+      if (!other || other.articles.length !== 1 || other.determiner !== other.articles[0]) {
+        return false;
+      }
+      if (!articles.includes(other.articles[0])) return false;
+      const otherWord = other.noun.toLowerCase();
+      if (otherWord === word) return !withArticle;
+      return (
+        otherWord.length >= 3 && word.length >= otherWord.length + 2 && word.endsWith(otherWord)
+      );
+    })
     .sort((a, b) => b.noun.length - a.noun.length)[0];
   if (!base) return undefined;
   const split = noun.length - base.noun.length;
   return {
-    compound: `${article} ${noun.slice(0, split)}[${noun.slice(split)}]`,
-    base: `${base.article} ${base.noun}`,
+    compound: split
+      ? `${determiner} ${noun.slice(0, split)}[${noun.slice(split)}]`
+      : `${determiner} ${noun}`,
+    base: `${base.determiner} ${base.noun}`,
   };
 }
