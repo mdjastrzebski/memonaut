@@ -32,8 +32,9 @@ Memonaut is a spaced-repetition learning web app for school kids. See [README.md
 ## Git
 
 - Work on a branch named by its kind, like Conventional Commits: `feat/*`, `fix/*`, `chore/*`, `docs/*`, `refactor/*`, `test/*` or `data/*`, e.g. `feat/improve-article-de`.
-- PR titles are short Conventional Commits, e.g. `feat: German article choice for possessives`.
-- PR descriptions are minimal: a few bullets of what changed, no Claude or AI credit.
+- Commit messages and PR titles are short Conventional Commits, e.g. `feat: German article choice for possessives`.
+- PR descriptions are minimal: a few bullets of what changed.
+- No Claude or AI credit in commit messages or PR descriptions: no `Co-Authored-By`, `Claude-Session` or "Generated with" lines.
 
 ## Writing Decks
 
