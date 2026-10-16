@@ -349,7 +349,7 @@ test('rejects invalid content', () => {
   );
 });
 
-test('a German subject practises its singular nouns with German article choice', () => {
+test('a German subject practises its singular nouns with an article or possessive with German article choice', () => {
   const { subjects, decks } = buildContent({
     './german/subject.yaml': subject,
     './german/decks/a.yaml': `
@@ -357,6 +357,7 @@ id: a
 name: A
 concepts:
   - { id: das-buch, local: książka, foreign: das Buch }
+  - { id: mein-buch, local: moja książka, foreign: mein Buch }
   - { id: die-buecher, local: książki, foreign: die Bücher, plural: true }
   - { id: das-ist-das-buch, local: to jest książka, foreign: das ist das Buch }
   - { id: drei, local: trzy, foreign: drei }
