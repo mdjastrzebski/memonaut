@@ -37,7 +37,8 @@ function getQuestion(options: string[]): string {
 /**
  * German article choice: the learner sees a noun without its article, e.g. "Buch", with its
  * meaning, and picks der, die or das, each in its gender's color and always in the same order; or,
- * for a noun with a possessive, e.g. "meine Tasche", its form, e.g. mein or meine. The word is read
+ * for a noun with another word before it, its form, e.g. dieser, diese or dieses for "dieses Buch",
+ * or mein or meine for "meine Tasche". The word is read
  * aloud only once they've picked, as hearing it would give the article away. The result tells what
  * gives the article away: the word's own explanation or else its ending, e.g. -ung for die, and the
  * noun with der, die or das it takes after, e.g. "der Ball" for "der Fußball" or "der Freund" for
@@ -47,9 +48,7 @@ export function ArticleChoiceDeExercise(props: ExerciseProps) {
   const { concept, subject } = getLanguageProps(props);
   const germanNoun = getGermanNoun(concept);
   if (!germanNoun) {
-    throw new Error(
-      `${props.card.exerciseType} needs a German noun with its article or possessive`,
-    );
+    throw new Error(`${props.card.exerciseType} needs a German noun with its article`);
   }
   const playWord = () => speak(concept.foreign, subject.foreignLanguage);
   const words = props.subjectConcepts.filter(

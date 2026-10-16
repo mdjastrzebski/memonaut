@@ -5,10 +5,18 @@ export const GERMAN_ARTICLES = ['der', 'die', 'das'] as const;
 export type GermanArticle = (typeof GERMAN_ARTICLES)[number];
 
 /**
- * Possessives, each with its form for der and das nouns, and for die nouns, e.g. "mein Buch" and
- * "meine Tasche". "Ihr" is the polite "your".
+ * Words before a noun with a form for der, die and das nouns, as offered in article choice: der,
+ * die and das themselves and dieser, diese and dieses, e.g. "dieses Buch".
  */
-const GERMAN_POSSESSIVES: [string, string][] = [
+const THREE_FORMS: string[][] = [[...GERMAN_ARTICLES], ['dieser', 'diese', 'dieses']];
+
+/**
+ * Words before a noun with one form for der and das nouns and one for die nouns, e.g. "mein Buch"
+ * and "meine Tasche": ein, kein and the possessives. "Ihr" is the polite "your".
+ */
+const TWO_FORMS: string[][] = [
+  ['ein', 'eine'],
+  ['kein', 'keine'],
   ['mein', 'meine'],
   ['dein', 'deine'],
   ['sein', 'seine'],
@@ -20,11 +28,11 @@ const GERMAN_POSSESSIVES: [string, string][] = [
 
 /** A German noun split from the word before it, e.g. "das" and "Buch" for "das Buch". */
 export interface GermanNoun {
-  /** The word before the noun, the answer in article choice, e.g. "das" or "meine". */
+  /** The word before the noun, the answer in article choice, e.g. "das", "eine" or "meine". */
   determiner: string;
   /** The words to pick from, in the order offered, e.g. der, die and das, or mein and meine. */
   options: string[];
-  /** The articles the noun can take: one for der, die or das, and der or das for e.g. "mein". */
+  /** The articles the noun can take: one for e.g. "das" or "meine", der or das for e.g. "mein". */
   articles: GermanArticle[];
   noun: string;
 }
@@ -36,21 +44,18 @@ export function isGerman(subject: Subject): boolean {
 
 /** What a word before a noun tells, e.g. the options and article for "meine"; none if not one. */
 export function getDeterminer(word: string): Omit<GermanNoun, 'noun'> | undefined {
-  if (GERMAN_ARTICLES.includes(word as GermanArticle)) {
-    return {
-      determiner: word,
-      options: [...GERMAN_ARTICLES],
-      articles: [word as GermanArticle],
-    };
+  const three = THREE_FORMS.find((forms) => forms.includes(word));
+  if (three) {
+    return { determiner: word, options: three, articles: [GERMAN_ARTICLES[three.indexOf(word)]] };
   }
-  const options = GERMAN_POSSESSIVES.find((forms) => forms.includes(word));
-  if (!options) return undefined;
-  return { determiner: word, options, articles: word === options[1] ? ['die'] : ['der', 'das'] };
+  const two = TWO_FORMS.find((forms) => forms.includes(word));
+  if (!two) return undefined;
+  return { determiner: word, options: two, articles: word === two[1] ? ['die'] : ['der', 'das'] };
 }
 
 /**
- * The noun of a word that is a German article or possessive followed by one capitalized word, e.g.
- * "das Buch" or "meine Tasche", for article choice. Phrases like "das ist das Buch" have none, nor
+ * The noun of a word that is a German article, dieser, ein, kein or a possessive followed by one
+ * capitalized word, e.g. "das Buch" or "meine Tasche", for article choice. Phrases like "das ist das Buch" have none, nor
  * do plurals marked plural, like "die Bücher", as their article tells no gender.
  */
 export function getGermanNoun(
@@ -126,7 +131,7 @@ export interface CompoundHint {
 /**
  * Another noun of the Subject with der, die or das the noun takes its article from: the noun its
  * last part is, when a compound, e.g. "der Ball" for "der Fußball", the longest such noun winning;
- * or the noun itself, after a possessive, e.g. "der Freund" for "mein Freund".
+ * or the noun itself, after another word, e.g. "der Freund" for "mein Freund".
  */
 export function getCompoundHint(
   { determiner, articles, noun }: GermanNoun,
