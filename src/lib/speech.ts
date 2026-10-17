@@ -12,23 +12,13 @@ const DEFAULT_VOICE_ID = 'TX3LPaxmHKxFdv7VOQHJ';
 const VOICE_IDS: Record<string, string> = {
   'de-DE': 'TX3LPaxmHKxFdv7VOQHJ',
   'en-GB': 'JBFqnCBsd6RMkjVDRZzb',
-  'en-US': 'TX3LPaxmHKxFdv7VOQHJ',
-  'es-ES': 'JBFqnCBsd6RMkjVDRZzb',
-  'fr-FR': 'JBFqnCBsd6RMkjVDRZzb',
-  'it-IT': 'SAz9YHcvj6GT2YYXdXww',
   'pl-PL': 'TX3LPaxmHKxFdv7VOQHJ',
-  'pt-PT': 'SAz9YHcvj6GT2YYXdXww',
 };
 /** Said "before" the word, so a short word is pronounced in the right language. */
 const PREVIOUS_TEXTS: Record<string, string> = {
   'de-DE': 'Das nächste Wort ist auf Deutsch.',
   'en-GB': 'The next word is in British English.',
-  'en-US': 'The next word is in American English.',
-  'es-ES': 'La siguiente palabra está en español.',
-  'fr-FR': 'Le mot suivant est en français.',
-  'it-IT': 'La prossima parola è in italiano.',
   'pl-PL': 'Następne słowo jest po polsku.',
-  'pt-PT': 'A próxima palavra está em português.',
 };
 
 /**

@@ -2,7 +2,7 @@
 
 Memonaut is a learning web app for school kids, built on spaced repetition. It helps a learner keep what they learn in school subjects, such as English, German, Polish or Przyroda, by scheduling each piece of knowledge for review just before it would be forgotten.
 
-> **Status:** early prototype. The concepts below are settled. Pick a subject (German, English or Polish spelling) and its core set or a unit, then study it: multiple choice, dictation and translation, FSRS scheduling. Each Card's review state is saved in the browser after every answer; the setup screen shows how many words are due today.
+> **Status:** early prototype.
 
 ## Goals
 
@@ -135,7 +135,6 @@ Each file under `decks/` is a unit Deck. A Concept can appear in several units o
 
 ## Open questions
 
-- Can a Concept exist in no Deck at all, e.g. after its unit is removed, while keeping its review history?
 - Should progress also sync through a backend, so it survives clearing the browser and moves between devices?
 
 ## Development

@@ -1,4 +1,4 @@
-import type { Card, ExerciseType, Review } from '@/domain/types';
+import type { Card, ExerciseType } from '@/domain/types';
 import { getRetrievability, State, type FsrsCard } from '@/srs/scheduler';
 
 /**
@@ -62,11 +62,6 @@ export function getCardEffort(card: Card, now: Date): number {
     getDifficultyFactor(card.srs) *
     getExpectedAnswers(card.srs.state, getRetrievability(card.srs, now))
   );
-}
-
-/** The effort points one answer took, by its Exercise Type and the Card's difficulty before it. */
-export function getReviewEffort(review: Review, exerciseType: ExerciseType): number {
-  return getAnswerEffort(exerciseType, review.log);
 }
 
 /** The effort points of one answer to a Card in the given memory state. */
