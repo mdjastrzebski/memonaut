@@ -398,25 +398,44 @@ test('introduces only new words, not started ones or questions', () => {
   expect(createSession({ deck: quiz, concepts: questions, now: start }).intros).toEqual([]);
 });
 
-test('introduces a tricky word again before it is practised', () => {
+test('asks a tricky word first, and introduces it again once it is missed', () => {
   const lastWeek = new Date(start.getTime() - 7 * 24 * 60 * 60_000);
   const cards = byId(
     reviewed('one:dictation', lastWeek, { due: start, lapses: 2 }),
     reviewed('two:dictation', lastWeek, { due: start, lapses: 1 }),
   );
-  const session = createSession({ deck, concepts, cards, now: start });
-  expect(session.intros).toEqual(['one']);
+  const answer = (session: Session, rating: Grade) =>
+    submitReview(session, { input: '', elapsedMs: 1000, issues: [], rating, now: start });
+  let session = createSession({
+    deck: { ...deck, conceptIds: ['one'] },
+    concepts,
+    cards,
+    now: start,
+  });
   expect(session.tricky).toEqual(['one']);
-  // Its intro counts half a point on top of the due dictations.
-  const notTricky = byId(
-    reviewed('one:dictation', lastWeek, { due: start }),
-    reviewed('two:dictation', lastWeek, { due: start }),
-  );
-  expect(session.effort).toBe(
-    createSession({ deck, concepts, cards: notTricky, now: start }).effort + 0.5,
-  );
+  // Not introduced before it's asked, as that would give the answer away.
+  expect(session.intros).toEqual([]);
 
-  // A word missed again and again while still learning is tricky too, but not a question.
+  session = answer(session, Rating.Again);
+  expect(getCurrentIntro(session)?.id).toBe('one');
+  session = introduce(session);
+  expect(getCurrentCard(session)?.id).toBe('one:dictation');
+  // Asked again right after its intro, it can't be rated Easy.
+  session = answer(session, Rating.Easy);
+  expect(session.reviews[1].rating).toBe(Rating.Good);
+  // Missed again, it isn't introduced a second time.
+  session = answer({ ...session, queue: ['one:dictation'] }, Rating.Again);
+  expect(session.intros).toEqual([]);
+
+  // A word missed but not tricky isn't introduced again.
+  const both = createSession({ deck, concepts, cards, now: start });
+  expect(both.tricky).toEqual(['one']);
+  const twoFirst = { ...both, queue: ['two:dictation', 'one:dictation'] };
+  expect(answer(twoFirst, Rating.Again).intros).toEqual([]);
+});
+
+test('a word is tricky once missed again and again, but a question never is', () => {
+  const lastWeek = new Date(start.getTime() - 7 * 24 * 60 * 60_000);
   const missed = byId(reviewed('two:dictation', lastWeek, { due: start, difficulty: 9.6 }));
   expect(createSession({ deck, concepts, cards: missed, now: start }).tricky).toEqual(['two']);
   const questions: Concept[] = [
@@ -432,28 +451,8 @@ test('introduces a tricky word again before it is practised', () => {
     reviewed('square-3:question-type', lastWeek, { due: start, lapses: 3 }),
   );
   expect(
-    createSession({ deck: quiz, concepts: questions, cards: hardQuestion, now: start }).intros,
+    createSession({ deck: quiz, concepts: questions, cards: hardQuestion, now: start }).tricky,
   ).toEqual([]);
-});
-
-test('rates the first answer to a tricky word just introduced Good at most', () => {
-  const lastWeek = new Date(start.getTime() - 7 * 24 * 60 * 60_000);
-  const cards = byId(reviewed('one:dictation', lastWeek, { due: start, lapses: 2 }));
-  const session = createSession({
-    deck: { ...deck, conceptIds: ['one'] },
-    concepts,
-    cards,
-    now: start,
-  });
-  const introduced = introduce(session);
-  const answered = submitReview(introduced, {
-    input: 'eins',
-    elapsedMs: 1000,
-    issues: [],
-    rating: Rating.Easy,
-    now: start,
-  });
-  expect(answered.reviews[0].rating).toBe(Rating.Good);
 });
 
 test('rates the first answer to a word just introduced Good at most', () => {

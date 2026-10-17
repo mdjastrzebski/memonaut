@@ -135,7 +135,10 @@ export interface Session {
   intros: string[];
   /** Ids of the Concepts introduced so far. */
   introduced: string[];
-  /** Ids of the tricky words picked, which are introduced again before they're practised. */
+  /**
+   * Ids of the tricky words picked. One is still asked first, so its answer shows what's
+   * remembered, and introduced again only once it's missed, before it's asked again.
+   */
   tricky: string[];
   reviews: Review[];
   /** Effort points the picked Cards were expected to take. */
@@ -211,23 +214,15 @@ export function createSession({
           : step === Step.New
             ? [newOrder.indexOf(concept.id), 0]
             : [card.srs.due.getTime(), conceptIndex];
-      // A new word is introduced before its first exercise, so it isn't first met in a guess, and
-      // a tricky one again, to learn it anew. A question isn't, as showing it with its answer would
-      // give it away.
-      const tricky = isTricky(conceptCards(concept.id));
-      const intro = (step === Step.New || tricky) && concept.kind === 'language';
-      const effort = getCardEffort(card, now);
-      return { concept, card, step, tricky, intro, effort, sortKey: [step, ...sortKey] };
+      // A new word is introduced before its first exercise, so it isn't first met in a guess. A
+      // question isn't, as showing it with its answer would give it away.
+      const intro = step === Step.New && concept.kind === 'language';
+      const tricky = concept.kind === 'language' && isTricky(conceptCards(concept.id));
+      const effort = getCardEffort(card, now) + (intro ? INTRO_EFFORT : 0);
+      return { concept, card, step, intro, tricky, effort, sortKey: [step, ...sortKey] };
     }),
   );
   candidates.sort((a, b) => compareKeys(a.sortKey, b.sortKey));
-  // A word is introduced once, before the first of its Cards.
-  const withIntro = new Set<string>();
-  for (const candidate of candidates) {
-    if (!candidate.intro || withIntro.has(candidate.concept.id)) continue;
-    withIntro.add(candidate.concept.id);
-    candidate.effort += INTRO_EFFORT;
-  }
   const picked = pickWithinEffort(candidates.slice(0, maxCards), maxEffort);
   const pickedConceptIds = (filter: (candidate: (typeof picked)[number]) => boolean) => [
     ...new Set(picked.filter(filter).map(({ concept }) => concept.id)),
@@ -401,7 +396,10 @@ export function getCurrentCard(session: Session): Card | undefined {
   return cardId ? session.cards[cardId] : undefined;
 }
 
-/** The new or tricky word to introduce before the current Card, if it's still to be introduced. */
+/**
+ * The word to introduce before the current Card, if it's still to be introduced: a new one, or a
+ * tricky one just missed.
+ */
 export function getCurrentIntro(session: Session): Concept | undefined {
   const card = getCurrentCard(session);
   return card && session.intros.includes(card.conceptId)
@@ -455,20 +453,20 @@ export interface SubmitReviewInput {
 }
 
 /**
- * The rating an answer to a Card is scheduled with. The first answer to a word just introduced, new
- * or tricky, counts as Good at most: picking it fast moments after seeing it doesn't show it's easy
- * to remember.
+ * The rating an answer to a Card is scheduled with. An answer to a word introduced in the session,
+ * new or tricky, counts as Good at most while its Card is still learning: picking it fast moments
+ * after seeing it doesn't show it's easy to remember.
  */
 export function getScheduledGrade(session: Session, card: Card, grade: Grade): Grade {
   const justIntroduced =
-    session.introduced.includes(card.conceptId) &&
-    !session.reviews.some((review) => review.cardId === card.id);
+    session.introduced.includes(card.conceptId) && card.srs.state !== State.Review;
   return justIntroduced && grade === Rating.Easy ? Rating.Good : grade;
 }
 
 /**
  * Applies a review to the current Card, with the rating it's scheduled with, and moves it to the
- * end of the queue if it's due again soon.
+ * end of the queue if it's due again soon. A tricky word missed is introduced again before that,
+ * once per session.
  */
 export function submitReview(session: Session, { now, ...input }: SubmitReviewInput): Session {
   const card = getCurrentCard(session);
@@ -480,11 +478,17 @@ export function submitReview(session: Session, { now, ...input }: SubmitReviewIn
   const { card: srsAfter, log } = reviewSrsCard(card.srs, answer.rating, now);
   const dueSoon = srsAfter.due.getTime() - now.getTime() <= LEARN_AHEAD_MS;
   const rest = session.queue.slice(1);
+  const reintroduce =
+    answer.rating === Rating.Again &&
+    session.tricky.includes(card.conceptId) &&
+    !session.introduced.includes(card.conceptId) &&
+    !session.intros.includes(card.conceptId);
 
   return {
     ...session,
     cards: { ...session.cards, [card.id]: { ...card, srs: srsAfter } },
     queue: dueSoon ? [...rest, card.id] : rest,
+    intros: reintroduce ? [...session.intros, card.conceptId] : session.intros,
     reviews: [...session.reviews, { cardId: card.id, ...answer, log, srsAfter }],
   };
 }
