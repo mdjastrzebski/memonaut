@@ -108,7 +108,7 @@ concepts:
     }
   - { id: der-hund, local: pies, foreign: der Hund, group: animal }
   - { id: die-katze, local: kot, foreign: die Katze, group: animal }
-  # Przybory szkolne, zawsze z rodzajnikiem, i ich liczba mnoga, zawsze z die. Przybory do pisania są rodzaju męskiego, rzeczowniki na -e zwykle żeńskiego.
+  # Przybory szkolne, zawsze z rodzajnikiem, i ich liczba mnoga, zawsze z die. Rzeczowniki na -e zwykle żeńskiego.
   - {
       id: das-heft,
       local: zeszyt,
@@ -123,7 +123,6 @@ concepts:
       foreign: der Kuli,
       localPlural: długopisy,
       foreignPlural: die Kulis,
-      explanation: 'do pisania → [der]',
       group: thing/school,
     }
   - {
@@ -132,7 +131,6 @@ concepts:
       foreign: der Marker,
       localPlural: zakreślacze,
       foreignPlural: die Marker,
-      explanation: 'do pisania → [der]',
       group: thing/school,
     }
   - {
@@ -158,7 +156,6 @@ concepts:
       foreign: der Bleistift,
       localPlural: ołówki,
       foreignPlural: die Bleistifte,
-      explanation: 'do pisania → [der]',
       group: thing/school,
     }
   - {
@@ -167,7 +164,6 @@ concepts:
       foreign: der Buntstift,
       localPlural: kredki,
       foreignPlural: die Buntstifte,
-      explanation: 'do pisania → [der]',
       group: thing/school,
     }
   - {

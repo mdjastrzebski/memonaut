@@ -19,7 +19,7 @@ concepts:
   - { id: was-ist-das, local: co to jest?, foreign: was ist das?, core: true }
   - { id: wer-ist-das, local: kto to jest?, foreign: wer ist das? }
   #- { id: ich-bin-10-jahre-alt, local: mam 10 lat, foreign: ich bin 10 Jahre alt }
-  # Przybory szkolne, zawsze z rodzajnikiem. Przybory do pisania są rodzaju męskiego, rzeczowniki na -e zwykle żeńskiego.
+  # Przybory szkolne, zawsze z rodzajnikiem. Rzeczowniki na -e zwykle żeńskiego.
   - { id: die-schulsachen, local: przybory szkolne, foreign: die Schulsachen, plural: true }
   # Pozostałe przedmioty osobiste i zwierzęta.
   - { id: der-schreibtisch, local: biurko, foreign: der Schreibtisch, group: thing/personal }
