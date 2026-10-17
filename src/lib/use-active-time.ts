@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 
 import {
   getActiveMs,
+  getIdleMs,
   pauseActiveTime,
   recordActivity,
   startActiveTime,
@@ -12,10 +13,14 @@ const ACTIVITY_EVENTS = ['keydown', 'pointerdown'] as const;
 
 /**
  * Tracks active time while `running`: starts afresh each time it turns on, stops when the learner
- * is idle or the page is hidden, and goes on with the next key press or tap. Returns a getter
- * for the active time so far; kept in a ref, since every key press updates it.
+ * is idle or the page is hidden, and goes on with the next key press or tap. Returns getters for
+ * the active time so far and the time since the last input; kept in a ref, since every key press
+ * updates it.
  */
-export function useActiveTime(running: boolean): () => number {
+export function useActiveTime(running: boolean): {
+  getActiveMs: () => number;
+  getIdleMs: () => number | null;
+} {
   const time = useRef<ActiveTime>({ accumulatedMs: 0, lastActivityAt: null });
 
   useEffect(() => {
@@ -38,5 +43,8 @@ export function useActiveTime(running: boolean): () => number {
     };
   }, [running]);
 
-  return useCallback(() => getActiveMs(time.current, Date.now()), []);
+  return {
+    getActiveMs: useCallback(() => getActiveMs(time.current, Date.now()), []),
+    getIdleMs: useCallback(() => getIdleMs(time.current, Date.now()), []),
+  };
 }

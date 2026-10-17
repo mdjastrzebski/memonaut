@@ -2,6 +2,7 @@ import { expect, test } from 'vitest';
 
 import {
   getActiveMs,
+  getIdleMs,
   IDLE_CREDIT_MS,
   IDLE_TIMEOUT_MS,
   pauseActiveTime,
@@ -67,4 +68,11 @@ test('pausing twice keeps the time', () => {
   const time = pauseActiveTime(pauseActiveTime(startActiveTime(0), seconds(5)), seconds(20));
 
   expect(getActiveMs(time, seconds(20))).toBe(seconds(5));
+});
+
+test('tells the time since the last input until paused', () => {
+  const time = recordActivity(startActiveTime(0), seconds(10));
+
+  expect(getIdleMs(time, seconds(35))).toBe(seconds(25));
+  expect(getIdleMs(pauseActiveTime(time, seconds(35)), seconds(40))).toBeNull();
 });

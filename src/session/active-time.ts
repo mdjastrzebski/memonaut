@@ -43,3 +43,8 @@ export function pauseActiveTime(time: ActiveTime, now: number): ActiveTime {
   if (time.lastActivityAt === null) return time;
   return { accumulatedMs: getActiveMs(time, now), lastActivityAt: null };
 }
+
+/** How long since the last input, or null while paused. */
+export function getIdleMs(time: ActiveTime, now: number): number | null {
+  return time.lastActivityAt === null ? null : Math.max(0, now - time.lastActivityAt);
+}
