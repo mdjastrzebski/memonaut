@@ -63,13 +63,21 @@ function unitTile(name: string) {
   return screen.getByRole('radio', { name });
 }
 
-/** Opens the app and starts a session with every German Essentials word. */
+/** Reads past new words' intros, up to the next exercise. */
+async function skipIntros(user: ReturnType<typeof userEvent.setup>) {
+  while (screen.queryByRole('region', { name: 'New word' })) {
+    await user.click(screen.getByRole('button', { name: /Continue/ }));
+  }
+}
+
+/** Opens the app and starts a session with every German Essentials word, past the first intros. */
 async function startEssentialsSession(user: ReturnType<typeof userEvent.setup>) {
   render(<App />);
   await user.click(screen.getByRole('radio', { name: 'German' }));
   // At the default pace, 20 minutes fits a dictation of every Essentials word.
   await user.click(screen.getByRole('radio', { name: '20 min' }));
   await user.click(screen.getByRole('button', { name: 'Start session' }));
+  await skipIntros(user);
 }
 
 /**
@@ -171,6 +179,7 @@ test('the Advanced panel shows only with dev=1, starts collapsed and stays expan
   const { unmount } = render(<App />);
   await user.click(screen.getByRole('radio', { name: 'German' }));
   await user.click(screen.getByRole('button', { name: 'Start session' }));
+  await skipIntros(user);
   expect(screen.queryByRole('button', { name: 'Advanced' })).not.toBeInTheDocument();
   unmount();
 
@@ -178,6 +187,7 @@ test('the Advanced panel shows only with dev=1, starts collapsed and stays expan
   try {
     render(<App />);
     await user.click(screen.getByRole('button', { name: 'Start session' }));
+    await skipIntros(user);
     const toggle = () => screen.getByRole('button', { name: 'Advanced' });
     const panel = () => screen.getByRole('region', { name: 'Advanced' });
     expect(toggle()).toHaveAttribute('aria-expanded', 'false');
@@ -315,13 +325,15 @@ test('dictation reads the word aloud and shows its meaning only after checking',
   const user = userEvent.setup();
   await startEssentialsSession(user);
 
-  expect(spoken).toHaveLength(1);
   const { local, foreign, hint } = currentConcept();
+  // Read aloud in its intro, then again as the dictation appears.
+  expect(spoken.filter((word) => word === foreign)).toHaveLength(2);
+  expect(spoken.at(-1)).toBe(foreign);
   expect(screen.queryByText(local)).not.toBeInTheDocument();
   expect(screen.queryByText(hint!)).not.toBeInTheDocument();
 
   await user.click(screen.getByRole('button', { name: 'Listen' }));
-  expect(spoken).toEqual([foreign, foreign]);
+  expect(spoken.slice(-2)).toEqual([foreign, foreign]);
 
   await user.type(screen.getByRole('textbox', { name: 'Answer' }), `${foreign}{Enter}`);
   expect(screen.getByRole('status')).toHaveTextContent(local);
@@ -337,16 +349,18 @@ test('a word moves on to translation once its dictation graduates', async () => 
 
   let dictations = 0;
   while (screen.queryByRole('button', { name: 'Listen' })) {
-    // A fast exact answer is rated Easy, so the card graduates and leaves the session.
+    // A fast exact answer is rated Easy, so the card graduates and leaves the session. The first
+    // one, right after the word's intro, counts as Good, so each word comes back once more.
     await user.type(
       screen.getByRole('textbox', { name: 'Answer' }),
       `${currentConcept().foreign}{Enter}`,
     );
     await user.keyboard('{Enter}');
+    await skipIntros(user);
     dictations++;
   }
   // New words start with dictation only.
-  expect(dictations).toBe(essentialsSize);
+  expect(dictations).toBe(2 * essentialsSize);
   expect(screen.getByText(/Session results/)).toBeInTheDocument();
 
   // Every word was practised today, so its unlocked translation only fills the room left. 5 minutes
@@ -417,8 +431,9 @@ test('keeps progress after a reload, even mid-session, without asking before lea
   const { unmount } = render(<App />);
   await user.click(screen.getByRole('radio', { name: 'German' }));
   await user.click(screen.getByRole('button', { name: 'Start session' }));
+  await skipIntros(user);
 
-  // A fast exact dictation is rated Easy, so the word is due again in a few days.
+  // The first answer after the word's intro counts as Good at most, so it's due again soon.
   await user.type(
     screen.getByRole('textbox', { name: 'Answer' }),
     `${currentConcept().foreign}{Enter}`,
@@ -432,8 +447,7 @@ test('keeps progress after a reload, even mid-session, without asking before lea
 
   const tile = screen.getByRole('radio', { name: 'Essentials' }).closest('label');
   expect(tile).toHaveTextContent(`Learned0Learning1New${essentialsSize - 1}`);
-  // Its translation is unlocked, but waits until the next study day.
-  expect(tile).toHaveTextContent('Nothing due today');
+  expect(tile).toHaveTextContent('1 word due today');
   // Subject tiles leave due words to the set tiles.
   expect(screen.getByRole('radio', { name: 'German' }).closest('label')).not.toHaveTextContent(
     'due today',
@@ -490,21 +504,26 @@ test('picking a unit shows its stats and words, and starts a session of it', asy
 
   await user.click(within(selected).getByRole('button', { name: 'Start session' }));
   expect(screen.getByRole('progressbar', { name: 'Kapitel 0 progress' })).toBeInTheDocument();
-  // A unit starts with multiple choice.
+  // A unit starts with its new words' intros, then multiple choice.
+  const intro = screen.getByRole('region', { name: 'New word' });
+  expect(intro).toHaveTextContent('wort 1');
+  expect(intro).toHaveTextContent('słowo 1');
+  await skipIntros(user);
   expect(screen.getByRole('group', { name: 'Options' })).toBeInTheDocument();
 });
 
 test('a unit unlocks recognition choice, dictation, translation choice, then translation', async () => {
   vi.useFakeTimers({ toFake: ['Date'], now: new Date(2026, 0, 5, 10) });
-  // 4 points a minute: 5 minutes fit 10 new words' recognition, at 1 point answered twice, and
-  // 10 minutes their dictation, at 2 points answered twice.
-  localStorage.setItem('memonaut:pace', JSON.stringify({ german: 4 }));
+  // 2.2 points a minute: 10 minutes fit 8 new words' recognition, at 1 point answered twice and
+  // half a point for the intro, and 15 minutes their dictation, at 2 points answered twice.
+  localStorage.setItem('memonaut:pace', JSON.stringify({ german: 2.2 }));
   const user = userEvent.setup();
   render(<App />);
   await user.click(screen.getByRole('radio', { name: 'German' }));
   await pickUnit(user, 'Kapitel 0');
-  await user.click(screen.getByRole('radio', { name: '5 min' }));
+  await user.click(screen.getByRole('radio', { name: '10 min' }));
   await user.click(screen.getByRole('button', { name: 'Start session' }));
+  await skipIntros(user);
   const concepts = content.concepts.filter(
     (concept): concept is LanguageConcept =>
       concept.kind === 'language' && concept.subjectId === 'german',
@@ -523,8 +542,9 @@ test('a unit unlocks recognition choice, dictation, translation choice, then tra
 
   // Recognition: the German word is shown and read aloud; its meaning is picked with a number key.
   // A right pick is rated Good, so each word comes back once more before it graduates. Only the
-  // first is picked really fast: it's rated Easy and graduates at once. Under a minute passes in
-  // all, too short to measure the pace, so the next session is planned at the same one.
+  // first is picked really fast: it's rated Easy, but right after its intro it counts as Good, so
+  // it comes back too. Under a minute passes in all, too short to measure the pace, so the next
+  // session is planned at the same one.
   let recognitions = 0;
   while (screen.queryByText('What does it mean?')) {
     const foreign = screen.getByRole('heading', { level: 2 }).textContent;
@@ -537,12 +557,13 @@ test('a unit unlocks recognition choice, dictation, translation choice, then tra
     expect(screen.getByRole('status')).toHaveTextContent(recognitions === 0 ? 'Easy' : 'Good');
     expect(screen.getByRole('status')).toHaveTextContent(`${foreign}=means${local}`);
     await user.keyboard('{Enter}');
+    await skipIntros(user);
     recognitions++;
   }
-  expect(recognitions).toBe(19);
+  expect(recognitions).toBe(16);
 
-  await startNewSession(new Date(2026, 0, 6, 10), '10 min');
-  for (let i = 0; i < 10; i++) {
+  await startNewSession(new Date(2026, 0, 6, 10), '15 min');
+  for (let i = 0; i < 8; i++) {
     await user.type(screen.getByRole('textbox', { name: 'Answer' }), `${spoken.at(-1)}{Enter}`);
     await user.keyboard('{Enter}');
   }
@@ -604,7 +625,8 @@ test('words practised in a session show their status, with details on hover', as
   const user = userEvent.setup();
   await startEssentialsSession(user);
 
-  // A fast exact dictation is rated Easy and learned; the word's translation is still new.
+  // The first answer after the word's intro counts as Good at most, so it's still learning; the
+  // word's translation is still new.
   const { foreign } = currentConcept();
   await user.type(screen.getByRole('textbox', { name: 'Answer' }), `${foreign}{Enter}`);
   await user.keyboard('{Enter}');
@@ -625,7 +647,7 @@ test('words practised in a session show their status, with details on hover', as
 
   await user.hover(status);
   const tooltip = await screen.findByRole('tooltip');
-  expect(tooltip).toHaveTextContent(/Dictation: learned, back in \d+d/);
+  expect(tooltip).toHaveTextContent(/Dictation: learning, back in \d+m/);
   expect(tooltip).toHaveTextContent('Translation: not practised yet');
 });
 
@@ -633,8 +655,9 @@ test('a session holds as many exercises as fit in the minutes chosen, 10 by defa
   const user = userEvent.setup();
   render(<App />);
 
-  // At the default pace, a new word's recognition takes 1 point, answered twice.
-  const fit = (minutes: number) => Math.floor((minutes * DEFAULT_POINTS_PER_MINUTE) / 2);
+  // At the default pace, a new word's recognition takes 1 point, answered twice, and its intro half
+  // a point.
+  const fit = (minutes: number) => Math.floor((minutes * DEFAULT_POINTS_PER_MINUTE) / 2.5);
   await user.click(screen.getByRole('radio', { name: 'German' }));
   await pickUnit(user, 'Kapitel 0');
   expect(screen.getByRole('radio', { name: '10 min' })).toBeChecked();
@@ -643,6 +666,7 @@ test('a session holds as many exercises as fit in the minutes chosen, 10 by defa
   await user.click(screen.getByRole('radio', { name: '5 min' }));
   expect(screen.getByText(`${fit(5)} exercises · about 5m`)).toBeInTheDocument();
   await user.click(screen.getByRole('button', { name: 'Start session' }));
+  await skipIntros(user);
   await finishSession(user);
   expect(sessionWords()).toHaveLength(fit(5));
   expect(screen.getByText('planned 5m')).toBeInTheDocument();
@@ -660,10 +684,14 @@ test('Polish practises spelling with dictation only', async () => {
 
   await user.click(screen.getByRole('radio', { name: 'Polish' }));
   expect(unitTile('Trudne słówka')).toBeChecked();
-  // At the default pace, a new word's dictation takes 2 points, answered twice.
-  const fit = Math.floor((5 * DEFAULT_POINTS_PER_MINUTE) / 4);
+  // At the default pace, a new word's dictation takes 2 points, answered twice, and its intro half
+  // a point.
+  const fit = Math.floor((5 * DEFAULT_POINTS_PER_MINUTE) / 4.5);
   await user.click(screen.getByRole('radio', { name: '5 min' }));
   await user.click(screen.getByRole('button', { name: 'Start session' }));
+  // Each word is introduced first, with its spelling shown.
+  expect(screen.getByRole('region', { name: 'New word' })).toBeInTheDocument();
+  await skipIntros(user);
   expect(screen.getByRole('group', { name: 'Special characters' })).toHaveTextContent('ż');
 
   let dictations = 0;
@@ -671,10 +699,12 @@ test('Polish practises spelling with dictation only', async () => {
     await user.type(screen.getByRole('textbox', { name: 'Answer' }), `${spoken.at(-1)}{Enter}`);
     expect(screen.getByRole('status')).toHaveTextContent('Easy');
     await user.keyboard('{Enter}');
+    await skipIntros(user);
     dictations++;
   }
 
-  expect(dictations).toBe(fit);
+  // The first answer right after a word's intro counts as Good, so each word comes back once.
+  expect(dictations).toBe(2 * fit);
   expect(screen.getByText(/Session results/)).toBeInTheDocument();
   expect(sessionWords()).toHaveLength(fit);
 });
@@ -710,6 +740,7 @@ test('the effort stats show with dev=1 in the URL, with each finished session lo
     await user.click(screen.getByRole('radio', { name: 'German' }));
     await user.click(screen.getByRole('button', { name: 'Start session' }));
     for (let i = 0; i < 2; i++) {
+      await skipIntros(user);
       await user.type(
         screen.getByRole('textbox', { name: 'Answer' }),
         `${currentConcept().foreign}{Enter}`,
@@ -756,6 +787,7 @@ test('with dev=1 in the URL, a session can use only some exercise types', async 
     expect(within(types).getByRole('checkbox', { name: 'Article' })).toBeChecked();
 
     await user.click(screen.getByRole('button', { name: 'Start session' }));
+    await skipIntros(user);
     expect(screen.getByText('Der, die or das?')).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Ball');
   } finally {

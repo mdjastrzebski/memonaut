@@ -10,10 +10,11 @@ import type {
 import { getGermanNoun, isGerman } from '@/exercises/german-articles';
 import type { AnswerIssue } from '@/exercises/type-answer';
 import { shuffle } from '@/lib/shuffle';
-import { getCardEffort, getReviewEffort } from '@/session/effort';
+import { getCardEffort, getReviewEffort, INTRO_EFFORT } from '@/session/effort';
 import {
   createSrsCard,
   getRetrievability,
+  Rating,
   reviewSrsCard,
   State,
   type Grade,
@@ -24,6 +25,12 @@ import {
  * This lets a new card go through its learning steps (1m, 10m) and graduate to Review.
  */
 export const LEARN_AHEAD_MS = 20 * 60 * 1000;
+
+/**
+ * How many exercises come between a new word's intro and its first exercise, so that exercise asks
+ * to recall the word rather than echo what's still on screen.
+ */
+export const INTRO_GAP = 2;
 
 /** Every Exercise Type, easiest first. A Concept unlocks them one at a time, in a Deck's order. */
 export const EXERCISE_TYPES: ExerciseType[] = [
@@ -111,6 +118,14 @@ export interface Session {
   cards: Record<string, Card>;
   /** Card ids still to practise in this session; the first one is current. */
   queue: string[];
+  /**
+   * New words still to introduce: ids of Concepts shown with their meaning and read aloud before
+   * their first exercise. An intro isn't a Card: it's never scheduled, and a word left without its
+   * first answer is introduced again next time, as it's still new.
+   */
+  intros: string[];
+  /** Ids of the Concepts introduced so far. */
+  introduced: string[];
   reviews: Review[];
   /** Effort points the picked Cards were expected to take. */
   effort: number;
@@ -184,11 +199,15 @@ export function createSession({
           : step === Step.New
             ? [newOrder.indexOf(concept.id), 0]
             : [card.srs.due.getTime(), conceptIndex];
-      return { concept, card, sortKey: [step, ...sortKey] };
+      // A new word is introduced before its first exercise, so it isn't first met in a guess. A
+      // question isn't, as showing it with its answer would give it away.
+      const intro = step === Step.New && concept.kind === 'language';
+      const effort = getCardEffort(card, now) + (intro ? INTRO_EFFORT : 0);
+      return { concept, card, intro, effort, sortKey: [step, ...sortKey] };
     }),
   );
   candidates.sort((a, b) => compareKeys(a.sortKey, b.sortKey));
-  const picked = takeWithinEffort(candidates.slice(0, maxCards), maxEffort, now);
+  const picked = takeWithinEffort(candidates.slice(0, maxCards), maxEffort);
   // Grouped by Exercise Type so the queue below can keep them in order.
   const cards = exerciseTypes.flatMap((exerciseType) =>
     picked.map(({ card }) => card).filter((card) => card.exerciseType === exerciseType),
@@ -205,23 +224,21 @@ export function createSession({
         random,
       ),
     ),
+    intros: picked.filter(({ intro }) => intro).map(({ concept }) => concept.id),
+    introduced: [],
     reviews: [],
-    effort: sumEffort(picked, now),
+    effort: picked.reduce((total, { effort }) => total + effort, 0),
   };
 }
 
 /** The leading candidates whose expected effort fits in `maxEffort`, at least one. */
-function takeWithinEffort<T extends { card: Card }>(candidates: T[], maxEffort: number, now: Date) {
+function takeWithinEffort<T extends { effort: number }>(candidates: T[], maxEffort: number) {
   let total = 0;
-  const count = candidates.findIndex(({ card }) => {
-    total += getCardEffort(card, now);
+  const count = candidates.findIndex(({ effort }) => {
+    total += effort;
     return total > maxEffort;
   });
   return count === -1 ? candidates : candidates.slice(0, Math.max(count, 1));
-}
-
-function sumEffort(picked: { card: Card }[], now: Date): number {
-  return picked.reduce((total, { card }) => total + getCardEffort(card, now), 0);
 }
 
 /**
@@ -333,6 +350,30 @@ export function getCurrentCard(session: Session): Card | undefined {
   return cardId ? session.cards[cardId] : undefined;
 }
 
+/** The new word to introduce before the current Card, if it's still to be introduced. */
+export function getCurrentIntro(session: Session): Concept | undefined {
+  const card = getCurrentCard(session);
+  return card && session.intros.includes(card.conceptId)
+    ? session.concepts[card.conceptId]
+    : undefined;
+}
+
+/**
+ * Marks the current word as introduced and moves its Card back by `INTRO_GAP` exercises, which may
+ * be other words' intros.
+ */
+export function introduce(session: Session): Session {
+  const intro = getCurrentIntro(session);
+  if (!intro) return session;
+  const [cardId, ...rest] = session.queue;
+  return {
+    ...session,
+    queue: [...rest.slice(0, INTRO_GAP), cardId, ...rest.slice(INTRO_GAP)],
+    intros: session.intros.filter((conceptId) => conceptId !== intro.id),
+    introduced: [...session.introduced, intro.id],
+  };
+}
+
 /**
  * How far the session is, from 0 to 1: a Card counts fully once it leaves the session and half
  * while it's still queued after being answered. Never goes back down.
@@ -346,11 +387,11 @@ export function getSessionProgress(session: Session): number {
   return (done + answeredInQueue / 2) / total;
 }
 
-/** Effort points of the answers given so far. */
+/** Effort points of the answers given and the words introduced so far. */
 export function getEffortDone(session: Session): number {
   return session.reviews.reduce(
     (total, review) => total + getReviewEffort(review, session.cards[review.cardId].exerciseType),
-    0,
+    session.introduced.length * INTRO_EFFORT,
   );
 }
 
@@ -362,13 +403,27 @@ export interface SubmitReviewInput {
   now: Date;
 }
 
-/** Applies a review to the current Card and moves it to the end of the queue if it's due again soon. */
-export function submitReview(session: Session, { now, ...answer }: SubmitReviewInput): Session {
+/**
+ * The rating an answer to a Card is scheduled with. The first answer to a word just introduced
+ * counts as Good at most: picking it fast moments after seeing it doesn't show it's easy to remember.
+ */
+export function getScheduledGrade(session: Session, card: Card, grade: Grade): Grade {
+  const justIntroduced =
+    card.srs.state === State.New && session.introduced.includes(card.conceptId);
+  return justIntroduced && grade === Rating.Easy ? Rating.Good : grade;
+}
+
+/**
+ * Applies a review to the current Card, with the rating it's scheduled with, and moves it to the
+ * end of the queue if it's due again soon.
+ */
+export function submitReview(session: Session, { now, ...input }: SubmitReviewInput): Session {
   const card = getCurrentCard(session);
   if (!card) {
     return session;
   }
 
+  const answer = { ...input, rating: getScheduledGrade(session, card, input.rating) };
   const { card: srsAfter, log } = reviewSrsCard(card.srs, answer.rating, now);
   const dueSoon = srsAfter.due.getTime() - now.getTime() <= LEARN_AHEAD_MS;
   const rest = session.queue.slice(1);

@@ -9,7 +9,7 @@ import type { Card, Concept, Subject } from '@/domain/types';
 import type { AnswerResult } from '@/exercises/type-answer';
 import { formatNumber, formatRelative, formatSeconds } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import type { Session, SubmitReviewInput } from '@/session/session';
+import { getScheduledGrade, type Session, type SubmitReviewInput } from '@/session/session';
 import { previewReview, Rating, ratingName, State, type Grade } from '@/srs/scheduler';
 
 /** What every Exercise Type's component gets: the Card to practise and the screen's settings. */
@@ -36,14 +36,16 @@ export interface AdvancedToggle {
 interface ExerciseCardProps {
   /** Extra context drawn large in the corner, e.g. "3". */
   hint?: string;
+  /** What the card is for screen readers; "Exercise" if left out. */
+  label?: string;
   children: ReactNode;
 }
 
 /** The card an exercise is shown on. */
-export function ExerciseCard({ hint, children }: ExerciseCardProps) {
+export function ExerciseCard({ hint, label = 'Exercise', children }: ExerciseCardProps) {
   return (
     <section
-      aria-label="Exercise"
+      aria-label={label}
       className="relative animate-card-in overflow-hidden rounded-[2rem] border-2 border-line bg-card px-6 pt-6 pb-6 shadow-sticker-lg sm:px-10 sm:pt-8 sm:pb-8"
     >
       {hint && (
@@ -124,6 +126,7 @@ export function EnterHint() {
 }
 
 interface ExerciseAdvancedProps extends AdvancedToggle {
+  session: Session;
   card: Card;
   now: Date;
   /** The answer's rating, once given. */
@@ -135,9 +138,17 @@ interface ExerciseAdvancedProps extends AdvancedToggle {
  * reviewed and forgotten, and when it was last and is next reviewed; once answered, each as
  * before → after.
  */
-export function ExerciseAdvanced({ card, now, result, open, onToggle }: ExerciseAdvancedProps) {
+export function ExerciseAdvanced({
+  session,
+  card,
+  now,
+  result,
+  open,
+  onToggle,
+}: ExerciseAdvancedProps) {
   const before = card.srs;
-  const after = result && previewReview(before, now)[result.grade].card;
+  const grade = result && getScheduledGrade(session, card, result.grade);
+  const after = grade && previewReview(before, now)[grade].card;
   const isNew = before.state === State.New;
   const change = (from: ReactNode, to: ReactNode | undefined) => (
     <>
@@ -171,8 +182,8 @@ export function ExerciseAdvanced({ card, now, result, open, onToggle }: Exercise
       ),
     ],
   ];
-  if (result) {
-    rows.push(['Answer', `${ratingName(result.grade)} · ${formatSeconds(result.elapsedMs)}`]);
+  if (result && grade) {
+    rows.push(['Answer', `${ratingName(grade)} · ${formatSeconds(result.elapsedMs)}`]);
   }
 
   return (

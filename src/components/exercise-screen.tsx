@@ -12,10 +12,14 @@ import { QuestionTypeExercise } from '@/components/exercises/question-type-exerc
 import { RecognitionChoiceExercise } from '@/components/exercises/recognition-choice-exercise';
 import { TranslationChoiceExercise } from '@/components/exercises/translation-choice-exercise';
 import { TranslationExercise } from '@/components/exercises/translation-exercise';
+import { WordIntro } from '@/components/exercises/word-intro';
 import type { ExerciseType } from '@/domain/types';
-import { getCurrentCard } from '@/session/session';
+import { getCurrentCard, getCurrentIntro } from '@/session/session';
 
-export type ExerciseScreenProps = Omit<ExerciseProps, 'card' | 'concept'>;
+export interface ExerciseScreenProps extends Omit<ExerciseProps, 'card' | 'concept'> {
+  /** Called once a new word's intro is read, to move on to the next exercise. */
+  onIntroduced: () => void;
+}
 
 /** The component drawing each Exercise Type. */
 const EXERCISE_COMPONENTS: Record<ExerciseType, ComponentType<ExerciseProps>> = {
@@ -30,12 +34,21 @@ const EXERCISE_COMPONENTS: Record<ExerciseType, ComponentType<ExerciseProps>> = 
   'question-type': QuestionTypeExercise,
 };
 
-/** The session's current exercise, drawn by its Exercise Type's component. */
-export function ExerciseScreen(props: ExerciseScreenProps) {
+/**
+ * The session's current exercise, drawn by its Exercise Type's component, or a new word's intro
+ * before its first one.
+ */
+export function ExerciseScreen({ onIntroduced, ...props }: ExerciseScreenProps) {
   const card = getCurrentCard(props.session);
   const concept = card && props.session.concepts[card.conceptId];
   if (!card || !concept) return null;
 
+  if (getCurrentIntro(props.session)) {
+    // Keyed so the next word's intro plays its word again.
+    return (
+      <WordIntro key={concept.id} {...props} card={card} concept={concept} onDone={onIntroduced} />
+    );
+  }
   const Exercise = EXERCISE_COMPONENTS[card.exerciseType];
   return <Exercise {...props} card={card} concept={concept} />;
 }

@@ -34,7 +34,7 @@ test('logs the plan, then the answers and which cards were done with', () => {
     deckId: 'numbers',
     minutes: 10,
     pointsPerMinute: 8,
-    plannedEffort: 8,
+    plannedEffort: 9,
     cards: [
       { cardId: 'one:dictation', state: State.New, answers: 0, done: false },
       { cardId: 'two:dictation', state: State.New, answers: 0, done: false },

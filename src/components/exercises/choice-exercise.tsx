@@ -39,6 +39,7 @@ export interface ChoiceExerciseProps extends ExerciseProps {
 
 /** A multiple-choice exercise: the learner picks the right option for the prompt, also with keys 1–4. */
 export function ChoiceExercise({
+  session,
   card,
   onReview,
   advanced,
@@ -162,7 +163,15 @@ export function ChoiceExercise({
         )}
       </ExerciseCard>
 
-      {advanced && <ExerciseAdvanced card={card} now={now} result={picked?.result} {...advanced} />}
+      {advanced && (
+        <ExerciseAdvanced
+          session={session}
+          card={card}
+          now={now}
+          result={picked?.result}
+          {...advanced}
+        />
+      )}
     </div>
   );
 }

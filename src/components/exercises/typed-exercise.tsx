@@ -252,7 +252,13 @@ export function TypedExercise({
       </ExerciseCard>
 
       {advanced && (
-        <ExerciseAdvanced card={card} now={now} result={checked?.result} {...advanced} />
+        <ExerciseAdvanced
+          session={session}
+          card={card}
+          now={now}
+          result={checked?.result}
+          {...advanced}
+        />
       )}
     </div>
   );
