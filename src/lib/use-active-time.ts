@@ -16,7 +16,7 @@ const ACTIVITY_EVENTS = ['keydown', 'pointerdown'] as const;
  * for the active time so far; kept in a ref, since every key press updates it.
  */
 export function useActiveTime(running: boolean): () => number {
-  const time = useRef<ActiveTime>({ accumulatedMs: 0, activeSince: null, lastActivityAt: 0 });
+  const time = useRef<ActiveTime>({ accumulatedMs: 0, lastActivityAt: null });
 
   useEffect(() => {
     if (!running) return;
