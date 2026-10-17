@@ -6,6 +6,7 @@ import {
   ExerciseCard,
   ExerciseAdvanced,
   FeedbackPanel,
+  NextTimeNote,
   type ExerciseProps,
 } from '@/components/exercises/exercise-parts';
 import { useAnswer } from '@/components/exercises/use-answer';
@@ -158,6 +159,7 @@ export function ChoiceExercise({
                 </Button>
               )}
             </FeedbackPanel>
+            <NextTimeNote session={session} grade={picked.result.grade} />
             <ContinueButton ref={continueRef} type="button" onClick={submit} />
           </div>
         )}

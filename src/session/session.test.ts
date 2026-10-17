@@ -19,6 +19,7 @@ import {
   getScheduledGrade,
   getSessionProgress,
   introduce,
+  isLastTry,
   submitReview,
   withExerciseTypes,
   type Session,
@@ -218,6 +219,65 @@ test('card leaves the session once it graduates to review', () => {
   expect(session.cards[first.id].srs.state).toBe(State.Review);
   expect(session.queue).not.toContain(first.id);
   expect(session.queue).toHaveLength(0);
+});
+
+test('a card missed twice in a session leaves it, and comes first in a session a few hours later', () => {
+  const answer = (session: Session, rating: Grade, now = start) =>
+    submitReview(session, { input: 'x', elapsedMs: 1000, issues: [], rating, now });
+  let session = create();
+  const first = getCurrentCard(session)!;
+
+  expect(isLastTry(session, Rating.Again)).toBe(false);
+  session = answer(session, Rating.Again);
+  expect(session.queue).toContain(first.id);
+
+  // Asked again, it's missed a second time: it leaves, though still learning and due soon.
+  session = { ...session, queue: [first.id, ...session.queue.filter((id) => id !== first.id)] };
+  expect(isLastTry(session, Rating.Again)).toBe(true);
+  expect(isLastTry(session, Rating.Good)).toBe(false);
+  session = answer(session, Rating.Again, minutes(1));
+  expect(session.queue).not.toContain(first.id);
+  expect(session.cards[first.id].srs.state).toBe(State.Learning);
+  // It waits a few hours, so a session started right after doesn't begin with it again.
+  expect(session.cards[first.id].srs.due).toEqual(minutes(1 + 180));
+  expect(session.reviews.at(-1)?.srsAfter.due).toEqual(minutes(1 + 180));
+  const nextSession = (now: Date) =>
+    createSession({
+      deck: { ...deck, exerciseTypes: ['translation'] },
+      concepts,
+      cards: { [first.id]: session.cards[first.id] },
+      maxCards: 1,
+      now,
+    });
+  // Not even reviewed ahead in a session with room left.
+  const soon = createSession({
+    deck: { ...deck, exerciseTypes: ['translation'] },
+    concepts,
+    cards: { [first.id]: session.cards[first.id] },
+    now: minutes(5),
+  });
+  expect(Object.keys(soon.cards)).not.toContain(first.id);
+
+  // Due by a later session, it's picked before anything new.
+  expect(Object.keys(nextSession(minutes(1 + 180)).cards)).toEqual([first.id]);
+});
+
+test('an almost-right answer ends practising a card in the session, though it is due soon', () => {
+  let session = create();
+  const first = getCurrentCard(session)!;
+
+  expect(isLastTry(session, Rating.Hard)).toBe(true);
+  session = submitReview(session, {
+    input: 'zwie',
+    elapsedMs: 1000,
+    issues: ['typo'],
+    rating: Rating.Hard,
+    now: start,
+  });
+
+  expect(session.cards[first.id].srs.state).toBe(State.Learning);
+  expect(session.cards[first.id].srs.due.getTime()).toBeLessThan(minutes(20).getTime());
+  expect(session.queue).not.toContain(first.id);
 });
 
 test('progress counts answered cards half and finished cards fully', () => {

@@ -512,10 +512,10 @@ test('picking a unit shows its stats and words, and starts a session of it', asy
   expect(screen.getByRole('group', { name: 'Options' })).toBeInTheDocument();
 });
 
-test('a unit unlocks recognition choice, dictation, translation choice, then translation', async () => {
+test('a unit unlocks recognition choice, translation choice, then dictation', async () => {
   vi.useFakeTimers({ toFake: ['Date'], now: new Date(2026, 0, 5, 10) });
   // 2.2 points a minute: 10 minutes fit 8 new words' recognition, at 1 point answered twice and
-  // half a point for the intro, and 15 minutes their dictation, at 2 points answered twice.
+  // half a point for the intro, and also their translation choice, at 1 point answered twice.
   localStorage.setItem('memonaut:pace', JSON.stringify({ german: 2.2 }));
   const user = userEvent.setup();
   render(<App />);
@@ -562,9 +562,10 @@ test('a unit unlocks recognition choice, dictation, translation choice, then tra
   }
   expect(recognitions).toBe(16);
 
-  // Answers recognitions and dictations correctly until another exercise comes or the session ends.
-  const answerUntilOther = async () => {
-    const answered = { recognitions: 0, dictations: 0 };
+  // Answer  // Answers recognitions, and translation choices unless left out, correctly until another
+  // exercise comes or the session ends.
+  const answerUntilOther = async ({ translationChoices = true } = {}) => {
+    const answered = { recognitions: 0, translationChoices: 0 };
     for (;;) {
       await skipIntros(user);
       if (screen.queryByText('What does it mean?')) {
@@ -573,9 +574,12 @@ test('a unit unlocks recognition choice, dictation, translation choice, then tra
         const index = options().findIndex((option) => option.textContent?.endsWith(local!));
         await user.keyboard(String(index + 1));
         answered.recognitions++;
-      } else if (screen.queryByRole('textbox', { name: 'Answer' })) {
-        await user.type(screen.getByRole('textbox', { name: 'Answer' }), `${spoken.at(-1)}{Enter}`);
-        answered.dictations++;
+      } else if (translationChoices && screen.queryByText('Which word is it?')) {
+        const local = screen.getByRole('heading', { level: 2 }).textContent;
+        const { foreign } = concepts.find((concept) => concept.local === local)!;
+        const index = options().findIndex((option) => option.textContent?.endsWith(foreign));
+        await user.keyboard(String(index + 1));
+        answered.translationChoices++;
       } else {
         return answered;
       }
@@ -583,16 +587,10 @@ test('a unit unlocks recognition choice, dictation, translation choice, then tra
     }
   };
 
-  // 15 minutes fit just the 8 dictations, and 9 new words' recognitions come on top, 3 for every
-  // 5 minutes.
-  await startNewSession(new Date(2026, 0, 6, 10), '15 min');
-  expect(await answerUntilOther()).toEqual({ recognitions: 18, dictations: 8 });
-
-  // Before the recognitions are due again at 10 AM: 20 minutes fit the 9 dictations unlocked and
-  // some translation choices, and 12 new words come on top, their recognitions mixed in with the
-  // dictations as their intros come up.
-  await startNewSession(new Date(2026, 0, 7, 5), '20 min');
-  expect(await answerUntilOther()).toEqual({ recognitions: 12, dictations: 9 });
+  // 10 minutes fit the 8 translation choices, and 6 new words' recognitions come on top, 3 for
+  // every 5 minutes, each a couple of exercises after its intro.
+  await startNewSession(new Date(2026, 0, 6, 10), '10 min');
+  const before = await answerUntilOther({ translationChoices: false });
   // Translation choice: a wrong pick is rated Again, and the German word is read aloud.
   expect(screen.getByText('Which word is it?')).toBeInTheDocument();
   const local = screen.getByRole('heading', { level: 2 }).textContent;
@@ -606,6 +604,19 @@ test('a unit unlocks recognition choice, dictation, translation choice, then tra
   expect(screen.getByRole('status')).toHaveTextContent('Again');
   await user.click(screen.getByRole('button', { name: /Continue/ }));
   expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  // A fast right pick is rated Easy and graduates at once, so the missed one comes back once and the
+  // others are picked once. The new words' recognition counts as Good at most, so comes back once.
+  const after = await answerUntilOther();
+  expect(before.recognitions + after.recognitions).toBe(12);
+  expect(after.translationChoices).toBe(8);
+
+  // Next day, before the recognitions are due again at 10 AM, the 6 newer words' translation choice
+  // comes first, then dictation of the words whose translation choice graduated: the German word is
+  // read aloud and typed.
+  await startNewSession(new Date(2026, 0, 7, 5), '10 min');
+  expect((await answerUntilOther()).translationChoices).toBe(6);
+  expect(screen.getByRole('textbox', { name: 'Answer' })).toBeInTheDocument();
+  expect(concepts.some((concept) => concept.foreign === spoken.at(-1))).toBe(true);
 }, 20_000);
 
 test('switching subject selects its core set and English has no special characters', async () => {

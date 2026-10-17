@@ -14,6 +14,7 @@ import {
   ExerciseCard,
   ExerciseAdvanced,
   FeedbackPanel,
+  NextTimeNote,
   type ExerciseProps,
 } from '@/components/exercises/exercise-parts';
 import { useAnswer } from '@/components/exercises/use-answer';
@@ -23,8 +24,9 @@ import { MarkedText } from '@/components/marked-text';
 import { SpecialCharacters } from '@/components/special-characters';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { alignAnswer, diffAnswer } from '@/exercises/answer-diff';
 import { splitTrickySpellings } from '@/exercises/tricky-spellings';
-import { getFastLimitMs, gradeAnyAnswer } from '@/exercises/type-answer';
+import { getFastLimitMs, gradeAnyAnswer, normalizeSpacing } from '@/exercises/type-answer';
 import { cn } from '@/lib/utils';
 import { Rating, type Grade } from '@/srs/scheduler';
 
@@ -53,7 +55,8 @@ interface TypedExerciseProps extends ExerciseProps {
 
 /**
  * An exercise where the learner types the answer, e.g. the foreign word. After a wrong or
- * almost-right answer, they type the right one before moving on.
+ * almost-right answer, they type the right one before moving on: when it was close, by fixing the
+ * marked letters of their own answer, or else by copying it.
  */
 export function TypedExercise({
   session,
@@ -78,7 +81,7 @@ export function TypedExercise({
   const [rightAnswer, setRightAnswer] = useState(answer);
   const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const pendingCaret = useRef<number | null>(null);
+  const pendingSelection = useRef<[start: number, end: number] | null>(null);
 
   const specialCharacters = subject.specialCharacters ?? [];
   const strict = session.deck.strictSpelling;
@@ -107,11 +110,11 @@ export function TypedExercise({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Restore the caret after inserting a special character.
+  // Restore the caret after inserting a special character, or select the first letter to fix.
   useLayoutEffect(() => {
-    if (pendingCaret.current !== null) {
-      inputRef.current?.setSelectionRange(pendingCaret.current, pendingCaret.current);
-      pendingCaret.current = null;
+    if (pendingSelection.current !== null) {
+      inputRef.current?.setSelectionRange(...pendingSelection.current);
+      pendingSelection.current = null;
     }
   }, [input, retyped]);
 
@@ -119,6 +122,8 @@ export function TypedExercise({
   const fastLimitMs = getFastLimitMs(answer);
   // After a wrong or almost-right answer, the learner types the right one before moving on.
   const retyping = checked !== null && (grade === Rating.Hard || grade === Rating.Again);
+  // Started from their own answer when it was close.
+  const fixing = retyping && diffAnswer(rightAnswer, checked.input) !== undefined;
   const retypedCorrectly = retyping && retyped === rightAnswer;
   const [value, setValue] = retyping ? [retyped, setRetyped] : [input, setInput];
 
@@ -129,6 +134,12 @@ export function TypedExercise({
       check(input, (elapsedMs) => {
         const best = gradeAnyAnswer([answer, ...alternatives], input, elapsedMs, { strict });
         setRightAnswer(best.answer);
+        const wrong = best.result.grade === Rating.Hard || best.result.grade === Rating.Again;
+        if (wrong && diffAnswer(best.answer, input)) {
+          const typed = normalizeSpacing(input);
+          setRetyped(typed);
+          pendingSelection.current = getFirstFix(best.answer, typed);
+        }
         return best.result;
       });
       onChecked?.();
@@ -141,7 +152,7 @@ export function TypedExercise({
     const element = inputRef.current;
     const start = element?.selectionStart ?? value.length;
     const end = element?.selectionEnd ?? value.length;
-    pendingCaret.current = start + character.length;
+    pendingSelection.current = [start + character.length, start + character.length];
     setValue(value.slice(0, start) + character + value.slice(end));
     element?.focus();
   };
@@ -166,7 +177,12 @@ export function TypedExercise({
           {retyping ? (
             <>
               {feedback}
-              <p className="-mb-2 font-semibold">Now type the answer to continue:</p>
+              <NextTimeNote session={session} grade={checked.result.grade} />
+              <p className="-mb-2 font-semibold">
+                {fixing
+                  ? 'Fix the marked letters to continue:'
+                  : 'Now type the answer to continue:'}
+              </p>
               <div className="relative">
                 <Input
                   ref={inputRef}
@@ -334,24 +350,63 @@ function SpelledAnswer({ answer, trickySpellings }: { answer: string; trickySpel
 }
 
 /**
- * Draws the retyped letters over the transparent input text: right ones as typed, wrong ones in
- * red, then the rest of the answer as a faded guide to copy.
+ * The letters of `typed` to select first when fixing it: the first one to change, or where the
+ * first missing one goes.
+ */
+function getFirstFix(answer: string, typed: string): [start: number, end: number] {
+  let start = 0;
+  for (const part of alignAnswer(answer, typed)) {
+    if (part.kind !== 'match') return [start, start + part.typed.length];
+    start += part.typed.length;
+  }
+  return [start, start];
+}
+
+/**
+ * Draws the retyped letters over the transparent input text: right ones as typed, ones to fix
+ * marked, a tick where one is missing, then the rest of the answer as a faded guide to copy.
  */
 function RetypeGuide({ answer, typed }: { answer: string; typed: string }) {
+  const parts = alignAnswer(answer, typed);
+  // Letters missing at the end are the rest of the answer still to type.
+  const lastTyped = parts.findLastIndex(({ kind }) => kind !== 'missing');
+  const rest = parts
+    .slice(lastTyped + 1)
+    .map(({ expected }) => expected)
+    .join('');
+
   return (
     <div
       aria-hidden
       className="pointer-events-none absolute inset-0 flex items-center overflow-hidden border-2 border-transparent px-5 font-display text-3xl font-semibold whitespace-pre"
     >
-      {typed.split('').map((letter, index) => (
-        <span
-          key={index}
-          className={cn(letter !== answer[index] && 'rounded-sm bg-wrong/30 text-wrong-ink')}
-        >
-          {letter}
-        </span>
-      ))}
-      <span className="text-muted-foreground/50">{answer.slice(typed.length)}</span>
+      {parts.slice(0, lastTyped + 1).map(({ kind, typed }, index) => {
+        switch (kind) {
+          case 'match':
+            return <span key={index}>{typed}</span>;
+          case 'minor':
+            return (
+              <span key={index} className="rounded-sm bg-almost">
+                {typed}
+              </span>
+            );
+          case 'wrong':
+          case 'extra':
+            return (
+              <span key={index} className="rounded-sm bg-wrong/30 text-wrong-ink">
+                {typed}
+              </span>
+            );
+          case 'missing':
+            // Takes no room, so the letters stay over the input's own.
+            return (
+              <span key={index} className="relative">
+                <span className="absolute -top-[0.45em] -left-px h-[0.9em] w-0.5 rounded-full bg-wrong-ink" />
+              </span>
+            );
+        }
+      })}
+      <span className="text-muted-foreground/50">{rest}</span>
     </div>
   );
 }

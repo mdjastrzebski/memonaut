@@ -4,7 +4,8 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import type { Concept, ExerciseType } from '@/domain/types';
 import { HINT_DELAY_MS } from '@/lib/speech';
-import { createSession } from '@/session/session';
+import { createSession, submitReview } from '@/session/session';
+import { Rating } from '@/srs/scheduler';
 import { testContent as content } from '@/test/content';
 
 import { ExerciseScreen } from './exercise-screen';
@@ -34,20 +35,20 @@ afterEach(() => {
 
 /**
  * Its first exercise, in a bundled unit deck holding only it, past the word's intro unless
- * `intro` is set.
+ * `intro` is set, and missed once already in the session if `missed` is set.
  */
 function renderExercise(
   conceptId: string,
   strictSpelling = true,
   exerciseTypes?: ExerciseType[],
   subjectConcepts: Concept[] = [],
-  { intro = false, tricky = false, onIntroduced = () => {} } = {},
+  { intro = false, tricky = false, missed = false, onIntroduced = () => {} } = {},
 ) {
   const deck = content.decks.find(
     (deck) => deck.kind === 'unit' && deck.conceptIds.includes(conceptId),
   )!;
   const subject = content.subjects.find((subject) => subject.id === deck.subjectId)!;
-  const session = createSession({
+  let session = createSession({
     deck: {
       ...deck,
       conceptIds: [conceptId],
@@ -56,6 +57,16 @@ function renderExercise(
     },
     concepts: content.concepts,
   });
+  if (missed) {
+    const missedSession = submitReview(session, {
+      input: '',
+      elapsedMs: 1000,
+      issues: [],
+      rating: Rating.Again,
+      now: new Date(),
+    });
+    session = { ...missedSession, queue: session.queue };
+  }
   render(
     <ExerciseScreen
       session={{
@@ -220,8 +231,50 @@ test('translation takes an alternative answer, and compares a mistake with the c
   await user.type(screen.getByRole('textbox', { name: 'Answer' }), 'einhundrt{Enter}');
   expect(screen.getByRole('status')).toHaveTextContent('Hard');
   expect(screen.getByRole('status')).toHaveTextContent('einhundert');
-  await user.type(screen.getByRole('textbox', { name: 'Retype answer' }), 'einhundert');
+  // Fixed from the answer given, with the caret where the missing letter goes.
+  const retype = screen.getByRole('textbox', { name: 'Retype answer' });
+  expect(retype).toHaveValue('einhundrt');
+  expect(screen.getByText('Fix the marked letters to continue:')).toBeInTheDocument();
+  await user.keyboard('e');
+  expect(retype).toHaveValue('einhundert');
   expect(screen.getByRole('button', { name: /continue/i })).toBeEnabled();
+});
+
+test('a close mistake selects the first wrong letter to fix', async () => {
+  const user = userEvent.setup();
+  renderExercise('german/number-100', false, ['translation']);
+
+  await user.type(screen.getByRole('textbox', { name: 'Answer' }), 'hundart{Enter}');
+  const retype = screen.getByRole('textbox', { name: 'Retype answer' });
+  expect(retype).toHaveValue('hundart');
+  await user.keyboard('e');
+  expect(retype).toHaveValue('hundert');
+  expect(screen.getByRole('button', { name: /continue/i })).toBeEnabled();
+});
+
+test('a second miss in the session says the word is left for next time', async () => {
+  const user = userEvent.setup();
+  renderExercise('german/number-100', false, ['translation'], [], { missed: true });
+
+  await user.type(screen.getByRole('textbox', { name: 'Answer' }), 'tausend{Enter}');
+  expect(screen.getByText("We'll practise this one again next time.")).toBeInTheDocument();
+});
+
+test('a first miss in the session comes back without a note', async () => {
+  const user = userEvent.setup();
+  renderExercise('german/number-100', false, ['translation']);
+
+  await user.type(screen.getByRole('textbox', { name: 'Answer' }), 'tausend{Enter}');
+  expect(screen.queryByText("We'll practise this one again next time.")).not.toBeInTheDocument();
+});
+
+test('a wrong answer far from the right one is retyped from scratch', async () => {
+  const user = userEvent.setup();
+  renderExercise('german/number-100', false, ['translation']);
+
+  await user.type(screen.getByRole('textbox', { name: 'Answer' }), 'tausend{Enter}');
+  expect(screen.getByRole('textbox', { name: 'Retype answer' })).toHaveValue('');
+  expect(screen.getByText('Now type the answer to continue:')).toBeInTheDocument();
 });
 
 test('plural form shows the word and asks for its plural, then shows how it is made', async () => {
