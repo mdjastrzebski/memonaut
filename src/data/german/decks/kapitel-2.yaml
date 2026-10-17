@@ -13,6 +13,7 @@ concepts:
   - { id: magst-du-deutsch, local: czy lubisz niemiecki?, foreign: magst du Deutsch? }
   # Hobby, szkoła i świat.
   - { id: das-hobby, local: hobby, foreign: das Hobby }
+  - { id: die-schule, local: szkoła, foreign: die Schule, explanation: 'na -[e] → zwykle [die]' }
   - { id: die-schulsache, local: rzecz szkolna, foreign: die Schulsache }
   - { id: die-welt, local: świat, foreign: die Welt }
   # Początek zdania, do wskazywania rzeczy.
@@ -72,6 +73,7 @@ concepts:
       group: thing/personal,
     }
   - { id: das-skateboard, local: deskorolka, foreign: das Skateboard, group: thing/personal }
+  - { id: das-tier, local: zwierzę, foreign: das Tier, group: animal }
   - { id: das-stofftier, local: pluszak, foreign: das Stofftier, group: thing/personal }
   - {
       id: der-rucksack,
@@ -79,6 +81,13 @@ concepts:
       foreign: der Rucksack,
       localPlural: plecaki,
       foreignPlural: die Rucksäcke,
+      group: thing/personal,
+    }
+  - {
+      id: die-tasche,
+      local: torba,
+      foreign: die Tasche,
+      explanation: 'na -[e] → zwykle [die]',
       group: thing/personal,
     }
   - {
@@ -151,6 +160,15 @@ concepts:
       group: thing/school,
     }
   - {
+      id: der-stift,
+      local: kredka lub pisak,
+      foreign: der Stift,
+      localPlural: kredki lub pisaki,
+      foreignPlural: die Stifte,
+      group: thing/school,
+    }
+  - { id: bunt, local: kolorowy, foreign: bunt }
+  - {
       id: der-bleistift,
       local: ołówek,
       foreign: der Bleistift,
@@ -166,6 +184,7 @@ concepts:
       foreignPlural: die Buntstifte,
       group: thing/school,
     }
+  - { id: der-spitz, local: szpic, foreign: der Spitz, group: animal }
   - {
       id: der-anspitzer,
       local: temperówka,
@@ -174,6 +193,7 @@ concepts:
       foreignPlural: die Anspitzer,
       group: thing/school,
     }
+  - { id: der-gummi, local: guma, foreign: der Gummi }
   - {
       id: der-radiergummi,
       local: gumka do mazania,
@@ -183,7 +203,7 @@ concepts:
       group: thing/school,
     }
   - {
-      id: das-federmaeppchen,
+      id: das-maeppchen,
       local: piórnik,
       foreign: das Mäppchen,
       localPlural: piórniki,
@@ -258,6 +278,8 @@ concepts:
       group: number/tens,
       core: true,
     }
+  # und łączy jedności z dziesiątkami.
+  - { id: und, local: i, foreign: und, core: true }
   # 21–29: jedności + und + zwanzig.
   - {
       id: number-21,
