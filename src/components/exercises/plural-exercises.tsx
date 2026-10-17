@@ -35,10 +35,10 @@ export function PluralFormExercise(props: ExerciseProps) {
 }
 
 /**
- * Plural translation: the learner sees the local plural, e.g. "książki", and types the foreign one,
+ * Translation plural: the learner sees the local plural, e.g. "książki", and types the foreign one,
  * "die Bücher", then hears it. The result shows how the plural is made.
  */
-export function PluralTranslationExercise(props: ExerciseProps) {
+export function TranslationPluralExercise(props: ExerciseProps) {
   const { concept, subject } = getLanguageProps(props);
   const plural = concept.foreignPlural!;
 

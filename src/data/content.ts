@@ -74,9 +74,9 @@ const CONCEPT_FIELDS = {
       .literal('true')
       .transform(() => true)
       .optional(),
-    /** The local plural, for plural translation; needs `foreignPlural`. */
+    /** The local plural, for translation plural; needs `foreignPlural`. */
     localPlural: z.string().min(1).optional(),
-    /** The foreign plural, for plural form and plural translation. */
+    /** The foreign plural, for plural form and translation plural. */
     foreignPlural: z.string().min(1).optional(),
   },
   knowledge: {

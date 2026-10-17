@@ -115,7 +115,7 @@ export interface LanguageConcept extends ConceptBase {
   plural?: boolean;
   /**
    * Optional plural of the local word, e.g. "książki". With `foreignPlural`, the word is also
-   * practised with plural translation.
+   * practised with translation plural.
    */
   localPlural?: string;
   /**
@@ -153,7 +153,7 @@ export interface KnowledgeConcept extends ConceptBase {
  *   or dieser, diese or dieses; or mein or meine for e.g. "meine Tasche", likewise ein and kein
  * - translation: see the local word and type the foreign one
  * - plural-form: see the foreign word, e.g. "das Buch", and type its plural, "die Bücher"
- * - plural-translation: see the local plural, e.g. "książki", and type the foreign one
+ * - translation-plural: see the local plural, e.g. "książki", and type the foreign one
  * - question-choice: see a knowledge question and pick its answer from a few options
  * - question-type: see a knowledge question and type its answer
  */
@@ -164,7 +164,7 @@ export type ExerciseType =
   | 'article-choice-de'
   | 'translation'
   | 'plural-form'
-  | 'plural-translation'
+  | 'translation-plural'
   | 'question-choice'
   | 'question-type';
 

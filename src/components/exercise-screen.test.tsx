@@ -186,9 +186,9 @@ test('plural form shows the word and asks for its plural, then shows how it is m
   expect(utterances.map((utterance) => utterance.text)).toEqual(['die Bücher']);
 });
 
-test('plural translation shows the local plural and asks for the foreign one', async () => {
+test('translation plural shows the local plural and asks for the foreign one', async () => {
   const user = userEvent.setup();
-  renderExercise('german/das-buch', false, ['plural-translation']);
+  renderExercise('german/das-buch', false, ['translation-plural']);
   expect(screen.getByRole('heading', { name: 'książki' })).toBeInTheDocument();
 
   await user.type(screen.getByRole('textbox', { name: 'Answer' }), 'die Bucher{Enter}');

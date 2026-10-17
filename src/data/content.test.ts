@@ -219,7 +219,7 @@ test('a subject practises every exercise type unless it lists some, easiest firs
     'article-choice-de',
     'translation',
     'plural-form',
-    'plural-translation',
+    'translation-plural',
   ]);
   expect(exerciseTypes('exerciseTypes: [translation, dictation]\n')).toEqual([
     'dictation',
@@ -259,7 +259,7 @@ concepts:
     'article-choice-de',
     'translation',
     'plural-form',
-    'plural-translation',
+    'translation-plural',
   ]);
 
   expect(() =>
@@ -379,7 +379,7 @@ concepts:
   expect(subjects[0].exerciseTypes).toEqual([
     ...exerciseTypes,
     'plural-form',
-    'plural-translation',
+    'translation-plural',
   ]);
   expect(decks[0].exerciseTypes).toEqual(exerciseTypes);
   const withoutArticle = exerciseTypes.filter((type) => type !== 'article-choice-de');
@@ -390,7 +390,7 @@ concepts:
   });
 });
 
-test('a word with plurals is practised with plural form, and with plural translation when both are given', () => {
+test('a word with plurals is practised with plural form, and with translation plural when both are given', () => {
   const { decks, concepts } = buildContent({
     './german/subject.yaml': subject,
     './german/decks/a.yaml': `
@@ -410,7 +410,7 @@ concepts:
     'article-choice-de',
     'translation',
   ];
-  expect(decks[0].exerciseTypes).toEqual([...singular, 'plural-form', 'plural-translation']);
+  expect(decks[0].exerciseTypes).toEqual([...singular, 'plural-form', 'translation-plural']);
   expect(decks[0].conceptExerciseTypes).toEqual({
     'german/das-heft': [...singular, 'plural-form'],
     'german/drei': singular.filter((type) => type !== 'article-choice-de'),

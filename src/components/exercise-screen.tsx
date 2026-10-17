@@ -5,7 +5,7 @@ import { DictationExercise } from '@/components/exercises/dictation-exercise';
 import type { ExerciseProps } from '@/components/exercises/exercise-parts';
 import {
   PluralFormExercise,
-  PluralTranslationExercise,
+  TranslationPluralExercise,
 } from '@/components/exercises/plural-exercises';
 import { QuestionChoiceExercise } from '@/components/exercises/question-choice-exercise';
 import { QuestionTypeExercise } from '@/components/exercises/question-type-exercise';
@@ -25,7 +25,7 @@ const EXERCISE_COMPONENTS: Record<ExerciseType, ComponentType<ExerciseProps>> = 
   'article-choice-de': ArticleChoiceDeExercise,
   'translation': TranslationExercise,
   'plural-form': PluralFormExercise,
-  'plural-translation': PluralTranslationExercise,
+  'translation-plural': TranslationPluralExercise,
   'question-choice': QuestionChoiceExercise,
   'question-type': QuestionTypeExercise,
 };

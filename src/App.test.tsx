@@ -721,7 +721,7 @@ test('with dev=1 in the URL, a session can use only some exercise types', async 
       'Translation choice',
       'Translation',
       'Plural',
-      'Plural translation',
+      'Translation plural',
     ]) {
       await user.click(within(types).getByRole('checkbox', { name }));
     }

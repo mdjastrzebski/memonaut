@@ -15,7 +15,7 @@ export const EXERCISE_EFFORT: Record<ExerciseType, number> = {
   'translation': 2.5,
   // Typed like translation, but the word is on screen and only its plural is recalled.
   'plural-form': 2,
-  'plural-translation': 2.5,
+  'translation-plural': 2.5,
   'question-choice': 1.5,
   'question-type': 2.5,
 };
