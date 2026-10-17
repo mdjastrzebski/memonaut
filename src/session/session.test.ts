@@ -382,7 +382,7 @@ test('introduces each new word before its first card, a couple of exercises ahea
   expect(session.introduced).toEqual(['one', 'two', 'three']);
 });
 
-test('introduces only new words, not started ones or questions', () => {
+test('introduces only new concepts, not started ones, in a deck that shows intros', () => {
   const cards = byId(reviewed('one:dictation', start));
   expect(createSession({ deck, concepts, cards, now: nextDay(start) }).intros).toEqual(['two']);
 
@@ -395,7 +395,14 @@ test('introduces only new words, not started ones or questions', () => {
     conceptIds: ['square-3'],
     exerciseTypes: ['question-type'],
   };
-  expect(createSession({ deck: quiz, concepts: questions, now: start }).intros).toEqual([]);
+  expect(createSession({ deck: quiz, concepts: questions, now: start }).intros).toEqual([
+    'square-3',
+  ]);
+  const noIntro = { ...quiz, showIntro: false };
+  expect(createSession({ deck: noIntro, concepts: questions, now: start }).intros).toEqual([]);
+  expect(
+    createSession({ deck: { ...deck, showIntro: false }, concepts, now: start }).intros,
+  ).toEqual([]);
 });
 
 test('asks a tricky word first, and introduces it again once it is missed', () => {
@@ -434,7 +441,7 @@ test('asks a tricky word first, and introduces it again once it is missed', () =
   expect(answer(twoFirst, Rating.Again).intros).toEqual([]);
 });
 
-test('a word is tricky once missed again and again, but a question never is', () => {
+test('a word is tricky once missed again and again, in a deck that shows intros', () => {
   const lastWeek = new Date(start.getTime() - 7 * 24 * 60 * 60_000);
   const missed = byId(reviewed('two:dictation', lastWeek, { due: start, difficulty: 9.6 }));
   expect(createSession({ deck, concepts, cards: missed, now: start }).tricky).toEqual(['two']);
@@ -452,6 +459,10 @@ test('a word is tricky once missed again and again, but a question never is', ()
   );
   expect(
     createSession({ deck: quiz, concepts: questions, cards: hardQuestion, now: start }).tricky,
+  ).toEqual(['square-3']);
+  const noIntro = { ...quiz, showIntro: false };
+  expect(
+    createSession({ deck: noIntro, concepts: questions, cards: hardQuestion, now: start }).tricky,
   ).toEqual([]);
 });
 

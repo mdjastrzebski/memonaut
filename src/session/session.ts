@@ -136,7 +136,7 @@ export interface Session {
   /** Ids of the Concepts introduced so far. */
   introduced: string[];
   /**
-   * Ids of the tricky words picked. One is still asked first, so its answer shows what's
+   * Ids of the tricky Concepts picked, in a Deck that shows intros. One is still asked first, so its answer shows what's
    * remembered, and introduced again only once it's missed, before it's asked again.
    */
   tricky: string[];
@@ -214,10 +214,11 @@ export function createSession({
           : step === Step.New
             ? [newOrder.indexOf(concept.id), 0]
             : [card.srs.due.getTime(), conceptIndex];
-      // A new word is introduced before its first exercise, so it isn't first met in a guess. A
-      // question isn't, as showing it with its answer would give it away.
-      const intro = step === Step.New && concept.kind === 'language';
-      const tricky = concept.kind === 'language' && isTricky(conceptCards(concept.id));
+      // A new Concept is introduced before its first exercise, so it isn't first met in a guess,
+      // unless the Deck doesn't show intros.
+      const showIntro = deck.showIntro !== false;
+      const intro = showIntro && step === Step.New;
+      const tricky = showIntro && isTricky(conceptCards(concept.id));
       const effort = getCardEffort(card, now) + (intro ? INTRO_EFFORT : 0);
       return { concept, card, step, intro, tricky, effort, sortKey: [step, ...sortKey] };
     }),

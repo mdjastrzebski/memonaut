@@ -98,6 +98,16 @@ test('a tricky word is introduced again as one', () => {
   expect(intro).toHaveTextContent('=meansksiążka');
 });
 
+test('a new question is introduced with its answer and explanation, not read aloud', () => {
+  const question = content.concepts.find((concept) => concept.kind === 'knowledge')!;
+  renderExercise(question.id, true, undefined, [], { intro: true });
+  const intro = screen.getByRole('region', { name: 'New question' });
+  expect(within(intro).getByRole('heading', { level: 2 })).toHaveTextContent(question.question);
+  expect(intro).toHaveTextContent(`=answer${question.answer}`);
+  expect(utterances).toEqual([]);
+  expect(within(intro).queryByRole('button', { name: 'Listen' })).not.toBeInTheDocument();
+});
+
 test('a new spelling word is introduced with its spoken hint instead of a meaning', () => {
   renderExercise('polish/morze', true, undefined, [], { intro: true });
   const intro = screen.getByRole('region', { name: 'New word' });

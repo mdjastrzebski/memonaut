@@ -54,6 +54,11 @@ export interface Deck {
   strictSpelling?: boolean;
   /** Introduces new Concepts in random order instead of Deck order. */
   shuffleNew?: boolean;
+  /**
+   * Shows a new Concept, and a tricky one once missed, with its answer before it's asked. True if
+   * left out; off for e.g. math, whose questions are worked out rather than remembered.
+   */
+  showIntro?: boolean;
   /** How its Concepts are practised, easiest first: some or all of its Subject's. */
   exerciseTypes: ExerciseType[];
   /**
