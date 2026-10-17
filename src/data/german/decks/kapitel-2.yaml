@@ -184,6 +184,7 @@ concepts:
       foreignPlural: die Buntstifte,
       group: thing/school,
     }
+  - { id: der-spitz, local: szpic, foreign: der Spitz, group: animal }
   - {
       id: der-anspitzer,
       local: temperówka,
