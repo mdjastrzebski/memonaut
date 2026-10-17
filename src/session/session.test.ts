@@ -326,6 +326,26 @@ test('introduces a new word even when due cards take up all the effort', () => {
   ).toEqual(['one:dictation']);
 });
 
+test('starts at least minNew new words, on top of what fits', () => {
+  const three: Concept[] = [
+    ...concepts,
+    { id: 'three', subjectId: 'german', kind: 'language', local: 'trzy', foreign: 'drei' },
+  ];
+  const create = (minNew: number) =>
+    Object.keys(
+      createSession({
+        deck: { ...deck, conceptIds: ['one', 'two', 'three'] },
+        concepts: three,
+        maxEffort: 1,
+        minNew,
+        now: start,
+      }).cards,
+    );
+  expect(create(2)).toEqual(['one:dictation', 'two:dictation']);
+  // No more than there are new words left.
+  expect(create(5)).toEqual(['one:dictation', 'two:dictation', 'three:dictation']);
+});
+
 test('fits fewer typed exercises than multiple choice ones in the same effort', () => {
   const count = (exerciseTypes: ExerciseType[]) =>
     Object.keys(
