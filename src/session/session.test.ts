@@ -14,10 +14,14 @@ import {
   countDueToday,
   createSession,
   getCurrentCard,
+  getCurrentIntro,
   getEffortDone,
+  getScheduledGrade,
   getSessionProgress,
+  introduce,
   submitReview,
   withExerciseTypes,
+  type Session,
 } from './session';
 
 const concepts: Concept[] = [
@@ -274,13 +278,14 @@ test('counts words due before the next study day, or with an exercise type unloc
 });
 
 test('picks cards in the usual order while their effort fits, but at least one', () => {
-  // A new card's dictation is 2 points, answered twice: 4 points each.
+  // A new card's dictation is 2 points, answered twice, and its word's intro half a point: 4.5
+  // points each.
   expect(pick({}, start, undefined, deck)).toEqual(['one:dictation', 'two:dictation']);
-  expect(Object.keys(createSession({ deck, concepts, maxEffort: 8, now: start }).cards)).toEqual([
+  expect(Object.keys(createSession({ deck, concepts, maxEffort: 9, now: start }).cards)).toEqual([
     'one:dictation',
     'two:dictation',
   ]);
-  expect(Object.keys(createSession({ deck, concepts, maxEffort: 7, now: start }).cards)).toEqual([
+  expect(Object.keys(createSession({ deck, concepts, maxEffort: 8, now: start }).cards)).toEqual([
     'one:dictation',
   ]);
   expect(Object.keys(createSession({ deck, concepts, maxEffort: 1, now: start }).cards)).toEqual([
@@ -299,7 +304,7 @@ test('fits fewer typed exercises than multiple choice ones in the same effort', 
 
 test('tells the effort planned and the effort of the answers given', () => {
   const session = createSession({ deck, concepts, now: start });
-  expect(session.effort).toBe(8);
+  expect(session.effort).toBe(9);
   const answered = submitReview(session, {
     input: 'eins',
     elapsedMs: 1000,
@@ -308,6 +313,82 @@ test('tells the effort planned and the effort of the answers given', () => {
     now: start,
   });
   expect(getEffortDone(answered)).toBe(2);
+  expect(getEffortDone(introduce(answered))).toBe(2.5);
+});
+
+test('introduces each new word before its first card, a couple of exercises ahead', () => {
+  const three: Concept[] = [
+    ...concepts,
+    { id: 'three', subjectId: 'german', kind: 'language', local: 'trzy', foreign: 'drei' },
+  ];
+  let session = createSession({
+    deck: { ...deck, conceptIds: ['one', 'two', 'three'] },
+    concepts: three,
+    now: start,
+    random: () => 0.99,
+  });
+  expect(session.intros).toEqual(['one', 'two', 'three']);
+
+  // Shows the intro or the exercise in front, and moves on past it.
+  const steps: string[] = [];
+  while (getCurrentCard(session)) {
+    const intro = getCurrentIntro(session);
+    steps.push(intro ? `intro ${intro.id}` : getCurrentCard(session)!.id);
+    session = intro
+      ? introduce(session)
+      : { ...session, queue: session.queue.slice(1), reviews: session.reviews };
+  }
+  expect(steps).toEqual([
+    'intro one',
+    'intro two',
+    'intro three',
+    'one:dictation',
+    'two:dictation',
+    'three:dictation',
+  ]);
+  expect(session.introduced).toEqual(['one', 'two', 'three']);
+});
+
+test('introduces only new words, not started ones or questions', () => {
+  const cards = byId(reviewed('one:dictation', start));
+  expect(createSession({ deck, concepts, cards, now: nextDay(start) }).intros).toEqual(['two']);
+
+  const questions: Concept[] = [
+    { id: 'square-3', subjectId: 'math', kind: 'knowledge', question: '3² =', answer: '9' },
+  ];
+  const quiz: Deck = {
+    ...deck,
+    subjectId: 'math',
+    conceptIds: ['square-3'],
+    exerciseTypes: ['question-type'],
+  };
+  expect(createSession({ deck: quiz, concepts: questions, now: start }).intros).toEqual([]);
+});
+
+test('rates the first answer to a word just introduced Good at most', () => {
+  const easy = (session: Session) =>
+    submitReview(session, {
+      input: 'eins',
+      elapsedMs: 1000,
+      issues: [],
+      rating: Rating.Easy,
+      now: start,
+    });
+  const session = createSession({
+    deck: { ...deck, conceptIds: ['one'] },
+    concepts,
+    now: start,
+  });
+  const [cardId] = session.queue;
+
+  // Without its intro, a fast answer graduates at once.
+  expect(easy(session).cards[cardId].srs.state).toBe(State.Review);
+
+  const introduced = introduce(session);
+  const answered = easy(introduced);
+  expect(answered.reviews[0].rating).toBe(Rating.Good);
+  expect(answered.cards[cardId].srs.state).toBe(State.Learning);
+  expect(getScheduledGrade(introduced, introduced.cards[cardId], Rating.Hard)).toBe(Rating.Hard);
 });
 
 test('a deck can be practised with only some of its exercise types', () => {

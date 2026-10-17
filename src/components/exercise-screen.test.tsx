@@ -32,12 +32,16 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-/** Its first exercise, in a bundled unit deck holding only it. */
+/**
+ * Its first exercise, in a bundled unit deck holding only it, past the word's intro unless
+ * `intro` is set.
+ */
 function renderExercise(
   conceptId: string,
   strictSpelling = true,
   exerciseTypes?: ExerciseType[],
   subjectConcepts: Concept[] = [],
+  { intro = false, onIntroduced = () => {} } = {},
 ) {
   const deck = content.decks.find(
     (deck) => deck.kind === 'unit' && deck.conceptIds.includes(conceptId),
@@ -54,8 +58,9 @@ function renderExercise(
   });
   render(
     <ExerciseScreen
-      session={session}
+      session={intro ? session : { ...session, intros: [] }}
       onReview={() => {}}
+      onIntroduced={onIntroduced}
       subject={subject}
       subjectConcepts={subjectConcepts}
       showSpecialCharacters={false}
@@ -63,6 +68,31 @@ function renderExercise(
     />,
   );
 }
+
+test('a new word is introduced with its meaning and read aloud before its first exercise', async () => {
+  const user = userEvent.setup();
+  const onIntroduced = vi.fn();
+  renderExercise('german/das-buch', true, undefined, [], { intro: true, onIntroduced });
+
+  const intro = screen.getByRole('region', { name: 'New word' });
+  expect(within(intro).getByRole('heading', { level: 2 })).toHaveTextContent('das Buch');
+  expect(intro).toHaveTextContent('=meansksiążka');
+  expect(utterances.map((utterance) => utterance.text)).toEqual(['das Buch']);
+  expect(screen.queryByRole('group', { name: 'Options' })).not.toBeInTheDocument();
+
+  await user.click(within(intro).getByRole('button', { name: 'Listen' }));
+  expect(utterances).toHaveLength(2);
+  // Continue is focused, so Enter moves on.
+  await user.keyboard('{Enter}');
+  expect(onIntroduced).toHaveBeenCalledOnce();
+});
+
+test('a new spelling word is introduced with its spoken hint instead of a meaning', () => {
+  renderExercise('polish/morze', true, undefined, [], { intro: true });
+  const intro = screen.getByRole('region', { name: 'New word' });
+  expect(within(intro).getByRole('heading', { level: 2 })).toHaveTextContent('morze');
+  expect(intro).toHaveTextContent('zbiornik słonej wody');
+});
 
 test('dictation reads a hint after a homophone, and shows it only after checking', async () => {
   const user = userEvent.setup();

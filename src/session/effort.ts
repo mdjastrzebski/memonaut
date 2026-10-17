@@ -21,6 +21,12 @@ export const EXERCISE_EFFORT: Record<ExerciseType, number> = {
 };
 
 /**
+ * Effort points of a new word's intro: reading it and its meaning while it's read aloud, about half
+ * as long as a quick multiple-choice answer.
+ */
+export const INTRO_EFFORT = 0.5;
+
+/**
  * How many points a learner gets through per minute before any session was timed. Sessions
  * planned at 8 took a child about 1.9 times as long as picked (10 minutes for 5, 18 for 10).
  */

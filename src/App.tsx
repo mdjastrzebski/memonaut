@@ -29,6 +29,7 @@ import {
   createSession,
   getCurrentCard,
   getEffortDone,
+  introduce,
   submitReview,
   type Session,
   type SubmitReviewInput,
@@ -99,6 +100,11 @@ export default function App() {
     if (cardId) saveProgress(session.deck.subjectId, [next.cards[cardId]]);
     setSession(next);
     if (!getCurrentCard(next)) measurePace(next);
+  };
+
+  // An intro changes nothing saved: the word's Card stays new until it's answered.
+  const finishIntro = () => {
+    if (session) setSession(introduce(session));
   };
 
   // Once a session is over, its points per active minute tune the pace the next one is planned with.
@@ -225,6 +231,7 @@ export default function App() {
             key={session.reviews.length}
             session={session}
             onReview={review}
+            onIntroduced={finishIntro}
             subject={subject}
             subjectConcepts={content.concepts.filter((concept) => concept.subjectId === subject.id)}
             showSpecialCharacters={showSpecialCharacters}
