@@ -140,7 +140,8 @@ interface CreateSessionOptions {
   maxCards?: number;
   /**
    * Practise Cards, in the order of `Step`, while their expected effort points fit in this many,
-   * but at least one. It decides only how many are picked, never which come first.
+   * but at least one. It decides only how many are picked, never which come first, except that a
+   * new Concept left out for room is picked anyway, in place of the last Cards that fit.
    */
   maxEffort?: number;
   now?: Date;
@@ -203,11 +204,11 @@ export function createSession({
       // question isn't, as showing it with its answer would give it away.
       const intro = step === Step.New && concept.kind === 'language';
       const effort = getCardEffort(card, now) + (intro ? INTRO_EFFORT : 0);
-      return { concept, card, intro, effort, sortKey: [step, ...sortKey] };
+      return { concept, card, step, intro, effort, sortKey: [step, ...sortKey] };
     }),
   );
   candidates.sort((a, b) => compareKeys(a.sortKey, b.sortKey));
-  const picked = takeWithinEffort(candidates.slice(0, maxCards), maxEffort);
+  const picked = pickWithinEffort(candidates.slice(0, maxCards), maxEffort);
   // Grouped by Exercise Type so the queue below can keep them in order.
   const cards = exerciseTypes.flatMap((exerciseType) =>
     picked.map(({ card }) => card).filter((card) => card.exerciseType === exerciseType),
@@ -229,6 +230,25 @@ export function createSession({
     reviews: [],
     effort: picked.reduce((total, { effort }) => total + effort, 0),
   };
+}
+
+/**
+ * The leading candidates whose expected effort fits in `maxEffort`, at least one. So that reviews
+ * never crowd out learning, the first new Concept is always among them while there's one left: if
+ * it doesn't fit, it takes the place of the last candidates that do.
+ */
+function pickWithinEffort<T extends { step: Step; effort: number }>(
+  candidates: T[],
+  maxEffort: number,
+): T[] {
+  const picked = takeWithinEffort(candidates, maxEffort);
+  const firstNew = candidates.find(({ step }) => step === Step.New);
+  if (!firstNew || picked.includes(firstNew)) return picked;
+  const rest = takeWithinEffort(
+    candidates.filter((candidate) => candidate !== firstNew),
+    maxEffort - firstNew.effort,
+  );
+  return candidates.filter((candidate) => candidate === firstNew || rest.includes(candidate));
 }
 
 /** The leading candidates whose expected effort fits in `maxEffort`, at least one. */
