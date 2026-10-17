@@ -233,6 +233,32 @@ test('ending the session shows results with the Advanced panel collapsed', async
   expect(cards).toHaveTextContent('Learning');
 });
 
+test('the progress screen tells there is no progress before any session', async () => {
+  const user = userEvent.setup();
+  render(<App />);
+  await user.click(screen.getByRole('button', { name: 'Progress' }));
+  expect(screen.getByText('No progress yet')).toBeInTheDocument();
+});
+
+test('the progress screen shows time and words of finished sessions, and opens a set', async () => {
+  const user = userEvent.setup();
+  await startEssentialsSession(user);
+  await user.type(screen.getByRole('textbox', { name: 'Answer' }), 'falsch{Enter}');
+  await retypeAnswer(user);
+  await finishSession(user);
+  await user.click(screen.getByRole('button', { name: 'Start a new session' }));
+  await user.click(screen.getByRole('button', { name: 'Progress' }));
+
+  expect(screen.queryByText('No progress yet')).not.toBeInTheDocument();
+  expect(screen.getByText('Time this week')).toBeInTheDocument();
+  expect(screen.getByText('New this week').nextSibling).toHaveTextContent('1');
+  const german = screen.getByRole('region', { name: 'German' });
+  expect(within(german).getByText(/learned per set/)).toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: `Practise ${essentials.name}` }));
+  expect(screen.getByRole('button', { name: /Start session/ })).toBeInTheDocument();
+});
+
 test('typing after the answer box loses focus types into it, and Enter checks the answer', async () => {
   const user = userEvent.setup();
   await startEssentialsSession(user);

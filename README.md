@@ -65,6 +65,8 @@ The minutes become points at the learner's pace in the Subject, 4.2 points a min
 
 To tune the points, each session's plan and answers are logged in the browser (`memonaut:effort-log`, the latest 100 sessions). With `?dev=1` in the URL, the setup screen shows an **Effort stats** panel: the time each answer took per point by Exercise Type and by difficulty, with suggested points that would even them out; how often Cards were answered against what was expected; and each session's planned time against the time it took. The log can be downloaded as JSON or cleared there. Below the session length, it also offers which of the set's Exercise Types a session uses, at least one, e.g. only `article-choice-de` to try it out: new words then start with the first one picked. The choice is kept until the page is reloaded.
 
+The **Progress** button in the header opens how the learner is doing, from the effort log and the Cards' FSRS state: minutes practised per study week (from Monday, 4 AM) over the last 8 weeks; this week's time, days practised and streak of days in a row, new words and right answers, each against last week; the most practised sets; and for each Subject, how many words are learned overall and per set, each set's minutes per week, and its hardest words: those whose hardest Card has an FSRS difficulty of 5 or more, or was forgotten, with how often they were missed and forgotten. As the log keeps the latest 100 sessions, time counts only those.
+
 A session's Cards are picked in this order:
 
 1. due Cards, most overdue first; of a Concept's due Cards, the one most likely forgotten, the easier type on a tie
