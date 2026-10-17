@@ -47,6 +47,12 @@ export const TRICKY_DIFFICULTY = 9;
  */
 export const MAX_SESSION_MISSES = 2;
 
+/**
+ * How long a Card that left the session for being missed `MAX_SESSION_MISSES` times waits at least,
+ * so a session started right after doesn't begin with the same words again.
+ */
+export const MISSED_CARD_DELAY_MS = 3 * 60 * 60 * 1000;
+
 /** Every Exercise Type, easiest first. A Concept unlocks them one at a time, in a Deck's order. */
 export const EXERCISE_TYPES: ExerciseType[] = [
   'recognition-choice',
@@ -186,7 +192,7 @@ const Step = {
   HeldDue: 3,
   /** Unlocked, but another Card of the Concept is practised today. Same order as `Unlocked`. */
   HeldUnlocked: 4,
-  /** Not due yet, reviewed ahead. Soonest due first. */
+  /** Not due yet, but in Review, reviewed ahead. Soonest due first. */
   Ahead: 5,
 } as const;
 type Step = (typeof Step)[keyof typeof Step];
@@ -326,7 +332,8 @@ function getCandidates(cards: Card[], now: Date, dueBy: Date): { card: Card; ste
     if (today.includes(card)) return [{ card, step: due ? Step.Due : Step.Unlocked }];
     if (due) return [{ card, step: Step.HeldDue }];
     if (unlocked) return [{ card, step: Step.HeldUnlocked }];
-    if (card.srs.state !== State.New) return [{ card, step: Step.Ahead }];
+    // Only a learned Card is reviewed ahead: one still learning waits, e.g. after being missed.
+    if (card.srs.state === State.Review) return [{ card, step: Step.Ahead }];
     return [];
   });
 }
@@ -497,7 +504,8 @@ export function isLastTry(session: Session, grade: Grade): boolean {
 /**
  * Applies a review to the current Card, with the rating it's scheduled with, and moves it to the
  * end of the queue if it's due again soon, unless that was its last try in the session. A tricky
- * word missed is introduced again before that, once per session.
+ * word missed is introduced again before that, once per session. A Card leaving after its last
+ * miss waits `MISSED_CARD_DELAY_MS` before it's due again.
  */
 export function submitReview(session: Session, { now, ...input }: SubmitReviewInput): Session {
   const card = getCurrentCard(session);
@@ -506,9 +514,14 @@ export function submitReview(session: Session, { now, ...input }: SubmitReviewIn
   }
 
   const answer = { ...input, rating: getScheduledGrade(session, card, input.rating) };
-  const { card: srsAfter, log } = reviewSrsCard(card.srs, answer.rating, now);
-  const dueSoon =
-    srsAfter.due.getTime() - now.getTime() <= LEARN_AHEAD_MS && !isLastTry(session, answer.rating);
+  const { card: scheduled, log } = reviewSrsCard(card.srs, answer.rating, now);
+  const lastTry = isLastTry(session, answer.rating);
+  const waitUntil = now.getTime() + MISSED_CARD_DELAY_MS;
+  const srsAfter =
+    lastTry && answer.rating === Rating.Again && scheduled.due.getTime() < waitUntil
+      ? { ...scheduled, due: new Date(waitUntil) }
+      : scheduled;
+  const dueSoon = srsAfter.due.getTime() - now.getTime() <= LEARN_AHEAD_MS && !lastTry;
   const rest = session.queue.slice(1);
   const reintroduce =
     dueSoon &&

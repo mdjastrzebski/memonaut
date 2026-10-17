@@ -221,7 +221,7 @@ test('card leaves the session once it graduates to review', () => {
   expect(session.queue).toHaveLength(0);
 });
 
-test('a card missed twice in a session leaves it, and comes first in the next one', () => {
+test('a card missed twice in a session leaves it, and comes first in a session a few hours later', () => {
   const answer = (session: Session, rating: Grade, now = start) =>
     submitReview(session, { input: 'x', elapsedMs: 1000, issues: [], rating, now });
   let session = create();
@@ -238,16 +238,28 @@ test('a card missed twice in a session leaves it, and comes first in the next on
   session = answer(session, Rating.Again, minutes(1));
   expect(session.queue).not.toContain(first.id);
   expect(session.cards[first.id].srs.state).toBe(State.Learning);
-
-  // Due by the next session, it's picked before anything new.
-  const next = createSession({
+  // It waits a few hours, so a session started right after doesn't begin with it again.
+  expect(session.cards[first.id].srs.due).toEqual(minutes(1 + 180));
+  expect(session.reviews.at(-1)?.srsAfter.due).toEqual(minutes(1 + 180));
+  const nextSession = (now: Date) =>
+    createSession({
+      deck: { ...deck, exerciseTypes: ['translation'] },
+      concepts,
+      cards: { [first.id]: session.cards[first.id] },
+      maxCards: 1,
+      now,
+    });
+  // Not even reviewed ahead in a session with room left.
+  const soon = createSession({
     deck: { ...deck, exerciseTypes: ['translation'] },
     concepts,
     cards: { [first.id]: session.cards[first.id] },
-    maxCards: 1,
-    now: minutes(120),
+    now: minutes(5),
   });
-  expect(Object.keys(next.cards)).toEqual([first.id]);
+  expect(Object.keys(soon.cards)).not.toContain(first.id);
+
+  // Due by a later session, it's picked before anything new.
+  expect(Object.keys(nextSession(minutes(1 + 180)).cards)).toEqual([first.id]);
 });
 
 test('an almost-right answer ends practising a card in the session, though it is due soon', () => {
