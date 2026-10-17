@@ -48,6 +48,14 @@ export function diffAnswer(expected: string, input: string): DiffPart[] | undefi
   return parts;
 }
 
+/**
+ * Lines up a typed answer with the expected one exactly as typed, without forgiving anything, e.g.
+ * to mark the letters still to fix while correcting it. The parts' typed letters make up `input`.
+ */
+export function alignAnswer(expected: string, input: string): DiffPart[] {
+  return alignLetters(expected, input);
+}
+
 /** About one mistake per three letters, so a short word allows one. */
 function getMaxMistakes(expected: string): number {
   return Math.max(1, Math.floor(expected.length / 3));

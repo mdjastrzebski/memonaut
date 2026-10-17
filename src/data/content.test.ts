@@ -67,9 +67,9 @@ concepts:
     conceptIds: ['german/der-hund', 'german/die-katze'],
     exerciseTypes: [
       'recognition-choice',
-      'dictation',
       'translation-choice',
       'article-choice-de',
+      'dictation',
       'translation',
     ],
   });
@@ -238,9 +238,9 @@ test('a subject practises every exercise type unless it lists some, easiest firs
     buildContent({ './german/subject.yaml': subject + listed }).subjects[0].exerciseTypes;
   expect(exerciseTypes('')).toEqual([
     'recognition-choice',
-    'dictation',
     'translation-choice',
     'article-choice-de',
+    'dictation',
     'translation',
     'plural-form',
     'translation-plural',
@@ -278,9 +278,9 @@ concepts:
   expect(exerciseTypes('german/typed')).toEqual(['dictation']);
   expect(exerciseTypes('german/all')).toEqual([
     'recognition-choice',
-    'dictation',
     'translation-choice',
     'article-choice-de',
+    'dictation',
     'translation',
     'plural-form',
     'translation-plural',
@@ -395,9 +395,9 @@ concepts:
   });
   const exerciseTypes = [
     'recognition-choice',
-    'dictation',
     'translation-choice',
     'article-choice-de',
+    'dictation',
     'translation',
   ];
   expect(subjects[0].exerciseTypes).toEqual([
@@ -429,9 +429,9 @@ concepts:
   expect(concepts[0]).toMatchObject({ localPlural: 'książki', foreignPlural: 'die Bücher' });
   const singular = [
     'recognition-choice',
-    'dictation',
     'translation-choice',
     'article-choice-de',
+    'dictation',
     'translation',
   ];
   expect(decks[0].exerciseTypes).toEqual([...singular, 'plural-form', 'translation-plural']);

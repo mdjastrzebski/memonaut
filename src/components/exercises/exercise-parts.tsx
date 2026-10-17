@@ -9,7 +9,12 @@ import type { Card, Concept, Subject } from '@/domain/types';
 import type { AnswerResult } from '@/exercises/type-answer';
 import { formatNumber, formatRelative, formatSeconds } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { getScheduledGrade, type Session, type SubmitReviewInput } from '@/session/session';
+import {
+  getScheduledGrade,
+  isLastTry,
+  type Session,
+  type SubmitReviewInput,
+} from '@/session/session';
 import { previewReview, Rating, ratingName, State, type Grade } from '@/srs/scheduler';
 
 /** What every Exercise Type's component gets: the Card to practise and the screen's settings. */
@@ -100,6 +105,19 @@ export function FeedbackPanel({ grade, children }: FeedbackPanelProps) {
       </span>
       {children}
     </div>
+  );
+}
+
+/**
+ * After a Card's last miss in the session, tells the learner it's left for next time, so it doesn't
+ * seem forgotten or keep them stuck.
+ */
+export function NextTimeNote({ session, grade }: { session: Session; grade: Grade }) {
+  if (grade !== Rating.Again || !isLastTry(session, grade)) return null;
+  return (
+    <p className="-mt-1 text-center text-sm font-semibold text-muted-foreground">
+      We'll practise this one again next time.
+    </p>
   );
 }
 
