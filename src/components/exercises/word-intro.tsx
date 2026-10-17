@@ -1,6 +1,7 @@
 import { Volume2 } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 
+import { getClozeConcept, speakCloze } from '@/components/exercises/cloze-props';
 import {
   ContinueButton,
   ExerciseCard,
@@ -11,6 +12,7 @@ import { getLanguageProps } from '@/components/exercises/language-props';
 import { useAutoPlay } from '@/components/exercises/use-auto-play';
 import { MarkedText } from '@/components/marked-text';
 import { Button } from '@/components/ui/button';
+import { getClozeText } from '@/exercises/cloze';
 import { speak } from '@/lib/speech';
 
 interface WordIntroProps extends ExerciseProps {
@@ -25,11 +27,14 @@ interface WordIntroProps extends ExerciseProps {
  * in a guess, or a tricky one after it's missed, before it's asked again. Nothing is rated.
  */
 export function WordIntro(props: WordIntroProps) {
-  return props.concept.kind === 'knowledge' ? (
-    <QuestionIntro {...props} />
-  ) : (
-    <LanguageWordIntro {...props} />
-  );
+  switch (props.concept.kind) {
+    case 'knowledge':
+      return <QuestionIntro {...props} />;
+    case 'cloze':
+      return <ClozeIntro {...props} />;
+    default:
+      return <LanguageWordIntro {...props} />;
+  }
 }
 
 /**
@@ -71,10 +76,31 @@ function QuestionIntro(props: WordIntroProps) {
   );
 }
 
+/**
+ * A cloze sentence with its gap filled in and highlighted, and its hint and explanation, read
+ * aloud in a language Subject.
+ */
+function ClozeIntro(props: WordIntroProps) {
+  const concept = getClozeConcept(props);
+  const playSentence = () => speakCloze(getClozeText(concept.cloze), props.subject);
+  useAutoPlay(playSentence);
+
+  return (
+    <IntroCard
+      label={props.tricky ? 'Tricky sentence' : 'New sentence'}
+      prompt={<MarkedText text={concept.cloze} />}
+      meaning={concept.hint}
+      explanation={concept.explanation}
+      onPlay={props.subject.kind === 'language' ? playSentence : undefined}
+      onDone={props.onDone}
+    />
+  );
+}
+
 interface IntroCardProps {
   label: string;
   hint?: string;
-  prompt: string;
+  prompt: ReactNode;
   meaning?: string;
   /** Read by screen readers before the meaning. */
   meaningLabel?: string;

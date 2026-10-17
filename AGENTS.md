@@ -48,3 +48,5 @@ A Deck without `shuffleNew: true` introduces new Concepts in file order, so orde
 A shuffled Deck, like the Polish spelling sets, doesn't need this.
 
 Write German nouns with their article, e.g. `das Buch`, so they're practised with German article choice, and mark plurals with `plural: true`, e.g. `die Bücher`, as their article tells no gender. To practise a noun's plural, give it on the singular instead, with `foreignPlural: die Bücher` and `localPlural: książki`, rather than adding the plural as a word of its own.
+
+Write a cloze sentence as its own item, with the gap in square brackets and its meaning as `hint`, e.g. `{ id: cloze-das-ist-der-rucksack-von-julian, cloze: 'das ist der Rucksack [von Julian]', hint: to jest plecak Juliana }`. Its id is `cloze-` followed by the whole sentence in lowercase with dashes, umlauts written out (`ä` → `ae`, `ß` → `ss`); for another gap in the same sentence, add `-1`, `-2` and so on to the id.

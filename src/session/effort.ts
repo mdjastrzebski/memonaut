@@ -12,6 +12,8 @@ export const EXERCISE_EFFORT: Record<ExerciseType, number> = {
   // As quick as other multiple choice to answer: three short options always in the same place and
   // nothing read aloud first, but recalling a gender takes thought, and its result has rules to read.
   'article-choice-de': 1,
+  // Typed like plural form, but only a short word: the sentence and its meaning are on screen.
+  'cloze': 1.5,
   'translation': 2.5,
   // Typed like translation, but the word is on screen and only its plural is recalled.
   'plural-form': 2,

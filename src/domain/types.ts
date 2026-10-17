@@ -72,7 +72,7 @@ export interface Deck {
  * One piece of knowledge, e.g. a word or a question. It can be in any number of Decks within its
  * Subject, and is of its Subject's kind.
  */
-export type Concept = LanguageConcept | KnowledgeConcept;
+export type Concept = LanguageConcept | KnowledgeConcept | ClozeConcept;
 
 interface ConceptBase {
   /** Unique across Subjects, e.g. "german/number-3". Learning state is keyed by it, so it must not change. */
@@ -150,12 +150,31 @@ export interface KnowledgeConcept extends ConceptBase {
 }
 
 /**
+ * A sentence of a language Subject with one gap to fill in, practised only with cloze. Its id
+ * starts with "cloze-".
+ */
+export interface ClozeConcept extends ConceptBase {
+  kind: 'cloze';
+  /**
+   * The sentence in the language being learned, with its gap in square brackets, e.g. "das ist der
+   * Rucksack [von Julian]".
+   */
+  cloze: string;
+  /** Optional, shown with the sentence, e.g. its meaning: "to jest plecak Juliana". */
+  hint?: string;
+  /** Optional, shown with the result, with parts in square brackets highlighted. */
+  explanation?: string;
+}
+
+/**
  * A way to practise a Concept:
  * - recognition-choice: see and hear the foreign word and pick the local one from a few options
  * - dictation: hear the foreign word and type how it's spelled
  * - translation-choice: see the local word and pick the foreign one from a few options
  * - article-choice-de: see a German noun without its article, e.g. "Buch", and pick der, die or das;
  *   or dieser, diese or dieses; or mein or meine for e.g. "meine Tasche", likewise ein and kein
+ * - cloze: see a cloze sentence with a gap, e.g. "das ist der Rucksack ___", and type what's
+ *   missing, "von Julian"
  * - translation: see the local word and type the foreign one
  * - plural-form: see the foreign word, e.g. "das Buch", and type its plural, "die Bücher"
  * - translation-plural: see the local plural, e.g. "książki", and type the foreign one
@@ -167,6 +186,7 @@ export type ExerciseType =
   | 'dictation'
   | 'translation-choice'
   | 'article-choice-de'
+  | 'cloze'
   | 'translation'
   | 'plural-form'
   | 'translation-plural'

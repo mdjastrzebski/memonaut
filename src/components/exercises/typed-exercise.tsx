@@ -49,6 +49,8 @@ interface TypedExerciseProps extends ExerciseProps {
   explanation?: string;
   /** Extra context drawn large in the corner, e.g. "3". */
   hint?: string;
+  /** Forgives only wrong capitalization, e.g. for a short word, as in a strict-spelling Deck. */
+  strict?: boolean;
   /** Called once the answer is checked, e.g. to read the word aloud. */
   onChecked?: () => void;
 }
@@ -72,6 +74,7 @@ export function TypedExercise({
   meaning,
   explanation,
   hint,
+  strict: strictAnswer = false,
   onChecked,
 }: TypedExerciseProps) {
   const { answered: checked, check, submit, now } = useAnswer(onReview);
@@ -84,7 +87,7 @@ export function TypedExercise({
   const pendingSelection = useRef<[start: number, end: number] | null>(null);
 
   const specialCharacters = subject.specialCharacters ?? [];
-  const strict = session.deck.strictSpelling;
+  const strict = strictAnswer || session.deck.strictSpelling;
 
   // Kids don't notice when the answer box loses focus, so typing anywhere goes back to it and Enter
   // submits. Enter on a focused button still presses that button.

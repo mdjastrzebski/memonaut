@@ -109,6 +109,14 @@ test('a tricky word is introduced again as one', () => {
   expect(intro).toHaveTextContent('=meansksiążka');
 });
 
+test('a new cloze sentence is introduced with its gap filled in and read aloud', () => {
+  renderExercise('german/cloze-das-buch-von-anna', false, undefined, [], { intro: true });
+  expect(screen.getByText('New sentence')).toBeInTheDocument();
+  expect(screen.getByRole('heading')).toHaveTextContent('das ist das Buch von Anna');
+  expect(screen.getByText('książka Anny')).toBeInTheDocument();
+  expect(utterances.map((utterance) => utterance.text)).toEqual(['das ist das Buch von Anna']);
+});
+
 test('a new question is introduced with its answer and explanation, not read aloud', () => {
   const question = content.concepts.find((concept) => concept.kind === 'knowledge')!;
   renderExercise(question.id, true, undefined, [], { intro: true });
@@ -288,6 +296,28 @@ test('plural form shows the word and asks for its plural, then shows how it is m
   expect(status).toHaveTextContent('książki');
   expect(status).toHaveTextContent('das Buch → die Bücher');
   expect(utterances.map((utterance) => utterance.text)).toEqual(['die Bücher']);
+});
+
+test('cloze shows the word with a gap and its meaning, and forgives a typo in a phrase', async () => {
+  const user = userEvent.setup();
+  renderExercise('german/cloze-das-buch-von-anna', false, ['cloze']);
+  expect(screen.getByRole('heading')).toHaveTextContent('das ist das Buch');
+  expect(screen.getByText('książka Anny')).toBeInTheDocument();
+
+  await user.type(screen.getByRole('textbox', { name: 'Answer' }), 'von Ana{Enter}');
+  const status = screen.getByRole('status');
+  expect(status).toHaveTextContent('Hard');
+  expect(status).toHaveTextContent('das ist das Buch von Anna');
+  expect(utterances.map((utterance) => utterance.text)).toEqual(['das ist das Buch von Anna']);
+});
+
+test('cloze with a one-word gap forgives no typo, as one letter off is another word', async () => {
+  const user = userEvent.setup();
+  renderExercise('german/cloze-das-buch', false, ['cloze']);
+  expect(screen.getByRole('heading')).toHaveTextContent('das ist Buch');
+
+  await user.type(screen.getByRole('textbox', { name: 'Answer' }), 'dar{Enter}');
+  expect(screen.getByRole('status')).toHaveTextContent('Again');
 });
 
 test('translation plural shows the local plural and asks for the foreign one', async () => {
