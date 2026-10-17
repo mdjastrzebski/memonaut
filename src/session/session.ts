@@ -59,6 +59,7 @@ export const EXERCISE_TYPES: ExerciseType[] = [
   'translation-choice',
   'article-choice-de',
   'dictation',
+  'cloze',
   'translation',
   'plural-form',
   'translation-plural',
@@ -73,6 +74,7 @@ export const KIND_EXERCISE_TYPES: Record<SubjectKind, ExerciseType[]> = {
     'translation-choice',
     'article-choice-de',
     'dictation',
+    'cloze',
     'translation',
     'plural-form',
     'translation-plural',
@@ -84,12 +86,14 @@ export const KIND_EXERCISE_TYPES: Record<SubjectKind, ExerciseType[]> = {
  * Whether a Concept can be practised with an Exercise Type: question choice needs choices, German
  * article choice a German singular noun with its article, dieser, ein, kein or a possessive, e.g.
  * "das Buch" or "meine Tasche", plural form a foreign plural, and translation plural both plurals.
+ * A cloze sentence is practised only with cloze.
  */
 export function canPractise(
   concept: Concept,
   exerciseType: ExerciseType,
   subject: Subject,
 ): boolean {
+  if ((concept.kind === 'cloze') !== (exerciseType === 'cloze')) return false;
   switch (exerciseType) {
     case 'question-choice':
       return concept.kind === 'knowledge' && !!concept.choices;

@@ -220,6 +220,22 @@ concepts:
       explanation: 'na -[e] → zwykle [die]',
       group: thing/school,
     }
+  # Do kogo coś należy: rzecz z rodzajnikiem, potem von + osoba. Luka na von + osoba.
+  - {
+      id: cloze-das-ist-der-rucksack-von-julian,
+      cloze: 'das ist der Rucksack [von Julian]',
+      hint: to jest plecak Juliana,
+    }
+  - {
+      id: cloze-das-ist-die-brille-von-papa,
+      cloze: 'das ist die Brille [von Papa]',
+      hint: to są okulary taty,
+    }
+  - {
+      id: cloze-das-ist-das-handy-von-anna,
+      cloze: 'das ist das Handy [von Anna]',
+      hint: to jest telefon Anny,
+    }
   # Dziesiątki: -zig, z wyjątkiem dreißig; 20 z Kapitel 1.
   - { id: number-20, local: dwadzieścia, foreign: zwanzig, hint: 20, group: number/tens }
   - {

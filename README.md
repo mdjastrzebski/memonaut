@@ -47,9 +47,10 @@ Exercise Types are ordered from easiest, and a session queues every Card of one 
 2. `translation-choice`: see the local word, pick the foreign one from a few options
 3. `article-choice-de`: German only: see a noun without its article, e.g. _Buch_ (książka), pick _der_, _die_ or _das_, each in its gender's color (blue, red, green) and always in the same order, also with keys 1–3. It's for words that are an article followed by one capitalized word, e.g. `das Buch`; phrases and plurals marked `plural: true` skip it, as a plural is always _die_. A noun with _dieser_ instead, e.g. `dieses Buch`, is practised the same way with _dieser_, _diese_ or _dieses_. One with _ein_, _kein_ or a possessive, e.g. `meine Tasche`, with its two forms: _mein_ for der and das nouns, _meine_ for die ones; likewise _ein_, _kein_, _dein_, _sein_, _ihr_, _unser_, _euer_/_eure_ and the polite _Ihr_. The word is read aloud only once picked, as hearing it would give the article away. The result tells what gives the article away: the word's `explanation`, or else its ending, e.g. _na -ung → zawsze die_, _na -e → zwykle die_, or that it's an exception, as for _der Name_; and for a compound, the noun of the Subject its last part is, e.g. _der Fuß**ball** jak der Ball_; after another word, also the same noun with its article, e.g. _mein Freund jak der Freund_.
 4. `dictation`: hear the foreign word, type how it's spelled
-5. `translation`: see the local word, type the foreign one
-6. `plural-form`: see the foreign word, e.g. _das Buch_, type its plural, _die Bücher_. Only for words with a `foreignPlural`. The result shows how the plural is made, with what it adds or changes highlighted, e.g. _das Buch → die B**ü**ch**er**_, or the article when nothing else changes, e.g. _der Computer → **die** Computer_.
-7. `translation-plural`: see the local plural, e.g. _książki_, type the foreign one, _die Bücher_. Only for words with both a `localPlural` and a `foreignPlural`; its result is shown like plural form's.
+5. `cloze`: see a cloze sentence with a gap and its hint, e.g. _das ist der Rucksack \_\_\__ (to jest plecak Juliana), type what's missing, _von Julian_. Only for cloze sentences, which get no other exercise, and never offered as wrong options in multiple choice. A one-word gap, e.g. _der_, forgives only wrong capitalization, as one letter off, e.g. _den_, is another word. The result shows the sentence with the gap filled in and highlighted, and it's read aloud.
+6. `translation`: see the local word, type the foreign one
+7. `plural-form`: see the foreign word, e.g. _das Buch_, type its plural, _die Bücher_. Only for words with a `foreignPlural`. The result shows how the plural is made, with what it adds or changes highlighted, e.g. _das Buch → die B**ü**ch**er**_, or the article when nothing else changes, e.g. _der Computer → **die** Computer_.
+8. `translation-plural`: see the local plural, e.g. _książki_, type the foreign one, _die Bücher_. Only for words with both a `localPlural` and a `foreignPlural`; its result is shown like plural form's.
 
 In multiple choice, the wrong options are other words of the Deck, or of the Subject when the Deck has too few. A word with a `group` gets the others of its group first, from the Deck or the Subject, so _Monday_ comes with other days rather than _dog_, then those of the wider group, e.g. other numbers for one in `number/large`. A word that would be right too, e.g. "large" for _duży_ when the answer is "big", is never offered. A right pick is rated Good, or Easy when made within 3 seconds, and a wrong one Again. Options can be picked with keys 1–4.
 
@@ -63,7 +64,7 @@ A Card due again within 20 minutes, e.g. one still learning or just missed, come
 
 A session takes about a chosen number of minutes (5, 10, 15 or 20). Each Card is worth **effort points** for how long it's expected to take, so a session holds fewer typed exercises than multiple choice ones:
 
-- one answer is worth 1 point in `recognition-choice`, `translation-choice` and `article-choice-de`, 1.5 in `question-choice`, 2 in `dictation` and `plural-form` and 2.5 in `translation`, `translation-plural` and `question-type`
+- one answer is worth 1 point in `recognition-choice`, `translation-choice` and `article-choice-de`, 1.5 in `question-choice` and `cloze`, 2 in `dictation` and `plural-form` and 2.5 in `translation`, `translation-plural` and `question-type`
 - times the Card's difficulty: from 0.8 for the easiest (FSRS difficulty 1) to 1.25 for the hardest (10); a new Card counts as average
 - times how often it's expected to be answered in the session: twice for a new Card (its learning step), 1.5 times for one still learning, and for a due one once, plus once more if it's forgotten
 - plus half a point for a new word's intro
@@ -139,6 +140,16 @@ concepts:
 ```
 
 A `language` Subject needs a `foreignLanguage`, and its words have `local`, `foreign` and the optional fields below. A `knowledge` Subject's Concepts have a `question`, an `answer`, an optional `explanation`, shown with the result, e.g. `29 : 6 = 4 r 5` for "Reszta z dzielenia 29 przez 6", and optional `choices`: wrong answers to pick from, best common mistakes, e.g. `36` for `2 · 3² =`. `explanation` is shown with the result in every exercise, below the meaning, with parts in square brackets highlighted, e.g. `'das Buch → die B[ü]ch[er]'` for how a plural is made; quote it in YAML, as brackets start a list. `alternatives` lists other right answers in translation, e.g. `[einhundert]` for `hundert`; a mistake is compared with the closest one, and only `foreign` is read aloud, asked in dictation and offered in multiple choice. `hint` is shown on screen in translation and translation choice only, since it could give the meaning away in the others; `spokenHint` is read aloud in dictation and must be in the language being learned. `local` may be left out only in a Subject with only `dictation`. `foreignPlural` gives a word's plural, e.g. `die Bücher` for `das Buch`, for `plural-form`, and `localPlural` the local one, e.g. `książki`, also for `translation-plural`; `localPlural` needs `foreignPlural`. A Deck practises only the Exercise Types some of its words can be practised with, so one without plurals has no plural exercises. `plural: true` marks a German plural noun, e.g. `die Bücher`, so it skips German article choice; a German Subject, by its `foreignLanguage`, practises its nouns with it. `group` names a set of like words within the Subject, e.g. `weekday`, for the wrong options in multiple choice; a slash puts it within a wider one, e.g. `number/small` within `number`. Leave out near-synonyms, which would be right too.
+
+A `language` Subject can also hold cloze sentences, practised only with `cloze`: instead of `local` and `foreign`, one has a `cloze`, the sentence with one gap in square brackets, quoted in YAML, an optional `hint` shown with it, e.g. its meaning, and an optional `explanation`. Its id starts with `cloze-`, e.g. `cloze-das-ist-der-rucksack-von-julian`, with `-1`, `-2` and so on for several gaps in the same sentence. Its intro shows the sentence with the gap filled in and highlighted.
+
+```yaml
+- {
+    id: cloze-das-ist-der-rucksack-von-julian,
+    cloze: 'das ist der Rucksack [von Julian]',
+    hint: to jest plecak Juliana,
+  }
+```
 
 Answers are rated automatically. By default an almost-correct answer (wrong capitalization, a missing umlaut or one letter off) is rated Hard. A number, e.g. `49`, must be exact in any Deck: one digit off is a wrong result, not a typo. A Deck with `strictSpelling: true`, like the Polish spelling sets, forgives only wrong capitalization, so _zolw_ for _żółw_ or _może_ for _morze_ is wrong. For the core Deck, set it in `core.yaml`. A Subject's `trickySpellings`, e.g. `[ó, u, rz, ż, ch, h]` for Polish, are marked in a right answer, to remind which spellings it got right.
 

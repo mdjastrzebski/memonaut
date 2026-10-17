@@ -1,5 +1,6 @@
 import {
   CircleHelp,
+  Brackets,
   Copy,
   Eye,
   Languages,
@@ -19,6 +20,7 @@ export const EXERCISES: Record<ExerciseType, { label: string; Icon: LucideIcon }
   'dictation': { label: 'Dictation', Icon: Volume2 },
   'translation-choice': { label: 'Translation choice', Icon: ListChecks },
   'article-choice-de': { label: 'Article', Icon: Tag },
+  'cloze': { label: 'Cloze', Icon: Brackets },
   'translation': { label: 'Translation', Icon: Languages },
   'plural-form': { label: 'Plural', Icon: Copy },
   'translation-plural': { label: 'Translation plural', Icon: Layers },

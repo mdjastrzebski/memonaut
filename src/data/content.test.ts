@@ -241,6 +241,7 @@ test('a subject practises every exercise type unless it lists some, easiest firs
     'translation-choice',
     'article-choice-de',
     'dictation',
+    'cloze',
     'translation',
     'plural-form',
     'translation-plural',
@@ -401,7 +402,9 @@ concepts:
     'translation',
   ];
   expect(subjects[0].exerciseTypes).toEqual([
-    ...exerciseTypes,
+    ...exerciseTypes.slice(0, -1),
+    'cloze',
+    'translation',
     'plural-form',
     'translation-plural',
   ]);
@@ -454,6 +457,42 @@ concepts:
       ),
     ),
   ).toThrow('b.yaml: concept "die-buecher" is a plural, so it has no foreign plural');
+});
+
+test('a cloze sentence is practised only with cloze, and words never with it', () => {
+  const { decks, concepts } = buildContent({
+    './german/subject.yaml': subject,
+    './german/decks/a.yaml': `
+id: a
+name: A
+concepts:
+  - { id: cloze-das-handy, cloze: 'das ist [das] Handy', hint: to jest komórka }
+  - { id: das-handy, local: komórka, foreign: das Handy }
+`,
+  });
+  expect(concepts[0]).toEqual({
+    id: 'german/cloze-das-handy',
+    subjectId: 'german',
+    kind: 'cloze',
+    cloze: 'das ist [das] Handy',
+    hint: 'to jest komórka',
+  });
+  expect(getConceptExerciseTypes(decks[0], 'german/cloze-das-handy')).toEqual(['cloze']);
+  expect(getConceptExerciseTypes(decks[0], 'german/das-handy')).not.toContain('cloze');
+
+  const deck = (concept: string) => ({
+    './german/subject.yaml': subject,
+    './german/decks/b.yaml': `id: b\nname: B\nconcepts:\n  - ${concept}\n`,
+  });
+  expect(() => buildContent(deck("{ id: cloze-das-ist, cloze: 'das ist' }"))).toThrow(
+    'b.yaml: concept "cloze-das-ist" needs one gap in square brackets in its cloze',
+  );
+  expect(() => buildContent(deck("{ id: das-ist, cloze: '[das] ist' }"))).toThrow(
+    'Start the id of a cloze sentence with "cloze-"',
+  );
+  expect(() => buildContent(deck("{ id: cloze-das-ist, cloze: '[das] ist', local: to }"))).toThrow(
+    'local',
+  );
 });
 
 test('only a German subject has German article choice', () => {

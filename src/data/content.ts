@@ -2,6 +2,7 @@ import { parse } from 'yaml';
 import { z } from 'zod';
 
 import type { Concept, Deck, ExerciseType, Subject, SubjectKind } from '@/domain/types';
+import { splitCloze } from '@/exercises/cloze';
 import { isGerman } from '@/exercises/german-articles';
 import { canPractise, EXERCISE_TYPES, KIND_EXERCISE_TYPES } from '@/session/session';
 
@@ -94,8 +95,36 @@ const CONCEPT_FIELDS = {
   },
 } satisfies Record<SubjectKind, z.ZodRawShape>;
 
+/** A cloze sentence's fields in a language Subject: its id starts with "cloze-". */
+const CLOZE_FIELDS = {
+  id: id.regex(/^cloze-/, 'Start the id of a cloze sentence with "cloze-"'),
+  /** The sentence with one gap in square brackets. */
+  cloze: z.string().min(1),
+  hint: z.string().optional(),
+  explanation: z.string().min(1).optional(),
+};
+
 /** Its fields are checked by the schema for its Subject's kind. */
 type ConceptFields = { id: string } & Record<string, string | string[] | undefined>;
+
+/**
+ * A Concept in a file: of its Subject's kind, or in a language Subject a cloze sentence when it has
+ * a `cloze`, each with its own fields.
+ */
+function conceptSchema<T extends z.ZodRawShape>(kind: SubjectKind, extra: T) {
+  const own = z.strictObject({ id, ...CONCEPT_FIELDS[kind], ...extra });
+  if (kind !== 'language') return own as unknown as z.ZodType<ConceptFields>;
+  const cloze = z.strictObject({ ...CLOZE_FIELDS, ...extra });
+  return z.unknown().transform((value, ctx) => {
+    const isCloze = typeof value === 'object' && value !== null && 'cloze' in value;
+    const result = (isCloze ? cloze : own).safeParse(value);
+    if (!result.success) {
+      ctx.issues.push(...(result.error.issues as typeof ctx.issues));
+      return z.NEVER;
+    }
+    return result.data;
+  }) as unknown as z.ZodType<ConceptFields>;
+}
 
 const deckSchema = (kind: SubjectKind) =>
   z.strictObject({
@@ -109,9 +138,7 @@ const deckSchema = (kind: SubjectKind) =>
     /** The Subject's if left out. */
     exerciseTypes: exerciseTypes.optional(),
     concepts: z.array(
-      z.strictObject({
-        id,
-        ...CONCEPT_FIELDS[kind],
+      conceptSchema(kind, {
         /** Puts the Concept in the Subject's core Deck. */
         core: flag,
       }) as unknown as z.ZodType<ConceptFields & { core: boolean }>,
@@ -125,9 +152,7 @@ const coreSchema = (kind: SubjectKind) =>
     shuffleNew: flag,
     showIntro: onFlag,
     exerciseTypes: exerciseTypes.optional(),
-    concepts: z.array(
-      z.strictObject({ id, ...CONCEPT_FIELDS[kind] }) as unknown as z.ZodType<ConceptFields>,
-    ),
+    concepts: z.array(conceptSchema(kind, {})),
   });
 
 const CORE_DECK = { id: 'core', name: 'Essentials' };
@@ -187,13 +212,16 @@ export function buildContent(files: Record<string, string>): Content {
     };
 
     const addConcept = (path: string, fields: ConceptFields) => {
-      const needingLocal = subject.exerciseTypes.find((type) => type !== 'dictation');
-      if (subject.kind === 'language' && fields.local === undefined && needingLocal) {
+      const isCloze = fields.cloze !== undefined;
+      const needingLocal = subject.exerciseTypes.find(
+        (type) => type !== 'dictation' && type !== 'cloze',
+      );
+      if (subject.kind === 'language' && !isCloze && fields.local === undefined && needingLocal) {
         throw new Error(`${path}: concept "${fields.id}" needs a local word for ${needingLocal}`);
       }
       const concept = {
         ...fields,
-        kind: subject.kind,
+        kind: isCloze ? 'cloze' : subject.kind,
         id: prefix(fields.id),
         subjectId: subject.id,
       } as Concept;
@@ -202,6 +230,11 @@ export function buildContent(files: Record<string, string>): Content {
       }
       if (concept.kind === 'language' && concept.plural && concept.foreignPlural) {
         throw new Error(`${path}: concept "${fields.id}" is a plural, so it has no foreign plural`);
+      }
+      if (concept.kind === 'cloze' && !splitCloze(concept.cloze)) {
+        throw new Error(
+          `${path}: concept "${fields.id}" needs one gap in square brackets in its cloze`,
+        );
       }
       if (concept.kind === 'knowledge' && concept.choices?.includes(concept.answer)) {
         throw new Error(`${path}: concept "${fields.id}" has its answer among its wrong choices`);

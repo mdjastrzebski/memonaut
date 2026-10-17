@@ -88,6 +88,8 @@ concepts:
   - { id: mein-ball, local: moja piłka, foreign: mein Ball }
   - { id: meine-lampe, local: moja lampa, foreign: meine Lampe }
   - { id: dieses-buch, local: ta książka, foreign: dieses Buch }
+  - { id: cloze-das-buch-von-anna, cloze: 'das ist das Buch [von Anna]', hint: książka Anny }
+  - { id: cloze-das-buch, cloze: 'das ist [das] Buch' }
 `,
 
   './math/subject.yaml': `

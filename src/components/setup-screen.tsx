@@ -528,7 +528,7 @@ function WordRow({ word, now }: { word: Word; now: Date }) {
   const label = PROGRESS_LABELS[progress];
   // A word first, then its meaning; a question first, then its answer.
   const { prompt, answer } = getConceptText(concept);
-  const [main, extra] = concept.kind === 'language' ? [answer, prompt] : [prompt, answer];
+  const [main, extra] = concept.kind === 'knowledge' ? [prompt, answer] : [answer, prompt];
 
   return (
     <li className="flex items-center gap-2.5 border-b border-foreground/10 py-1.5 last:border-b-0">

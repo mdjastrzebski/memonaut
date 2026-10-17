@@ -1,10 +1,16 @@
 import type { Concept, SubjectKind } from '@/domain/types';
+import { getClozeText } from '@/exercises/cloze';
 
 /** What a Concept asks, e.g. the local word or the question, and its answer, e.g. the foreign word. */
 export function getConceptText(concept: Concept): { prompt?: string; answer: string } {
-  return concept.kind === 'language'
-    ? { prompt: concept.local, answer: concept.foreign }
-    : { prompt: concept.question, answer: concept.answer };
+  switch (concept.kind) {
+    case 'language':
+      return { prompt: concept.local, answer: concept.foreign };
+    case 'knowledge':
+      return { prompt: concept.question, answer: concept.answer };
+    case 'cloze':
+      return { prompt: concept.hint, answer: getClozeText(concept.cloze) };
+  }
 }
 
 /** What the Concepts of each kind of Subject are called. */

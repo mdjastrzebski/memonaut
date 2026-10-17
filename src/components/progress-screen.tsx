@@ -423,7 +423,7 @@ function SubjectProgress({
               if (!concept) return null;
               const { prompt, answer } = getConceptText(concept);
               const [main, extra] =
-                concept.kind === 'language' ? [answer, prompt] : [prompt, answer];
+                concept.kind === 'knowledge' ? [prompt, answer] : [answer, prompt];
               return (
                 <li
                   key={hard.conceptId}
