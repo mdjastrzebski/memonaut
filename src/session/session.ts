@@ -10,7 +10,7 @@ import type {
 import { getGermanNoun, isGerman } from '@/exercises/german-articles';
 import type { AnswerIssue } from '@/exercises/type-answer';
 import { shuffle } from '@/lib/shuffle';
-import { getCardEffort, getReviewEffort } from '@/session/effort';
+import { getAnswerEffort, getCardEffort } from '@/session/effort';
 import {
   createSrsCard,
   getRetrievability,
@@ -23,7 +23,7 @@ import {
  * Cards due again within this window come back in the same session, like Anki's learn-ahead limit.
  * This lets a new card go through its learning steps (1m, 10m) and graduate to Review.
  */
-export const LEARN_AHEAD_MS = 20 * 60 * 1000;
+const LEARN_AHEAD_MS = 20 * 60 * 1000;
 
 /** Every Exercise Type, easiest first. A Concept unlocks them one at a time, in a Deck's order. */
 export const EXERCISE_TYPES: ExerciseType[] = [
@@ -93,7 +93,7 @@ export function withExerciseTypes(deck: Deck, exerciseTypes: ExerciseType[]): De
 }
 
 /** A study day starts at 4 AM local time, like Anki's, so late-evening study counts as one day. */
-export const DAY_START_HOUR = 4;
+const DAY_START_HOUR = 4;
 
 /** One study sitting over a Deck. Lives in memory only. */
 export interface Session {
@@ -267,7 +267,7 @@ function hasGraduated(card: Card): boolean {
 }
 
 /** When the study day of `now` started: the last 4 AM local time. */
-export function getDayStart(now: Date): Date {
+function getDayStart(now: Date): Date {
   const start = new Date(now);
   start.setHours(DAY_START_HOUR, 0, 0, 0);
   if (start.getTime() > now.getTime()) start.setDate(start.getDate() - 1);
@@ -282,7 +282,7 @@ function compareKeys(a: number[], b: number[]): number {
 }
 
 /** A Concept's Card for each Exercise Type: the one practised before, or a new one. */
-export function getConceptCards(
+function getConceptCards(
   conceptId: string,
   cards: Record<string, Card>,
   now: Date,
@@ -341,7 +341,8 @@ export function getSessionProgress(session: Session): number {
 /** Effort points of the answers given so far. */
 export function getEffortDone(session: Session): number {
   return session.reviews.reduce(
-    (total, review) => total + getReviewEffort(review, session.cards[review.cardId].exerciseType),
+    (total, review) =>
+      total + getAnswerEffort(session.cards[review.cardId].exerciseType, review.log),
     0,
   );
 }

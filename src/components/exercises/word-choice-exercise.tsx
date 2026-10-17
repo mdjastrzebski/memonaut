@@ -39,7 +39,7 @@ export function WordChoiceExercise({ side, ...props }: WordChoiceExerciseProps) 
 }
 
 /** A word and its meaning, with its explanation, shown with the result. */
-export function WordFeedback({ concept }: { concept: LanguageConcept }) {
+function WordFeedback({ concept }: { concept: LanguageConcept }) {
   return (
     <>
       <span>{concept.foreign}</span>

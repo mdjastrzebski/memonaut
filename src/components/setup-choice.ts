@@ -29,7 +29,6 @@ export function loadSetupChoice(content: Content): SetupChoice {
     content.decks.find((deck) => deck.id === saved.deckId) ??
     getSubjectDecks(content.decks, String(saved.subjectId))[0] ??
     getSubjectDecks(content.decks, content.subjects[0].id)[0];
-  // Sessions counted exercises (`sessionSize`) before they were timed; that choice isn't kept.
   const sessionMinutes = SESSION_MINUTES.find((minutes) => minutes === saved.sessionMinutes);
   const savedUnitIds =
     typeof saved.lastUnitIds === 'object' && saved.lastUnitIds !== null ? saved.lastUnitIds : {};

@@ -109,7 +109,7 @@ function isNumber(value: string): boolean {
   return /^-?\d+([.,]\d+)?$/.test(value);
 }
 
-export function normalizeSpacing(value: string): string {
+function normalizeSpacing(value: string): string {
   return value.trim().replace(/\s+/g, ' ');
 }
 

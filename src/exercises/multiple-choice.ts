@@ -8,7 +8,7 @@ import { normalizeAnswer, type AnswerResult } from './type-answer';
 export type ChoiceSide = 'local' | 'foreign';
 
 /** How many options are offered, the right one included, when there are enough words. */
-export const CHOICE_COUNT = 4;
+const CHOICE_COUNT = 4;
 
 /**
  * A right pick within this time is rated Easy: the word was known at once, not found by ruling the

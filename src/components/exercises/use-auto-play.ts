@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 
 /**
- * Plays the word once as soon as the exercise appears. The ref keeps StrictMode's second effect run
- * from cancelling and queueing it again.
+ * Plays once as soon as the component appears, e.g. the word of an exercise. The ref keeps
+ * StrictMode's second effect run from playing it again.
  */
 export function useAutoPlay(play: () => void) {
   const played = useRef(false);
@@ -11,6 +11,6 @@ export function useAutoPlay(play: () => void) {
       played.current = true;
       play();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only once per exercise
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only once
   }, []);
 }

@@ -1,8 +1,9 @@
 import { Rocket } from 'lucide-react';
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 
 import { CONCEPT_NOUNS, getConceptText } from '@/components/concept-text';
 import { EXERCISES } from '@/components/exercise-types';
+import { useAutoPlay } from '@/components/exercises/use-auto-play';
 import { getProgress, GRADE_STYLES, PROGRESS_LABELS, type Progress } from '@/components/grades';
 import { AdvancedPanel, SrsTermHint, StateBadge } from '@/components/srs-stats';
 import { Button } from '@/components/ui/button';
@@ -56,15 +57,8 @@ export function SummaryScreen({
 }: SummaryScreenProps) {
   const [now] = useState(() => new Date());
   const [showAdvanced, setShowAdvanced] = useState(false);
+  useAutoPlay(playCompleted);
 
-  // The ref keeps StrictMode's second effect run from playing it twice.
-  const played = useRef(false);
-  useEffect(() => {
-    if (!played.current) {
-      played.current = true;
-      playCompleted();
-    }
-  }, []);
   const cards = Object.values(session.cards);
   const { reviews } = session;
   const correctCount = reviews.filter((review) => review.rating !== Rating.Again).length;

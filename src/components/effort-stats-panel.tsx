@@ -94,20 +94,19 @@ export function EffortStatsPanel({ subjects, paces }: EffortStatsPanelProps) {
 
 function EffortTables({ sessions }: { sessions: SessionLog[] }) {
   const { msPerPoint, types, difficulties, answerCounts } = getEffortStats(sessions);
-  const seconds = (ms: number) => formatSeconds(ms);
 
   return (
     <>
       <StatsTable
         title="Exercise types"
-        description={`Time per answer: answering, then reading the feedback until the next exercise shows. Stretches away from the screen are left out. If the points are right, every type takes about the same time per point${msPerPoint > 0 ? `: ${seconds(msPerPoint)} on average` : ''}. Suggested points would make it so.`}
+        description={`Time per answer: answering, then reading the feedback until the next exercise shows. Stretches away from the screen are left out. If the points are right, every type takes about the same time per point${msPerPoint > 0 ? `: ${formatSeconds(msPerPoint)} on average` : ''}. Suggested points would make it so.`}
         head={['Type', 'Answers', 'Answering', 'With feedback', 'Per point', 'Points', 'Suggested']}
         rows={types.map((row) => [
           EXERCISES[row.exerciseType].label,
           row.answers,
-          seconds(row.medianAnswerMs),
-          seconds(row.medianTotalMs),
-          seconds(row.msPerPoint),
+          formatSeconds(row.medianAnswerMs),
+          formatSeconds(row.medianTotalMs),
+          formatSeconds(row.msPerPoint),
           formatNumber(row.points, 1),
           formatNumber(row.suggestedPoints, 1),
         ])}
@@ -120,7 +119,7 @@ function EffortTables({ sessions }: { sessions: SessionLog[] }) {
           row.label,
           row.answers,
           formatNumber(row.factor),
-          seconds(row.msPerPoint),
+          formatSeconds(row.msPerPoint),
           formatNumber(row.ratio),
         ])}
       />
