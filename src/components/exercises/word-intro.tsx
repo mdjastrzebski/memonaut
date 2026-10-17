@@ -16,12 +16,15 @@ import { speak } from '@/lib/speech';
 interface WordIntroProps extends ExerciseProps {
   /** Called once the word is read, to move on. */
   onDone: () => void;
+  /** Shown again because it keeps being forgotten or missed, rather than as a new word. */
+  tricky?: boolean;
 }
 
 /**
- * A new word shown before its first exercise, so it isn't first met in a guess: the word, read
- * aloud as soon as it appears, with its meaning, hint and explanation. A word with nothing to
- * translate, as in Polish spelling, shows its spoken hint instead. Nothing is rated.
+ * A new word shown before its first exercise, so it isn't first met in a guess, or a tricky one
+ * before it's practised, to learn it anew: the word, read aloud as soon as it appears, with its
+ * meaning, hint and explanation. A word with nothing to translate, as in Polish spelling, shows its
+ * spoken hint instead. Nothing is rated.
  */
 export function WordIntro(props: WordIntroProps) {
   const { concept, subject } = getLanguageProps(props);
@@ -29,14 +32,15 @@ export function WordIntro(props: WordIntroProps) {
   const playWord = () => speak(concept.foreign, subject.foreignLanguage, concept.spokenHint);
   useAutoPlay(playWord);
   const meaning = concept.local ?? concept.spokenHint;
+  const label = props.tricky ? 'Tricky word' : 'New word';
 
   // Focused, so Enter moves on.
   useEffect(() => continueRef.current?.focus(), []);
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
-      <ExerciseCard hint={concept.hint} label="New word">
-        <p className="relative mb-1 text-sm font-semibold text-muted-foreground">New word</p>
+      <ExerciseCard hint={concept.hint} label={label}>
+        <p className="relative mb-1 text-sm font-semibold text-muted-foreground">{label}</p>
         <div className="relative mb-6 flex items-center gap-4">
           <PromptWord>{concept.foreign}</PromptWord>
           <Button

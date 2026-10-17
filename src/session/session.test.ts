@@ -398,6 +398,64 @@ test('introduces only new words, not started ones or questions', () => {
   expect(createSession({ deck: quiz, concepts: questions, now: start }).intros).toEqual([]);
 });
 
+test('introduces a tricky word again before it is practised', () => {
+  const lastWeek = new Date(start.getTime() - 7 * 24 * 60 * 60_000);
+  const cards = byId(
+    reviewed('one:dictation', lastWeek, { due: start, lapses: 2 }),
+    reviewed('two:dictation', lastWeek, { due: start, lapses: 1 }),
+  );
+  const session = createSession({ deck, concepts, cards, now: start });
+  expect(session.intros).toEqual(['one']);
+  expect(session.tricky).toEqual(['one']);
+  // Its intro counts half a point on top of the due dictations.
+  const notTricky = byId(
+    reviewed('one:dictation', lastWeek, { due: start }),
+    reviewed('two:dictation', lastWeek, { due: start }),
+  );
+  expect(session.effort).toBe(
+    createSession({ deck, concepts, cards: notTricky, now: start }).effort + 0.5,
+  );
+
+  // A word missed again and again while still learning is tricky too, but not a question.
+  const missed = byId(reviewed('two:dictation', lastWeek, { due: start, difficulty: 9.6 }));
+  expect(createSession({ deck, concepts, cards: missed, now: start }).tricky).toEqual(['two']);
+  const questions: Concept[] = [
+    { id: 'square-3', subjectId: 'math', kind: 'knowledge', question: '3² =', answer: '9' },
+  ];
+  const quiz: Deck = {
+    ...deck,
+    subjectId: 'math',
+    conceptIds: ['square-3'],
+    exerciseTypes: ['question-type'],
+  };
+  const hardQuestion = byId(
+    reviewed('square-3:question-type', lastWeek, { due: start, lapses: 3 }),
+  );
+  expect(
+    createSession({ deck: quiz, concepts: questions, cards: hardQuestion, now: start }).intros,
+  ).toEqual([]);
+});
+
+test('rates the first answer to a tricky word just introduced Good at most', () => {
+  const lastWeek = new Date(start.getTime() - 7 * 24 * 60 * 60_000);
+  const cards = byId(reviewed('one:dictation', lastWeek, { due: start, lapses: 2 }));
+  const session = createSession({
+    deck: { ...deck, conceptIds: ['one'] },
+    concepts,
+    cards,
+    now: start,
+  });
+  const introduced = introduce(session);
+  const answered = submitReview(introduced, {
+    input: 'eins',
+    elapsedMs: 1000,
+    issues: [],
+    rating: Rating.Easy,
+    now: start,
+  });
+  expect(answered.reviews[0].rating).toBe(Rating.Good);
+});
+
 test('rates the first answer to a word just introduced Good at most', () => {
   const easy = (session: Session) =>
     submitReview(session, {

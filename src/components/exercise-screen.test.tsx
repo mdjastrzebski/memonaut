@@ -41,7 +41,7 @@ function renderExercise(
   strictSpelling = true,
   exerciseTypes?: ExerciseType[],
   subjectConcepts: Concept[] = [],
-  { intro = false, onIntroduced = () => {} } = {},
+  { intro = false, tricky = false, onIntroduced = () => {} } = {},
 ) {
   const deck = content.decks.find(
     (deck) => deck.kind === 'unit' && deck.conceptIds.includes(conceptId),
@@ -58,7 +58,11 @@ function renderExercise(
   });
   render(
     <ExerciseScreen
-      session={intro ? session : { ...session, intros: [] }}
+      session={{
+        ...session,
+        intros: intro ? session.intros : [],
+        tricky: tricky ? [conceptId] : [],
+      }}
       onReview={() => {}}
       onIntroduced={onIntroduced}
       subject={subject}
@@ -85,6 +89,13 @@ test('a new word is introduced with its meaning and read aloud before its first 
   // Continue is focused, so Enter moves on.
   await user.keyboard('{Enter}');
   expect(onIntroduced).toHaveBeenCalledOnce();
+});
+
+test('a tricky word is introduced again as one', () => {
+  renderExercise('german/das-buch', true, undefined, [], { intro: true, tricky: true });
+  const intro = screen.getByRole('region', { name: 'Tricky word' });
+  expect(within(intro).getByRole('heading', { level: 2 })).toHaveTextContent('das Buch');
+  expect(intro).toHaveTextContent('=meansksiążka');
 });
 
 test('a new spelling word is introduced with its spoken hint instead of a meaning', () => {

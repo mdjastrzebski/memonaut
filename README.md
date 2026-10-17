@@ -57,12 +57,14 @@ A Concept unlocks Exercise Types one at a time, in its Deck's order: a new Conce
 
 A new word isn't first met in a guess: before its first exercise, it's introduced on its own screen, with its meaning (or, in Polish spelling, its spoken hint), hint and explanation, and read aloud. Its first exercise then comes a couple of exercises later, often after other words' intros, so it asks to recall the word rather than echo it. An intro isn't a Card: nothing is rated or saved, and FSRS starts with the first exercise. A word whose session ends before that exercise is still new, so it's introduced again next time. The first answer right after an intro counts as Good at most, as a fast pick moments after seeing the word doesn't show it's easy to remember. Questions of a `knowledge` Subject aren't introduced, as that would give the answer away.
 
+A tricky word, one that keeps being forgotten or missed, like Anki's leeches but sooner, is introduced again in each session it comes up in, as a **Tricky word**, before the first of its exercises there, which then comes a couple of exercises later and counts as Good at most, too. A word is tricky once one of its Cards was forgotten twice after it was learned (2 FSRS lapses) or reached an FSRS difficulty of 9, e.g. after three misses in a row.
+
 A session takes about a chosen number of minutes (5, 10, 15 or 20). Each Card is worth **effort points** for how long it's expected to take, so a session holds fewer typed exercises than multiple choice ones:
 
 - one answer is worth 1 point in `recognition-choice`, `translation-choice` and `article-choice-de`, 1.5 in `question-choice`, 2 in `dictation` and `plural-form` and 2.5 in `translation`, `translation-plural` and `question-type`
 - times the Card's difficulty: from 0.8 for the easiest (FSRS difficulty 1) to 1.25 for the hardest (10); a new Card counts as average
 - times how often it's expected to be answered in the session: twice for a new Card (its learning step), 1.5 times for one still learning, and for a due one once, plus once more if it's forgotten
-- plus half a point for a new word's intro
+- plus half a point for a new or tricky word's intro
 
 The minutes become points at the learner's pace in the Subject, 4.2 points a minute to start with, as sessions planned at 8 took a child about 1.9 times as long as picked. Cards are picked in the order below while their points fit, but at least one: the points decide only how many Cards a session holds, never which come first, and nothing changes once it started. The one exception: while a set still has new Concepts, a session always starts at least one, so reviews never crowd out learning. If it doesn't fit, it's added on top. When a session is over, finished or left early, the points of the answers given per active minute move the pace toward what was measured, halfway for a session of 10 minutes or more and less for a shorter one, so the next session's estimate fits better. Sessions under a minute don't count. The setup screen shows how many exercises fit and about how long they take; the results compare the time taken with the time planned.
 
