@@ -13,6 +13,9 @@ export const EXERCISE_EFFORT: Record<ExerciseType, number> = {
   // nothing read aloud first, but recalling a gender takes thought, and its result has rules to read.
   'article-choice-de': 1,
   'translation': 2.5,
+  // Typed like translation, but the word is on screen and only its plural is recalled.
+  'plural-form': 2,
+  'translation-plural': 2.5,
   'question-choice': 1.5,
   'question-type': 2.5,
 };

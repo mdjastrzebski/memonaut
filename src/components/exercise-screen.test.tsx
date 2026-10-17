@@ -173,6 +173,30 @@ test('translation takes an alternative answer, and compares a mistake with the c
   expect(screen.getByRole('button', { name: /continue/i })).toBeEnabled();
 });
 
+test('plural form shows the word and asks for its plural, then shows how it is made', async () => {
+  const user = userEvent.setup();
+  renderExercise('german/das-buch', false, ['plural-form']);
+  expect(screen.getByRole('heading', { name: 'das Buch' })).toBeInTheDocument();
+  expect(screen.getByText('Plural')).toBeInTheDocument();
+
+  await user.type(screen.getByRole('textbox', { name: 'Answer' }), 'die Bücher{Enter}');
+  const status = screen.getByRole('status');
+  expect(status).toHaveTextContent('książki');
+  expect(status).toHaveTextContent('das Buch → die Bücher');
+  expect(utterances.map((utterance) => utterance.text)).toEqual(['die Bücher']);
+});
+
+test('translation plural shows the local plural and asks for the foreign one', async () => {
+  const user = userEvent.setup();
+  renderExercise('german/das-buch', false, ['translation-plural']);
+  expect(screen.getByRole('heading', { name: 'książki' })).toBeInTheDocument();
+
+  await user.type(screen.getByRole('textbox', { name: 'Answer' }), 'die Bucher{Enter}');
+  const status = screen.getByRole('status');
+  expect(status).toHaveTextContent('Hard');
+  expect(status).toHaveTextContent('das Buch → die Bücher');
+});
+
 test('German article choice shows the noun without its article, and reads the word once picked', async () => {
   const user = userEvent.setup();
   renderExercise('german/das-buch', false, ['article-choice-de']);

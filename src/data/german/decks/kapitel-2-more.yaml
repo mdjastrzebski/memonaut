@@ -19,16 +19,10 @@ concepts:
   - { id: was-ist-das, local: co to jest?, foreign: was ist das?, core: true }
   - { id: wer-ist-das, local: kto to jest?, foreign: wer ist das? }
   #- { id: ich-bin-10-jahre-alt, local: mam 10 lat, foreign: ich bin 10 Jahre alt }
-  # Przybory szkolne, zawsze z rodzajnikiem. Przybory do pisania są rodzaju męskiego, rzeczowniki na -e zwykle żeńskiego.
+  # Przybory szkolne, zawsze z rodzajnikiem. Rzeczowniki na -e zwykle żeńskiego.
   - { id: die-schulsachen, local: przybory szkolne, foreign: die Schulsachen, plural: true }
   # Pozostałe przedmioty osobiste i zwierzęta.
   - { id: der-schreibtisch, local: biurko, foreign: der Schreibtisch, group: thing/personal }
-  - {
-      id: das-taschentuch,
-      local: chusteczka do nosa,
-      foreign: das Taschentuch,
-      group: thing/personal,
-    }
   # Szkoła: -in tworzy formę żeńską.
   - { id: die-schule, local: szkoła, foreign: die Schule, explanation: 'na -[e] → zwykle [die]' }
   - { id: die-klasse, local: klasa, foreign: die Klasse, explanation: 'na -[e] → zwykle [die]' }
@@ -262,70 +256,6 @@ concepts:
     }
   # Liczba mnoga: zawsze die. Od najłatwiejszej: -s, bez końcówki, -n, -e, przegłos z -e, -er.
   - {
-      id: die-kulis,
-      local: długopisy,
-      foreign: die Kulis,
-      explanation: 'der Kuli → die Kuli[s]',
-      group: thing/plural,
-      plural: true,
-    }
-  - {
-      id: die-handys,
-      local: komórki,
-      foreign: die Handys,
-      explanation: 'das Handy → die Handy[s]',
-      group: thing/plural,
-      plural: true,
-    }
-  - {
-      id: die-fotos,
-      local: zdjęcia,
-      foreign: die Fotos,
-      explanation: 'das Foto → die Foto[s]',
-      group: thing/plural,
-      plural: true,
-    }
-  - {
-      id: die-radiergummis,
-      local: gumki do mazania,
-      foreign: die Radiergummis,
-      explanation: 'der Radiergummi → die Radiergummi[s]',
-      group: thing/plural,
-      plural: true,
-    }
-  - {
-      id: die-computer,
-      local: komputery,
-      foreign: die Computer,
-      explanation: 'der Computer → [die] Computer, bez końcówki',
-      group: thing/plural,
-      plural: true,
-    }
-  - {
-      id: die-anspitzer,
-      local: temperówki,
-      foreign: die Anspitzer,
-      explanation: 'der Anspitzer → [die] Anspitzer, bez końcówki',
-      group: thing/plural,
-      plural: true,
-    }
-  - {
-      id: die-marker,
-      local: zakreślacze,
-      foreign: die Marker,
-      explanation: 'der Marker → [die] Marker, bez końcówki',
-      group: thing/plural,
-      plural: true,
-    }
-  - {
-      id: die-maeppchen,
-      local: piórniki,
-      foreign: die Mäppchen,
-      explanation: 'das Mäppchen → [die] Mäppchen, bez końcówki',
-      group: thing/plural,
-      plural: true,
-    }
-  - {
       id: die-schueler,
       local: uczniowie,
       foreign: die Schüler,
@@ -338,30 +268,6 @@ concepts:
       local: lampy,
       foreign: die Lampen,
       explanation: 'die Lampe → die Lampe[n]',
-      group: thing/plural,
-      plural: true,
-    }
-  - {
-      id: die-brillen,
-      local: kilka par okularów,
-      foreign: die Brillen,
-      explanation: 'die Brille → die Brille[n]',
-      group: thing/plural,
-      plural: true,
-    }
-  - {
-      id: die-scheren,
-      local: kilka par nożyczek,
-      foreign: die Scheren,
-      explanation: 'die Schere → die Schere[n]',
-      group: thing/plural,
-      plural: true,
-    }
-  - {
-      id: die-schultaschen,
-      local: tornistry,
-      foreign: die Schultaschen,
-      explanation: 'die Schultasche → die Schultasche[n]',
       group: thing/plural,
       plural: true,
     }
@@ -382,50 +288,10 @@ concepts:
       plural: true,
     }
   - {
-      id: die-bleistifte,
-      local: ołówki,
-      foreign: die Bleistifte,
-      explanation: 'der Bleistift → die Bleistift[e]',
-      group: thing/plural,
-      plural: true,
-    }
-  - {
-      id: die-buntstifte,
-      local: kredki,
-      foreign: die Buntstifte,
-      explanation: 'der Buntstift → die Buntstift[e]',
-      group: thing/plural,
-      plural: true,
-    }
-  - {
-      id: die-hefte,
-      local: zeszyty,
-      foreign: die Hefte,
-      explanation: 'das Heft → die Heft[e]',
-      group: thing/plural,
-      plural: true,
-    }
-  - {
-      id: die-lineale,
-      local: linijki,
-      foreign: die Lineale,
-      explanation: 'das Lineal → die Lineal[e]',
-      group: thing/plural,
-      plural: true,
-    }
-  - {
       id: die-baelle,
       local: piłki,
       foreign: die Bälle,
       explanation: 'der Ball → die B[ä]ll[e]',
-      group: thing/plural,
-      plural: true,
-    }
-  - {
-      id: die-rucksaecke,
-      local: plecaki,
-      foreign: die Rucksäcke,
-      explanation: 'der Rucksack → die Rucks[ä]ck[e]',
       group: thing/plural,
       plural: true,
     }
@@ -435,22 +301,6 @@ concepts:
       foreign: die Kinder,
       explanation: 'das Kind → die Kind[er]',
       group: person/plural,
-      plural: true,
-    }
-  - {
-      id: die-buecher,
-      local: książki,
-      foreign: die Bücher,
-      explanation: 'das Buch → die B[ü]ch[er]',
-      group: thing/plural,
-      plural: true,
-    }
-  - {
-      id: die-taschentuecher,
-      local: chusteczki do nosa,
-      foreign: die Taschentücher,
-      explanation: 'das Taschentuch → die Taschent[ü]ch[er]',
-      group: thing/plural,
       plural: true,
     }
   - {

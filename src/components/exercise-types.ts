@@ -1,7 +1,9 @@
 import {
   CircleHelp,
+  Copy,
   Eye,
   Languages,
+  Layers,
   ListChecks,
   SquareCheckBig,
   Tag,
@@ -18,6 +20,8 @@ export const EXERCISES: Record<ExerciseType, { label: string; Icon: LucideIcon }
   'translation-choice': { label: 'Translation choice', Icon: ListChecks },
   'article-choice-de': { label: 'Article', Icon: Tag },
   'translation': { label: 'Translation', Icon: Languages },
+  'plural-form': { label: 'Plural', Icon: Copy },
+  'translation-plural': { label: 'Translation plural', Icon: Layers },
   'question-choice': { label: 'Question choice', Icon: SquareCheckBig },
   'question-type': { label: 'Question', Icon: CircleHelp },
 };

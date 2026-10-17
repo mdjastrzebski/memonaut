@@ -32,6 +32,8 @@ export const EXERCISE_TYPES: ExerciseType[] = [
   'translation-choice',
   'article-choice-de',
   'translation',
+  'plural-form',
+  'translation-plural',
   'question-choice',
   'question-type',
 ];
@@ -44,14 +46,16 @@ export const KIND_EXERCISE_TYPES: Record<SubjectKind, ExerciseType[]> = {
     'translation-choice',
     'article-choice-de',
     'translation',
+    'plural-form',
+    'translation-plural',
   ],
   knowledge: ['question-choice', 'question-type'],
 };
 
 /**
- * Whether a Concept can be practised with an Exercise Type: question choice needs choices, and
- * German article choice a German singular noun with its article, dieser, ein, kein or a possessive,
- * e.g. "das Buch" or "meine Tasche".
+ * Whether a Concept can be practised with an Exercise Type: question choice needs choices, German
+ * article choice a German singular noun with its article, dieser, ein, kein or a possessive, e.g.
+ * "das Buch" or "meine Tasche", plural form a foreign plural, and translation plural both plurals.
  */
 export function canPractise(
   concept: Concept,
@@ -63,6 +67,10 @@ export function canPractise(
       return concept.kind === 'knowledge' && !!concept.choices;
     case 'article-choice-de':
       return concept.kind === 'language' && isGerman(subject) && !!getGermanNoun(concept);
+    case 'plural-form':
+      return concept.kind === 'language' && !!concept.foreignPlural;
+    case 'translation-plural':
+      return concept.kind === 'language' && !!concept.foreignPlural && !!concept.localPlural;
     default:
       return true;
   }

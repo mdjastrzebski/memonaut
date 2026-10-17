@@ -715,7 +715,14 @@ test('with dev=1 in the URL, a session can use only some exercise types', async 
     await user.click(screen.getByRole('radio', { name: 'German' }));
     await pickUnit(user, 'Kapitel 1');
     const types = screen.getByRole('group', { name: 'Exercise types (dev)' });
-    for (const name of ['Recognition', 'Dictation', 'Translation choice', 'Translation']) {
+    for (const name of [
+      'Recognition',
+      'Dictation',
+      'Translation choice',
+      'Translation',
+      'Plural',
+      'Translation plural',
+    ]) {
       await user.click(within(types).getByRole('checkbox', { name }));
     }
     // The last one left can't be unchecked.

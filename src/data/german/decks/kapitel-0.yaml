@@ -9,7 +9,14 @@ concepts:
   - { id: die-mode, local: moda, foreign: die Mode }
   - { id: das-kino, local: kino, foreign: das Kino, group: hobby }
   - { id: die-musik, local: muzyka, foreign: die Musik, group: hobby }
-  - { id: der-computer, local: komputer, foreign: der Computer, group: thing/personal }
+  - {
+      id: der-computer,
+      local: komputer,
+      foreign: der Computer,
+      localPlural: komputery,
+      foreignPlural: die Computer,
+      group: thing/personal,
+    }
   - { id: die-torte, local: tort, foreign: die Torte }
   - { id: das-wort, local: słowo, foreign: das Wort }
   - { id: die-woerter, local: słowa, foreign: die Wörter, plural: true }
@@ -28,7 +35,14 @@ concepts:
   - { id: das-konzert, local: koncert, foreign: das Konzert, group: hobby }
   - { id: die-lektion, local: lekcja, foreign: die Lektion }
   - { id: deutsch, local: język niemiecki, foreign: Deutsch, group: language }
-  - { id: das-foto, local: zdjęcie, foreign: das Foto, group: thing/personal }
+  - {
+      id: das-foto,
+      local: zdjęcie,
+      foreign: das Foto,
+      localPlural: zdjęcia,
+      foreignPlural: die Fotos,
+      group: thing/personal,
+    }
   - { id: die-computerspiele, local: gry komputerowe, foreign: die Computerspiele, plural: true }
   - { id: die-katzen, local: koty, foreign: die Katzen, plural: true }
   - { id: die-gymnastik, local: gimnastyka, foreign: die Gymnastik }
