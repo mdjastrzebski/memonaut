@@ -141,7 +141,7 @@ interface CreateSessionOptions {
   /**
    * Practise Cards, in the order of `Step`, while their expected effort points fit in this many,
    * but at least one. It decides only how many are picked, never which come first, except that a
-   * new Concept left out for room is picked anyway, in place of the last Cards that fit.
+   * new Concept left out for room is added anyway.
    */
   maxEffort?: number;
   now?: Date;
@@ -233,9 +233,9 @@ export function createSession({
 }
 
 /**
- * The leading candidates whose expected effort fits in `maxEffort`, at least one. So that reviews
- * never crowd out learning, the first new Concept is always among them while there's one left: if
- * it doesn't fit, it takes the place of the last candidates that do.
+ * The leading candidates whose expected effort fits in `maxEffort`, at least one, and so that
+ * reviews never crowd out learning, the first new Concept while there's one left, even if it
+ * doesn't fit.
  */
 function pickWithinEffort<T extends { step: Step; effort: number }>(
   candidates: T[],
@@ -243,12 +243,7 @@ function pickWithinEffort<T extends { step: Step; effort: number }>(
 ): T[] {
   const picked = takeWithinEffort(candidates, maxEffort);
   const firstNew = candidates.find(({ step }) => step === Step.New);
-  if (!firstNew || picked.includes(firstNew)) return picked;
-  const rest = takeWithinEffort(
-    candidates.filter((candidate) => candidate !== firstNew),
-    maxEffort - firstNew.effort,
-  );
-  return candidates.filter((candidate) => candidate === firstNew || rest.includes(candidate));
+  return firstNew && !picked.includes(firstNew) ? [...picked, firstNew] : picked;
 }
 
 /** The leading candidates whose expected effort fits in `maxEffort`, at least one. */
