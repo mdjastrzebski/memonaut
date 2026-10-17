@@ -34,7 +34,7 @@ concepts:
   - { id: number-17, local: siedemnaście, foreign: siebzehn, hint: 17, group: number/teens }
   - { id: number-18, local: osiemnaście, foreign: achtzehn, hint: 18, group: number/teens }
   - { id: number-19, local: dziewiętnaście, foreign: neunzehn, hint: 19, group: number/teens }
-  - { id: number-20, local: dwadzieścia, foreign: zwanzig, hint: 20, group: number/teens }
+  - { id: number-20, local: dwadzieścia, foreign: zwanzig, hint: 20, group: number/tens }
   - { id: noch-mal, local: jeszcze raz, foreign: noch mal }
   - { id: sehr-gut, local: bardzo dobrze, foreign: sehr gut, group: mood }
   - { id: gut, local: dobrze, foreign: gut, group: mood }

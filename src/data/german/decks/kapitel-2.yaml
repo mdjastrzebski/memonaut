@@ -200,3 +200,135 @@ concepts:
       explanation: 'na -[e] → zwykle [die]',
       group: thing/school,
     }
+  # Dziesiątki: -zig, z wyjątkiem dreißig; 20 z Kapitel 1.
+  - { id: number-20, local: dwadzieścia, foreign: zwanzig, hint: 20, group: number/tens }
+  - {
+      id: number-30,
+      local: trzydzieści,
+      foreign: dreißig,
+      hint: 30,
+      group: number/tens,
+      core: true,
+    }
+  - {
+      id: number-40,
+      local: czterdzieści,
+      foreign: vierzig,
+      hint: 40,
+      group: number/tens,
+      core: true,
+    }
+  - {
+      id: number-50,
+      local: pięćdziesiąt,
+      foreign: fünfzig,
+      hint: 50,
+      group: number/tens,
+      core: true,
+    }
+  - {
+      id: number-60,
+      local: sześćdziesiąt,
+      foreign: sechzig,
+      hint: 60,
+      group: number/tens,
+      core: true,
+    }
+  - {
+      id: number-70,
+      local: siedemdziesiąt,
+      foreign: siebzig,
+      hint: 70,
+      group: number/tens,
+      core: true,
+    }
+  - {
+      id: number-80,
+      local: osiemdziesiąt,
+      foreign: achtzig,
+      hint: 80,
+      group: number/tens,
+      core: true,
+    }
+  - {
+      id: number-90,
+      local: dziewięćdziesiąt,
+      foreign: neunzig,
+      hint: 90,
+      group: number/tens,
+      core: true,
+    }
+  # 21–29: jedności + und + zwanzig.
+  - {
+      id: number-21,
+      local: dwadzieścia jeden,
+      foreign: einundzwanzig,
+      hint: 21,
+      group: number/twenties,
+    }
+  - {
+      id: number-22,
+      local: dwadzieścia dwa,
+      foreign: zweiundzwanzig,
+      hint: 22,
+      group: number/twenties,
+    }
+  - {
+      id: number-23,
+      local: dwadzieścia trzy,
+      foreign: dreiundzwanzig,
+      hint: 23,
+      group: number/twenties,
+    }
+  - {
+      id: number-24,
+      local: dwadzieścia cztery,
+      foreign: vierundzwanzig,
+      hint: 24,
+      group: number/twenties,
+    }
+  - {
+      id: number-25,
+      local: dwadzieścia pięć,
+      foreign: fünfundzwanzig,
+      hint: 25,
+      group: number/twenties,
+    }
+  - {
+      id: number-26,
+      local: dwadzieścia sześć,
+      foreign: sechsundzwanzig,
+      hint: 26,
+      group: number/twenties,
+    }
+  - {
+      id: number-27,
+      local: dwadzieścia siedem,
+      foreign: siebenundzwanzig,
+      hint: 27,
+      group: number/twenties,
+    }
+  - {
+      id: number-28,
+      local: dwadzieścia osiem,
+      foreign: achtundzwanzig,
+      hint: 28,
+      group: number/twenties,
+    }
+  - {
+      id: number-29,
+      local: dwadzieścia dziewięć,
+      foreign: neunundzwanzig,
+      hint: 29,
+      group: number/twenties,
+    }
+  # Sto.
+  - {
+      id: number-100,
+      local: sto,
+      foreign: hundert,
+      alternatives: [einhundert],
+      hint: 100,
+      group: number/large,
+      core: true,
+    }
