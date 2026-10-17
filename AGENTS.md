@@ -29,6 +29,13 @@ Memonaut is a spaced-repetition learning web app for school kids. See [README.md
 - Put tests next to the code as `*.test.ts(x)`, using Vitest and Testing Library.
 - Tests never depend on the bundled word sets: use `testContent` from `@/test/content`, which also stands in for `@/data/bundled-content`, or build small content inline with `buildContent`.
 
+## Git
+
+- Work on a branch named by its kind, like Conventional Commits: `feat/*`, `fix/*`, `chore/*`, `docs/*`, `refactor/*`, `test/*` or `data/*`, e.g. `feat/improve-article-de`.
+- Commit messages and PR titles are short Conventional Commits, e.g. `feat: German article choice for possessives`.
+- PR descriptions are minimal: a few bullets of what changed.
+- No Claude or AI credit in commit messages or PR descriptions: no `Co-Authored-By`, `Claude-Session` or "Generated with" lines.
+
 ## Writing Decks
 
 A Deck without `shuffleNew: true` introduces new Concepts in file order, so order its Concepts from easy to hard, so that earlier ones help with later ones:

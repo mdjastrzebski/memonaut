@@ -139,7 +139,8 @@ export interface KnowledgeConcept extends ConceptBase {
  * - recognition-choice: see and hear the foreign word and pick the local one from a few options
  * - dictation: hear the foreign word and type how it's spelled
  * - translation-choice: see the local word and pick the foreign one from a few options
- * - article-choice-de: see a German noun without its article, e.g. "Buch", and pick der, die or das
+ * - article-choice-de: see a German noun without its article, e.g. "Buch", and pick der, die or das;
+ *   or dieser, diese or dieses; or mein or meine for e.g. "meine Tasche", likewise ein and kein
  * - translation: see the local word and type the foreign one
  * - question-choice: see a knowledge question and pick its answer from a few options
  * - question-type: see a knowledge question and type its answer

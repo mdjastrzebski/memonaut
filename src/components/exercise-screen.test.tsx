@@ -195,6 +195,43 @@ test('German article choice tells what gives the article away', async () => {
   expect(screen.getByRole('status')).toHaveTextContent('der Fußball jak der Ball');
 });
 
+test('German article choice offers the forms of a possessive', async () => {
+  const user = userEvent.setup();
+  renderExercise('german/meine-lampe', false, ['article-choice-de']);
+  expect(screen.getByText('Mein or meine?')).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Lampe' })).toBeInTheDocument();
+  const options = within(screen.getByRole('group', { name: 'Options' })).getAllByRole('button');
+  expect(options.map((option) => option.textContent?.slice(1))).toEqual(['mein', 'meine']);
+
+  await user.keyboard('2');
+  const status = screen.getByRole('status');
+  expect(status).not.toHaveTextContent('Again');
+  expect(status).toHaveTextContent('na -e → zwykle die');
+});
+
+test("German article choice offers dieser, diese and dieses in their genders' colors", async () => {
+  const user = userEvent.setup();
+  renderExercise('german/dieses-buch', false, ['article-choice-de'], content.concepts);
+  expect(screen.getByText('Dieser, diese or dieses?')).toBeInTheDocument();
+  const options = within(screen.getByRole('group', { name: 'Options' })).getAllByRole('button');
+  expect(options.map((option) => option.textContent?.slice(1))).toEqual([
+    'dieser',
+    'diese',
+    'dieses',
+  ]);
+  expect(within(options[2]).getByText('dieses')).toHaveClass('text-emerald-600');
+
+  await user.keyboard('3');
+  expect(screen.getByRole('status')).toHaveTextContent('dieses Buch jak das Buch');
+});
+
+test('German article choice links a possessive to the noun with its article', async () => {
+  const user = userEvent.setup();
+  renderExercise('german/mein-ball', false, ['article-choice-de'], content.concepts);
+  await user.keyboard('1');
+  expect(screen.getByRole('status')).toHaveTextContent('mein Ball jak der Ball');
+});
+
 test('German article choice shows a rule from the ending, or the word explanation instead', async () => {
   const user = userEvent.setup();
   renderExercise('german/das-maeppchen', false, ['article-choice-de']);

@@ -4,8 +4,8 @@ import { getLanguageProps } from '@/components/exercises/language-props';
 import { MarkedText } from '@/components/marked-text';
 import type { LanguageConcept } from '@/domain/types';
 import {
-  GERMAN_ARTICLES,
   getCompoundHint,
+  getDeterminer,
   getEndingHint,
   getGermanNoun,
   type GermanArticle,
@@ -20,16 +20,29 @@ const ARTICLE_COLORS: Record<GermanArticle, string> = {
   das: 'text-emerald-600 dark:text-emerald-400',
 };
 
-function Article({ article }: { article: string }) {
-  return <span className={ARTICLE_COLORS[article as GermanArticle]}>{article}</span>;
+/** A word before a noun, e.g. "das" or "meine", in its gender's color if it tells only one. */
+function Determiner({ word }: { word: string }) {
+  const articles = getDeterminer(word)?.articles;
+  return (
+    <span className={articles?.length === 1 ? ARTICLE_COLORS[articles[0]] : undefined}>{word}</span>
+  );
+}
+
+/** The question for the options, e.g. "Der, die or das?". */
+function getQuestion(options: string[]): string {
+  const question = `${options.slice(0, -1).join(', ')} or ${options.at(-1)}?`;
+  return question[0].toUpperCase() + question.slice(1);
 }
 
 /**
  * German article choice: the learner sees a noun without its article, e.g. "Buch", with its
- * meaning, and picks der, die or das, each in its gender's color and always in the same order. The
- * word is read aloud only once they've picked, as hearing it would give the article away. The
- * result tells what gives the article away: the word's own explanation or else its ending, e.g.
- * -ung for die, and the noun a compound ends with, e.g. "der Ball" for "der Fußball".
+ * meaning, and picks der, die or das, each in its gender's color and always in the same order; or,
+ * for a noun with another word before it, its form, e.g. dieser, diese or dieses for "dieses Buch",
+ * or mein or meine for "meine Tasche". The word is read
+ * aloud only once they've picked, as hearing it would give the article away. The result tells what
+ * gives the article away: the word's own explanation or else its ending, e.g. -ung for die, and the
+ * noun with der, die or das it takes after, e.g. "der Ball" for "der Fußball" or "der Freund" for
+ * "mein Freund".
  */
 export function ArticleChoiceDeExercise(props: ExerciseProps) {
   const { concept, subject } = getLanguageProps(props);
@@ -45,7 +58,7 @@ export function ArticleChoiceDeExercise(props: ExerciseProps) {
   return (
     <ChoiceExercise
       {...props}
-      question="Der, die or das?"
+      question={getQuestion(germanNoun.options)}
       prompt={
         <div className="flex min-w-0 flex-col gap-1">
           <PromptWord>{germanNoun.noun}</PromptWord>
@@ -56,9 +69,9 @@ export function ArticleChoiceDeExercise(props: ExerciseProps) {
           )}
         </div>
       }
-      answer={germanNoun.article}
-      pickOptions={() => [...GERMAN_ARTICLES]}
-      renderOption={(option) => <Article article={option} />}
+      answer={germanNoun.determiner}
+      pickOptions={() => germanNoun.options}
+      renderOption={(option) => <Determiner word={option} />}
       feedback={<ArticleFeedback concept={concept} germanNoun={germanNoun} words={words} />}
       onListen={playWord}
       onPicked={playWord}
@@ -81,7 +94,7 @@ function ArticleFeedback({ concept, germanNoun, words }: ArticleFeedbackProps) {
   return (
     <>
       <span>
-        <Article article={germanNoun.article} /> {germanNoun.noun}
+        <Determiner word={germanNoun.determiner} /> {germanNoun.noun}
       </span>
       <span aria-hidden className="text-muted-foreground">
         =
