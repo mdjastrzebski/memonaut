@@ -1,6 +1,7 @@
 import { ChartColumn } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import { ActiveTimeReadout } from '@/components/active-time-readout';
 import { AppMenu } from '@/components/app-menu';
 import { EffortStatsPanel } from '@/components/effort-stats-panel';
 import { ExerciseScreen } from '@/components/exercise-screen';
@@ -67,7 +68,7 @@ export default function App() {
   const finished = session !== null && (ended || !getCurrentCard(session));
   const exercising = session !== null && !finished;
   const allCards = session ? { ...cards, ...session.cards } : cards;
-  const getActiveMs = useActiveTime(exercising);
+  const { getActiveMs, getIdleMs } = useActiveTime(exercising);
   const pace = paces[subject.id];
   const exerciseTypes = deck.exerciseTypes.filter((type) => !skippedTypes.includes(type));
 
@@ -242,6 +243,9 @@ export default function App() {
                 : undefined
             }
           />
+        )}
+        {devMode && exercising && (
+          <ActiveTimeReadout getActiveMs={getActiveMs} getIdleMs={getIdleMs} />
         )}
       </main>
     </TooltipProvider>
