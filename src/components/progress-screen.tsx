@@ -1,0 +1,500 @@
+import { ChevronRight, Flame } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
+
+import { CONCEPT_NOUNS, getConceptText, plural } from '@/components/concept-text';
+import { PROGRESS_LABELS, type Progress } from '@/components/grades';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import type { Content } from '@/data/content';
+import { getSubjectDecks } from '@/data/decks';
+import type { Card, Deck, Subject } from '@/domain/types';
+import { formatMinutes, formatPercent } from '@/lib/format';
+import { cn } from '@/lib/utils';
+import { loadEffortLog, type SessionLog } from '@/progress/effort-log';
+import {
+  getConceptsProgress,
+  getDeckProgress,
+  getDeckTimes,
+  getHardestConcepts,
+  getStreak,
+  getWeeklyTime,
+  getWeekStart,
+  getWeekStarts,
+  summarizePeriod,
+  type DeckTime,
+} from '@/session/learning-stats';
+
+/** Sets shown under "Most practised". */
+const TOP_DECKS = 5;
+/** Words shown under "Hardest" in each Subject. */
+const HARDEST = 6;
+
+interface ProgressScreenProps {
+  content: Content;
+  /** Cards practised so far, keyed by id. */
+  cards: Record<string, Card>;
+  /** Goes back to the setup screen with this set selected. */
+  onSelectDeck: (deck: Deck) => void;
+  /** Sessions to show; the logged ones if left out. */
+  sessions?: SessionLog[];
+  now?: Date;
+}
+
+/**
+ * How the learner is doing: time spent per week, the sets practised most, and per Subject how many
+ * words each set has learned and which words are hardest.
+ */
+export function ProgressScreen({
+  content,
+  cards,
+  onSelectDeck,
+  sessions: givenSessions,
+  now: givenNow,
+}: ProgressScreenProps) {
+  const [now] = useState(() => givenNow ?? new Date());
+  const [sessions] = useState(() => givenSessions ?? loadEffortLog());
+  const weekStart = getWeekStart(now);
+  const lastWeekStart = new Date(weekStart);
+  lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+  const thisWeek = summarizePeriod(sessions, weekStart, now);
+  const lastWeek = summarizePeriod(sessions, lastWeekStart, weekStart);
+  const streak = getStreak(sessions, now);
+  const deckTimes = getDeckTimes(sessions, now);
+  const findDeck = (id: string) => content.decks.find((deck) => deck.id === id);
+  const topDecks = deckTimes.filter((time) => findDeck(time.deckId)).slice(0, TOP_DECKS);
+  const allCards = Object.values(cards);
+  // Subjects practised, the one with the most time first.
+  const subjects = content.subjects
+    .filter((subject) => allCards.some((card) => card.conceptId.startsWith(`${subject.id}/`)))
+    .sort((a, b) => getSubjectTime(deckTimes, b.id) - getSubjectTime(deckTimes, a.id));
+
+  if (sessions.length === 0 && subjects.length === 0) {
+    return (
+      <section className="flex animate-card-in flex-col items-center gap-3 rounded-[2rem] border-2 border-line bg-card p-10 text-center shadow-sticker-lg">
+        <h2 className="font-display text-3xl font-extrabold tracking-tight">No progress yet</h2>
+        <p className="text-muted-foreground">
+          Finish a session and your time, learned words and hardest words show up here.
+        </p>
+      </section>
+    );
+  }
+
+  const stats: [label: string, value: string, note: ReactNode][] = [
+    [
+      'Time this week',
+      formatMinutes(thisWeek.activeMs),
+      compareWeeks(thisWeek.activeMs, lastWeek.activeMs),
+    ],
+    [
+      'Days practised',
+      `${thisWeek.days} of 7`,
+      streak > 1 ? (
+        <span className="flex items-center gap-1">
+          <Flame aria-hidden className="size-3.5 text-rocket" />
+          {streak} days in a row
+        </span>
+      ) : (
+        `${plural(thisWeek.sessions, 'session')} this week`
+      ),
+    ],
+    ['New this week', String(thisWeek.newConcepts), `last week ${lastWeek.newConcepts}`],
+    [
+      'Right answers',
+      thisWeek.answers ? formatPercent(thisWeek.correct / thisWeek.answers) : '–',
+      `of ${plural(thisWeek.answers, 'answer')} this week`,
+    ],
+  ];
+
+  return (
+    <div className="flex flex-col gap-8">
+      <section className="flex animate-card-in flex-col gap-6 rounded-[2rem] border-2 border-line bg-card p-6 shadow-sticker-lg sm:p-8">
+        <div className="flex flex-col gap-1">
+          <p className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
+            Your progress
+          </p>
+          <h2 className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
+            {getHeadline(thisWeek.activeMs, lastWeek.activeMs)}
+          </h2>
+        </div>
+        <WeeklyChart weekly={getWeeklyTime(sessions, now)} now={now} />
+      </section>
+
+      <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {stats.map(([label, value, note], index) => (
+          <div
+            key={label}
+            className="animate-rise rounded-2xl border-2 border-line bg-card p-4 shadow-sticker-sm"
+            style={{ animationDelay: `${100 + index * 60}ms` }}
+          >
+            <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
+            <dd className="font-display text-3xl font-bold tabular-nums">{value}</dd>
+            <dd className="text-xs text-muted-foreground">{note}</dd>
+          </div>
+        ))}
+      </dl>
+
+      {topDecks.length > 0 && (
+        <Section title="Most practised" note="Time in each set">
+          <ol aria-label="Most practised sets" className="flex flex-col gap-2">
+            {topDecks.map((time, index) => {
+              const deck = findDeck(time.deckId)!;
+              const subject = content.subjects.find((subject) => subject.id === deck.subjectId)!;
+              return (
+                <li key={time.deckId}>
+                  <button
+                    type="button"
+                    onClick={() => onSelectDeck(deck)}
+                    aria-label={`Practise ${deck.name}`}
+                    className="flex w-full cursor-pointer items-center gap-3 rounded-2xl border-2 border-line bg-card p-3 text-left shadow-sticker-sm transition-all outline-none hover:-translate-y-px hover:shadow-sticker focus-visible:ring-3 focus-visible:ring-ring/50 sm:gap-4 sm:px-4"
+                  >
+                    <span className="w-6 text-center font-display text-lg font-bold text-muted-foreground tabular-nums">
+                      {index + 1}
+                    </span>
+                    <span aria-hidden className="text-2xl leading-none">
+                      {subject.emoji}
+                    </span>
+                    <span className="flex min-w-0 flex-1 flex-col">
+                      <span className="truncate font-display text-lg font-bold">{deck.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {subject.name} · {formatMinutes(time.activeMs)} ·{' '}
+                        {plural(time.sessions, 'session')}
+                      </span>
+                    </span>
+                    <MiniWeeks weekly={time.weekly} className="max-sm:hidden" />
+                    <ChevronRight aria-hidden className="size-5 shrink-0 text-muted-foreground" />
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
+        </Section>
+      )}
+
+      {subjects.map((subject) => (
+        <SubjectProgress
+          key={subject.id}
+          subject={subject}
+          content={content}
+          cards={cards}
+          allCards={allCards}
+          sessions={sessions}
+          deckTimes={deckTimes}
+          onSelectDeck={onSelectDeck}
+        />
+      ))}
+
+      <p className="text-center text-xs text-muted-foreground">
+        {sessions.length >= 100
+          ? 'Time counts your latest 100 sessions on this device.'
+          : 'Time counts your sessions on this device.'}
+      </p>
+    </div>
+  );
+}
+
+function getSubjectTime(deckTimes: DeckTime[], subjectId: string): number {
+  return deckTimes
+    .filter((time) => time.subjectId === subjectId)
+    .reduce((total, time) => total + time.activeMs, 0);
+}
+
+function getHeadline(thisWeekMs: number, lastWeekMs: number): string {
+  if (thisWeekMs < 60_000) return lastWeekMs ? 'A new week to practise!' : 'Ready for liftoff?';
+  if (thisWeekMs > lastWeekMs) return `${formatMinutes(thisWeekMs)} this week, keep going!`;
+  return `${formatMinutes(thisWeekMs)} practised this week`;
+}
+
+function compareWeeks(thisWeekMs: number, lastWeekMs: number): string {
+  const diff = Math.round((thisWeekMs - lastWeekMs) / 60_000);
+  if (diff === 0) return `same as last week`;
+  return diff > 0 ? `${diff} min more than last week` : `last week ${formatMinutes(lastWeekMs)}`;
+}
+
+function Section({
+  title,
+  note,
+  children,
+}: {
+  title: string;
+  note?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <h3 className="font-display text-2xl font-bold">{title}</h3>
+        {note && <span className="text-sm text-muted-foreground">{note}</span>}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+/** Minutes practised in each of the last weeks, as bars; this week is in full color. */
+function WeeklyChart({ weekly, now }: { weekly: number[]; now: Date }) {
+  const starts = getWeekStarts(now, weekly.length);
+  const max = Math.max(...weekly, 60_000);
+  return (
+    <figure className="flex flex-col gap-2">
+      <figcaption className="text-sm font-medium text-muted-foreground">
+        Minutes per week
+      </figcaption>
+      <ol
+        aria-label="Minutes per week"
+        className="flex h-40 items-end gap-2 border-b-2 border-line sm:gap-3"
+      >
+        {weekly.map((ms, index) => {
+          const current = index === weekly.length - 1;
+          const label = current ? 'This week' : `Week of ${formatDay(starts[index])}`;
+          return (
+            <li key={index} className="flex h-full flex-1 flex-col justify-end">
+              <Tooltip>
+                <TooltipTrigger
+                  aria-label={`${label}: ${formatMinutes(ms)}`}
+                  className="group flex h-full cursor-help flex-col items-center justify-end gap-1 rounded-t-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                >
+                  {ms > 0 && (
+                    <span className="text-xs font-semibold text-muted-foreground tabular-nums group-hover:text-foreground">
+                      {Math.round(ms / 60_000)}
+                    </span>
+                  )}
+                  <span
+                    className={cn(
+                      'w-full max-w-12 rounded-t-[4px] transition-colors',
+                      current ? 'bg-rocket' : 'bg-rocket/45 group-hover:bg-rocket/70',
+                    )}
+                    style={{ height: `${(ms / max) * 100}%`, minHeight: ms > 0 ? 3 : 0 }}
+                  />
+                </TooltipTrigger>
+                <TooltipContent>
+                  {label}: {formatMinutes(ms)}
+                </TooltipContent>
+              </Tooltip>
+            </li>
+          );
+        })}
+      </ol>
+      <div
+        aria-hidden
+        className="flex gap-2 text-center text-[0.7rem] text-muted-foreground sm:gap-3"
+      >
+        {starts.map((start, index) => (
+          <span
+            key={index}
+            className={cn('flex-1', index === starts.length - 1 && 'font-bold text-foreground')}
+          >
+            {index === starts.length - 1 ? 'Now' : formatDay(start)}
+          </span>
+        ))}
+      </div>
+    </figure>
+  );
+}
+
+/** A small bar per week, to compare weeks at a glance; the full numbers are in its label. */
+function MiniWeeks({ weekly, className }: { weekly: number[]; className?: string }) {
+  const max = Math.max(...weekly, 60_000);
+  const label = `Minutes per week, oldest first: ${weekly.map((ms) => Math.round(ms / 60_000)).join(', ')}`;
+  return (
+    <span
+      role="img"
+      aria-label={label}
+      title={label}
+      className={cn('flex h-8 items-end gap-0.5', className)}
+    >
+      {weekly.map((ms, index) => (
+        <span
+          key={index}
+          className={cn(
+            'w-1.5 rounded-t-[2px]',
+            ms === 0 ? 'bg-muted' : index === weekly.length - 1 ? 'bg-rocket' : 'bg-rocket/45',
+          )}
+          style={{ height: ms > 0 ? `${Math.max((ms / max) * 100, 12)}%` : 2 }}
+        />
+      ))}
+    </span>
+  );
+}
+
+const formatDay = (date: Date) =>
+  date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+
+interface SubjectProgressProps {
+  subject: Subject;
+  content: Content;
+  cards: Record<string, Card>;
+  allCards: Card[];
+  sessions: SessionLog[];
+  deckTimes: DeckTime[];
+  onSelectDeck: (deck: Deck) => void;
+}
+
+/** A Subject's words learned overall and per set, the set's weekly time, and its hardest words. */
+function SubjectProgress({
+  subject,
+  content,
+  cards,
+  allCards,
+  sessions,
+  deckTimes,
+  onSelectDeck,
+}: SubjectProgressProps) {
+  const decks = getSubjectDecks(content.decks, subject.id);
+  const progress = [...getConceptsProgress(decks, cards).values()];
+  const learned = progress.filter((value) => value === 'learned').length;
+  const noun = CONCEPT_NOUNS[subject.kind];
+  const concepts = new Map(
+    content.concepts
+      .filter((concept) => concept.subjectId === subject.id)
+      .map((concept) => [concept.id, concept]),
+  );
+  const hardest = getHardestConcepts([...concepts.keys()], allCards, sessions, HARDEST);
+
+  return (
+    <section
+      aria-label={subject.name}
+      className="flex flex-col gap-6 rounded-[2rem] border-2 border-line bg-card p-6 shadow-sticker sm:p-8"
+    >
+      <div className="flex flex-col gap-1">
+        <p className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
+          {subject.emoji} {subject.name}
+        </p>
+        <h3 className="font-display text-2xl font-extrabold tracking-tight">
+          {learned} of {plural(progress.length, noun)} learned
+        </h3>
+        <ProgressBar progress={progress} className="mt-2" />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+          <h4 className="font-display font-bold">{noun.Many} learned per set</h4>
+          <Legend />
+        </div>
+        <ul className="flex flex-col">
+          {decks.map((deck) => {
+            const deckProgress = getDeckProgress(deck, cards);
+            const time = deckTimes.find((time) => time.deckId === deck.id);
+            const deckLearned = deckProgress.filter((value) => value === 'learned').length;
+            return (
+              <li
+                key={deck.id}
+                className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 border-b border-foreground/10 py-2.5 last:border-b-0 sm:grid-cols-[minmax(0,14rem)_minmax(0,1fr)_auto_auto]"
+              >
+                <button
+                  type="button"
+                  onClick={() => onSelectDeck(deck)}
+                  className="cursor-pointer truncate rounded-md text-left font-semibold underline-offset-2 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+                >
+                  {deck.name}
+                </button>
+                <span className="text-right text-sm text-muted-foreground tabular-nums sm:order-last">
+                  {deckLearned}/{deckProgress.length}
+                </span>
+                <ProgressBar progress={deckProgress} className="col-span-2 sm:col-span-1" />
+                <span className="flex w-[8.5rem] items-center justify-end gap-2 text-xs text-muted-foreground max-sm:hidden">
+                  {time ? (
+                    <>
+                      <MiniWeeks weekly={time.weekly} />
+                      <span className="flex w-16 flex-col leading-tight">
+                        <span className="font-semibold text-foreground tabular-nums">
+                          {formatMinutes(time.weekly.at(-1)!)}
+                        </span>
+                        this week
+                      </span>
+                    </>
+                  ) : (
+                    <span>not practised</span>
+                  )}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+
+      {hardest.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <h4 className="font-display font-bold">Hardest {noun.many}</h4>
+          <ol
+            aria-label={`Hardest ${noun.many} in ${subject.name}`}
+            className="grid gap-2 sm:grid-cols-2"
+          >
+            {hardest.map((hard) => {
+              const concept = concepts.get(hard.conceptId);
+              if (!concept) return null;
+              const { prompt, answer } = getConceptText(concept);
+              const [main, extra] =
+                concept.kind === 'language' ? [answer, prompt] : [prompt, answer];
+              return (
+                <li
+                  key={hard.conceptId}
+                  className="flex items-center gap-3 rounded-2xl border-2 border-wrong/40 bg-wrong/10 px-3 py-2"
+                >
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="font-semibold break-words">{main}</span>
+                    {extra && <span className="text-sm text-muted-foreground">{extra}</span>}
+                  </span>
+                  <span className="shrink-0 text-right text-xs font-medium text-wrong-ink">
+                    {hard.misses > 0 && <span className="block">missed {hard.misses}×</span>}
+                    {hard.lapses > 0 && <span className="block">forgotten {hard.lapses}×</span>}
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      )}
+    </section>
+  );
+}
+
+const PROGRESS_ORDER: Progress[] = ['learned', 'learning', 'new'];
+const PROGRESS_FILLS: Record<Progress, string> = {
+  learned: 'bg-correct',
+  learning: 'bg-almost',
+  new: 'bg-muted',
+};
+
+/** Learned, learning and new words as one bar, in that order. */
+function ProgressBar({ progress, className }: { progress: Progress[]; className?: string }) {
+  const counts = PROGRESS_ORDER.map((status) => ({
+    status,
+    count: progress.filter((value) => value === status).length,
+  }));
+  const label = counts
+    .map(({ status, count }) => `${PROGRESS_LABELS[status]}: ${count}`)
+    .join(', ');
+  return (
+    <span
+      role="img"
+      aria-label={label}
+      title={label}
+      className={cn(
+        'flex h-3 gap-0.5 overflow-hidden rounded-full border-2 border-line bg-muted',
+        className,
+      )}
+    >
+      {counts.map(
+        ({ status, count }) =>
+          count > 0 && (
+            <span key={status} className={PROGRESS_FILLS[status]} style={{ flexGrow: count }} />
+          ),
+      )}
+    </span>
+  );
+}
+
+function Legend() {
+  return (
+    <span className="flex gap-3 text-xs text-muted-foreground">
+      {PROGRESS_ORDER.map((status) => (
+        <span key={status} className="flex items-center gap-1">
+          <span
+            aria-hidden
+            className={cn('size-2.5 rounded-full border border-line', PROGRESS_FILLS[status])}
+          />
+          {PROGRESS_LABELS[status]}
+        </span>
+      ))}
+    </span>
+  );
+}

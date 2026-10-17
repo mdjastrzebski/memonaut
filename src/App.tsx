@@ -1,13 +1,16 @@
+import { ChartColumn } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { AppMenu } from '@/components/app-menu';
 import { EffortStatsPanel } from '@/components/effort-stats-panel';
 import { ExerciseScreen } from '@/components/exercise-screen';
+import { ProgressScreen } from '@/components/progress-screen';
 import { SessionProgress } from '@/components/session-progress';
 import { loadSetupChoice, saveSetupChoice } from '@/components/setup-choice';
 import { SetupScreen } from '@/components/setup-screen';
 import { SummaryScreen } from '@/components/summary-screen';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { Button } from '@/components/ui/button';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { content } from '@/data/bundled-content';
 import type { Card, Deck, ExerciseType } from '@/domain/types';
@@ -52,6 +55,8 @@ export default function App() {
   const [ended, setEnded] = useState(false);
   const [showSpecialCharacters, setShowSpecialCharacters] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  // The progress screen, shown instead of the setup screen.
+  const [showProgress, setShowProgress] = useState(false);
   // `?dev=1` in the URL shows tools for tuning the app, such as the effort stats.
   const [devMode] = useState(() => new URLSearchParams(window.location.search).get('dev') === '1');
   // In dev mode, Exercise Types left out of sessions, e.g. all but one to try it out.
@@ -118,6 +123,7 @@ export default function App() {
     if (exercising && session) measurePace(session);
     setCards(allCards);
     setSession(null);
+    setShowProgress(false);
   };
 
   const selectDeck = (deck: Deck) => {
@@ -152,12 +158,32 @@ export default function App() {
           </h1>
           {exercising && session && <SessionProgress session={session} />}
           <div className="ml-auto flex items-center gap-2">
+            {session === null && (
+              <Button
+                variant="sticker"
+                size="lg"
+                aria-pressed={showProgress}
+                onClick={() => setShowProgress(!showProgress)}
+                className="rounded-full px-3"
+              >
+                <ChartColumn /> <span className="max-sm:sr-only">Progress</span>
+              </Button>
+            )}
             <ThemeToggle />
             <AppMenu onEnd={exercising ? end : undefined} />
           </div>
         </header>
 
-        {session === null ? (
+        {session === null && showProgress ? (
+          <ProgressScreen
+            content={content}
+            cards={cards}
+            onSelectDeck={(deck) => {
+              selectDeck(deck);
+              setShowProgress(false);
+            }}
+          />
+        ) : session === null ? (
           <>
             <SetupScreen
               content={content}

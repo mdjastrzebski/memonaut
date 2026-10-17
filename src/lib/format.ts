@@ -31,3 +31,11 @@ export function formatNumber(value: number, digits = 2): string {
 export function formatPercent(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
+
+/** Whole minutes for time spent, e.g. "0 min", "25 min" or "1 h 5 min". */
+export function formatMinutes(ms: number): string {
+  const minutes = Math.round(ms / MINUTE);
+  if (minutes < 60) return `${minutes} min`;
+  const rest = minutes % 60;
+  return rest ? `${Math.floor(minutes / 60)} h ${rest} min` : `${minutes / 60} h`;
+}
