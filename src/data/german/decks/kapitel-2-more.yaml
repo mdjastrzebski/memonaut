@@ -23,12 +23,6 @@ concepts:
   - { id: die-schulsachen, local: przybory szkolne, foreign: die Schulsachen, plural: true }
   # Pozostałe przedmioty osobiste i zwierzęta.
   - { id: der-schreibtisch, local: biurko, foreign: der Schreibtisch, group: thing/personal }
-  - {
-      id: das-taschentuch,
-      local: chusteczka do nosa,
-      foreign: das Taschentuch,
-      group: thing/personal,
-    }
   # Szkoła: -in tworzy formę żeńską.
   - { id: die-schule, local: szkoła, foreign: die Schule, explanation: 'na -[e] → zwykle [die]' }
   - { id: die-klasse, local: klasa, foreign: die Klasse, explanation: 'na -[e] → zwykle [die]' }

@@ -113,6 +113,16 @@ export interface LanguageConcept extends ConceptBase {
    * choice.
    */
   plural?: boolean;
+  /**
+   * Optional plural of the local word, e.g. "książki". With `foreignPlural`, the word is also
+   * practised with plural translation.
+   */
+  localPlural?: string;
+  /**
+   * Optional plural of the foreign word, e.g. "die Bücher" for "das Buch". The word is then also
+   * practised with plural form.
+   */
+  foreignPlural?: string;
 }
 
 /** A question of a knowledge Subject, asked one way only. */
@@ -142,6 +152,8 @@ export interface KnowledgeConcept extends ConceptBase {
  * - article-choice-de: see a German noun without its article, e.g. "Buch", and pick der, die or das;
  *   or dieser, diese or dieses; or mein or meine for e.g. "meine Tasche", likewise ein and kein
  * - translation: see the local word and type the foreign one
+ * - plural-form: see the foreign word, e.g. "das Buch", and type its plural, "die Bücher"
+ * - plural-translation: see the local plural, e.g. "książki", and type the foreign one
  * - question-choice: see a knowledge question and pick its answer from a few options
  * - question-type: see a knowledge question and type its answer
  */
@@ -151,6 +163,8 @@ export type ExerciseType =
   | 'translation-choice'
   | 'article-choice-de'
   | 'translation'
+  | 'plural-form'
+  | 'plural-translation'
   | 'question-choice'
   | 'question-type';
 

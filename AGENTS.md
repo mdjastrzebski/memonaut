@@ -47,4 +47,4 @@ A Deck without `shuffleNew: true` introduces new Concepts in file order, so orde
 
 A shuffled Deck, like the Polish spelling sets, doesn't need this.
 
-Write German nouns with their article, e.g. `das Buch`, so they're practised with German article choice, and mark plurals with `plural: true`, e.g. `die Bücher`, as their article tells no gender.
+Write German nouns with their article, e.g. `das Buch`, so they're practised with German article choice, and mark plurals with `plural: true`, e.g. `die Bücher`, as their article tells no gender. To practise a noun's plural, give it on the singular instead, with `foreignPlural: die Bücher` and `localPlural: książki`, rather than adding the plural as a word of its own.

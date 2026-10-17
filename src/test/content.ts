@@ -75,7 +75,13 @@ name: Kapitel 1
 concepts:
   - { id: der-ball, local: piłka, foreign: der Ball }
   - { id: der-fussball, local: piłka nożna, foreign: der Fußball }
-  - { id: das-buch, local: książka, foreign: das Buch }
+  - {
+      id: das-buch,
+      local: książka,
+      foreign: das Buch,
+      localPlural: książki,
+      foreignPlural: die Bücher,
+    }
   - { id: das-maeppchen, local: piórnik, foreign: das Mäppchen }
   - { id: die-buecher, local: książki, foreign: die Bücher, plural: true }
   - { id: number-100, local: sto, foreign: hundert, alternatives: [einhundert], hint: 100 }

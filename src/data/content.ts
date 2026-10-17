@@ -74,6 +74,10 @@ const CONCEPT_FIELDS = {
       .literal('true')
       .transform(() => true)
       .optional(),
+    /** The local plural, for plural translation; needs `foreignPlural`. */
+    localPlural: z.string().min(1).optional(),
+    /** The foreign plural, for plural form and plural translation. */
+    foreignPlural: z.string().min(1).optional(),
   },
   knowledge: {
     question: z.string().min(1),
@@ -184,6 +188,12 @@ export function buildContent(files: Record<string, string>): Content {
         id: prefix(fields.id),
         subjectId: subject.id,
       } as Concept;
+      if (concept.kind === 'language' && concept.localPlural && !concept.foreignPlural) {
+        throw new Error(`${path}: concept "${fields.id}" has a local plural but no foreign plural`);
+      }
+      if (concept.kind === 'language' && concept.plural && concept.foreignPlural) {
+        throw new Error(`${path}: concept "${fields.id}" is a plural, so it has no foreign plural`);
+      }
       if (concept.kind === 'knowledge' && concept.choices?.includes(concept.answer)) {
         throw new Error(`${path}: concept "${fields.id}" has its answer among its wrong choices`);
       }
@@ -195,22 +205,35 @@ export function buildContent(files: Record<string, string>): Content {
       }
     };
 
-    /** Fewer Exercise Types for the Concepts that can't be practised with all of the Deck's. */
-    const getFewerExerciseTypes = (
+    /**
+     * The Deck's Exercise Types that any of its Concepts can be practised with, e.g. none of the
+     * plural ones without plurals, and fewer for the Concepts that can't be practised with all.
+     */
+    const getDeckExerciseTypes = (
       path: string,
       conceptIds: string[],
       exerciseTypes: ExerciseType[],
-    ): Pick<Deck, 'conceptExerciseTypes'> => {
-      const fewer: Record<string, ExerciseType[]> = {};
+    ): Pick<Deck, 'exerciseTypes' | 'conceptExerciseTypes'> => {
+      const conceptTypes = new Map<string, ExerciseType[]>();
       for (const conceptId of conceptIds) {
         const concept = concepts.get(conceptId)!;
         const types = exerciseTypes.filter((type) => canPractise(concept, type, subject));
         if (types.length === 0) {
           throw new Error(`${path}: concept "${conceptId}" fits none of the deck's exercise types`);
         }
-        if (types.length < exerciseTypes.length) fewer[prefix(conceptId)] = types;
+        conceptTypes.set(conceptId, types);
       }
-      return Object.keys(fewer).length > 0 ? { conceptExerciseTypes: fewer } : {};
+      const used = exerciseTypes.filter((type) =>
+        [...conceptTypes.values()].some((types) => types.includes(type)),
+      );
+      const fewer: Record<string, ExerciseType[]> = {};
+      for (const [conceptId, types] of conceptTypes) {
+        if (types.length < used.length) fewer[prefix(conceptId)] = types;
+      }
+      return {
+        exerciseTypes: used,
+        ...(Object.keys(fewer).length > 0 && { conceptExerciseTypes: fewer }),
+      };
     };
 
     const corePath = `./${dir}/core.yaml`;
@@ -250,8 +273,7 @@ export function buildContent(files: Record<string, string>): Content {
         conceptIds: conceptIds.map(prefix),
         ...(deck.strictSpelling && { strictSpelling: true }),
         ...(deck.shuffleNew && { shuffleNew: true }),
-        exerciseTypes,
-        ...getFewerExerciseTypes(path, conceptIds, exerciseTypes),
+        ...getDeckExerciseTypes(path, conceptIds, exerciseTypes),
       });
     }
 
@@ -266,8 +288,7 @@ export function buildContent(files: Record<string, string>): Content {
         conceptIds: [...coreIds].map(prefix),
         ...(coreStrictSpelling && { strictSpelling: true }),
         ...(coreShuffleNew && { shuffleNew: true }),
-        exerciseTypes: coreExerciseTypes,
-        ...getFewerExerciseTypes(`./${dir}: core deck`, [...coreIds], coreExerciseTypes),
+        ...getDeckExerciseTypes(`./${dir}: core deck`, [...coreIds], coreExerciseTypes),
       });
     }
   }

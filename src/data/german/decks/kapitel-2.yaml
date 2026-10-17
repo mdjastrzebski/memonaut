@@ -35,9 +35,30 @@ concepts:
   - { id: meine-mama, local: moja mama, foreign: meine Mama, group: possessive }
   - { id: mein-papa, local: mój tata, foreign: mein Papa, group: possessive }
   # Słowa podobne do polskich i angielskich, rzeczy i zwierzęta.
-  - { id: das-foto, local: zdjęcie, foreign: das Foto, group: thing/personal }
-  - { id: der-computer, local: komputer, foreign: der Computer, group: thing/personal }
-  - { id: das-handy, local: komórka, foreign: das Handy, group: thing/personal }
+  - {
+      id: das-foto,
+      local: zdjęcie,
+      foreign: das Foto,
+      localPlural: zdjęcia,
+      foreignPlural: die Fotos,
+      group: thing/personal,
+    }
+  - {
+      id: der-computer,
+      local: komputer,
+      foreign: der Computer,
+      localPlural: komputery,
+      foreignPlural: die Computer,
+      group: thing/personal,
+    }
+  - {
+      id: das-handy,
+      local: komórka,
+      foreign: das Handy,
+      localPlural: komórki,
+      foreignPlural: die Handys,
+      group: thing/personal,
+    }
   - { id: das-kino, local: kino, foreign: das Kino, group: hobby }
   - { id: das-konzert, local: koncert, foreign: das Konzert, group: hobby }
   - { id: die-gitarre, local: gitara, foreign: die Gitarre }
@@ -52,23 +73,56 @@ concepts:
     }
   - { id: das-skateboard, local: deskorolka, foreign: das Skateboard, group: thing/personal }
   - { id: das-stofftier, local: pluszak, foreign: das Stofftier, group: thing/personal }
-  - { id: der-rucksack, local: plecak, foreign: der Rucksack, group: thing/personal }
+  - {
+      id: der-rucksack,
+      local: plecak,
+      foreign: der Rucksack,
+      localPlural: plecaki,
+      foreignPlural: die Rucksäcke,
+      group: thing/personal,
+    }
+  - {
+      id: das-taschentuch,
+      local: chusteczka do nosa,
+      foreign: das Taschentuch,
+      localPlural: chusteczki do nosa,
+      foreignPlural: die Taschentücher,
+      group: thing/personal,
+    }
   - {
       id: die-brille,
       local: okulary,
       foreign: die Brille,
+      localPlural: kilka par okularów,
+      foreignPlural: die Brillen,
       explanation: 'na -[e] → zwykle [die]',
       group: thing/personal,
     }
-  - { id: das-buch, local: książka, foreign: das Buch, group: thing/school }
+  - {
+      id: das-buch,
+      local: książka,
+      foreign: das Buch,
+      localPlural: książki,
+      foreignPlural: die Bücher,
+      group: thing/school,
+    }
   - { id: der-hund, local: pies, foreign: der Hund, group: animal }
   - { id: die-katze, local: kot, foreign: die Katze, group: animal }
-  # Przybory szkolne, zawsze z rodzajnikiem. Przybory do pisania są rodzaju męskiego, rzeczowniki na -e zwykle żeńskiego.
-  - { id: das-heft, local: zeszyt, foreign: das Heft, group: thing/school }
+  # Przybory szkolne, zawsze z rodzajnikiem, i ich liczba mnoga, zawsze z die. Przybory do pisania są rodzaju męskiego, rzeczowniki na -e zwykle żeńskiego.
+  - {
+      id: das-heft,
+      local: zeszyt,
+      foreign: das Heft,
+      localPlural: zeszyty,
+      foreignPlural: die Hefte,
+      group: thing/school,
+    }
   - {
       id: der-kuli,
       local: długopis,
       foreign: der Kuli,
+      localPlural: długopisy,
+      foreignPlural: die Kulis,
       explanation: 'do pisania → [der]',
       group: thing/school,
     }
@@ -76,14 +130,25 @@ concepts:
       id: der-marker,
       local: zakreślacz,
       foreign: der Marker,
+      localPlural: zakreślacze,
+      foreignPlural: die Marker,
       explanation: 'do pisania → [der]',
       group: thing/school,
     }
-  - { id: das-lineal, local: linijka, foreign: das Lineal, group: thing/school }
+  - {
+      id: das-lineal,
+      local: linijka,
+      foreign: das Lineal,
+      localPlural: linijki,
+      foreignPlural: die Lineale,
+      group: thing/school,
+    }
   - {
       id: die-schere,
       local: nożyczki,
       foreign: die Schere,
+      localPlural: kilka par nożyczek,
+      foreignPlural: die Scheren,
       explanation: 'na -[e] → zwykle [die]',
       group: thing/school,
     }
@@ -91,6 +156,8 @@ concepts:
       id: der-bleistift,
       local: ołówek,
       foreign: der Bleistift,
+      localPlural: ołówki,
+      foreignPlural: die Bleistifte,
       explanation: 'do pisania → [der]',
       group: thing/school,
     }
@@ -98,15 +165,33 @@ concepts:
       id: der-buntstift,
       local: kredka,
       foreign: der Buntstift,
+      localPlural: kredki,
+      foreignPlural: die Buntstifte,
       explanation: 'do pisania → [der]',
       group: thing/school,
     }
-  - { id: der-anspitzer, local: temperówka, foreign: der Anspitzer, group: thing/school }
-  - { id: der-radiergummi, local: gumka do mazania, foreign: der Radiergummi, group: thing/school }
+  - {
+      id: der-anspitzer,
+      local: temperówka,
+      foreign: der Anspitzer,
+      localPlural: temperówki,
+      foreignPlural: die Anspitzer,
+      group: thing/school,
+    }
+  - {
+      id: der-radiergummi,
+      local: gumka do mazania,
+      foreign: der Radiergummi,
+      localPlural: gumki do mazania,
+      foreignPlural: die Radiergummis,
+      group: thing/school,
+    }
   - {
       id: das-federmaeppchen,
       local: piórnik,
       foreign: das Mäppchen,
+      localPlural: piórniki,
+      foreignPlural: die Mäppchen,
       alternatives: [das Federmäppchen],
       group: thing/school,
     }
@@ -114,6 +199,8 @@ concepts:
       id: die-schultasche,
       local: tornister,
       foreign: die Schultasche,
+      localPlural: tornistry,
+      foreignPlural: die Schultaschen,
       explanation: 'na -[e] → zwykle [die]',
       group: thing/school,
     }

@@ -3,6 +3,10 @@ import type { ComponentType } from 'react';
 import { ArticleChoiceDeExercise } from '@/components/exercises/article-choice-de-exercise';
 import { DictationExercise } from '@/components/exercises/dictation-exercise';
 import type { ExerciseProps } from '@/components/exercises/exercise-parts';
+import {
+  PluralFormExercise,
+  PluralTranslationExercise,
+} from '@/components/exercises/plural-exercises';
 import { QuestionChoiceExercise } from '@/components/exercises/question-choice-exercise';
 import { QuestionTypeExercise } from '@/components/exercises/question-type-exercise';
 import { RecognitionChoiceExercise } from '@/components/exercises/recognition-choice-exercise';
@@ -20,6 +24,8 @@ const EXERCISE_COMPONENTS: Record<ExerciseType, ComponentType<ExerciseProps>> = 
   'translation-choice': TranslationChoiceExercise,
   'article-choice-de': ArticleChoiceDeExercise,
   'translation': TranslationExercise,
+  'plural-form': PluralFormExercise,
+  'plural-translation': PluralTranslationExercise,
   'question-choice': QuestionChoiceExercise,
   'question-type': QuestionTypeExercise,
 };

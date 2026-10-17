@@ -218,6 +218,8 @@ test('a subject practises every exercise type unless it lists some, easiest firs
     'translation-choice',
     'article-choice-de',
     'translation',
+    'plural-form',
+    'plural-translation',
   ]);
   expect(exerciseTypes('exerciseTypes: [translation, dictation]\n')).toEqual([
     'dictation',
@@ -244,7 +246,7 @@ concepts:
 id: all
 name: All
 concepts:
-  - { id: c, local: x, foreign: w }
+  - { id: c, local: x, foreign: das Wort, localPlural: xs, foreignPlural: die Wörter }
 `,
   });
   const exerciseTypes = (id: string) => decks.find((deck) => deck.id === id)?.exerciseTypes;
@@ -256,6 +258,8 @@ concepts:
     'translation-choice',
     'article-choice-de',
     'translation',
+    'plural-form',
+    'plural-translation',
   ]);
 
   expect(() =>
@@ -372,13 +376,60 @@ concepts:
     'article-choice-de',
     'translation',
   ];
-  expect(subjects[0].exerciseTypes).toEqual(exerciseTypes);
+  expect(subjects[0].exerciseTypes).toEqual([
+    ...exerciseTypes,
+    'plural-form',
+    'plural-translation',
+  ]);
+  expect(decks[0].exerciseTypes).toEqual(exerciseTypes);
   const withoutArticle = exerciseTypes.filter((type) => type !== 'article-choice-de');
   expect(decks[0].conceptExerciseTypes).toEqual({
     'german/die-buecher': withoutArticle,
     'german/das-ist-das-buch': withoutArticle,
     'german/drei': withoutArticle,
   });
+});
+
+test('a word with plurals is practised with plural form, and with plural translation when both are given', () => {
+  const { decks, concepts } = buildContent({
+    './german/subject.yaml': subject,
+    './german/decks/a.yaml': `
+id: a
+name: A
+concepts:
+  - { id: das-buch, local: książka, foreign: das Buch, localPlural: książki, foreignPlural: die Bücher }
+  - { id: das-heft, local: zeszyt, foreign: das Heft, foreignPlural: die Hefte }
+  - { id: drei, local: trzy, foreign: drei }
+`,
+  });
+  expect(concepts[0]).toMatchObject({ localPlural: 'książki', foreignPlural: 'die Bücher' });
+  const singular = [
+    'recognition-choice',
+    'dictation',
+    'translation-choice',
+    'article-choice-de',
+    'translation',
+  ];
+  expect(decks[0].exerciseTypes).toEqual([...singular, 'plural-form', 'plural-translation']);
+  expect(decks[0].conceptExerciseTypes).toEqual({
+    'german/das-heft': [...singular, 'plural-form'],
+    'german/drei': singular.filter((type) => type !== 'article-choice-de'),
+  });
+
+  const deck = (concept: string) => ({
+    './german/subject.yaml': subject,
+    './german/decks/b.yaml': `id: b\nname: B\nconcepts:\n  - ${concept}\n`,
+  });
+  expect(() =>
+    buildContent(deck('{ id: das-buch, local: książka, foreign: das Buch, localPlural: książki }')),
+  ).toThrow('b.yaml: concept "das-buch" has a local plural but no foreign plural');
+  expect(() =>
+    buildContent(
+      deck(
+        '{ id: die-buecher, local: książki, foreign: die Bücher, plural: true, foreignPlural: x }',
+      ),
+    ),
+  ).toThrow('b.yaml: concept "die-buecher" is a plural, so it has no foreign plural');
 });
 
 test('only a German subject has German article choice', () => {
