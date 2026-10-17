@@ -31,7 +31,7 @@ concepts:
   - { id: der-schueler, local: uczeń, foreign: der Schüler, group: school-person }
   - { id: die-schuelerin, local: uczennica, foreign: die Schülerin, group: school-person }
   - { id: der-fussballspieler, local: piłkarz, foreign: der Fußballspieler }
-  # Liczby 11–20 z Kapitel 1, przed dziesiątkami.
+  # Liczby 11–19 z Kapitel 1.
   - { id: number-11, local: jedenaście, foreign: elf, hint: 11, group: number/teens }
   - { id: number-12, local: dwanaście, foreign: zwölf, hint: 12, group: number/teens }
   - { id: number-13, local: trzynaście, foreign: dreizehn, hint: 13, group: number/teens }
@@ -41,7 +41,6 @@ concepts:
   - { id: number-17, local: siedemnaście, foreign: siebzehn, hint: 17, group: number/teens }
   - { id: number-18, local: osiemnaście, foreign: achtzehn, hint: 18, group: number/teens }
   - { id: number-19, local: dziewiętnaście, foreign: neunzehn, hint: 19, group: number/teens }
-  - { id: number-20, local: dwadzieścia, foreign: zwanzig, hint: 20, group: number/teens }
   # Języki i lekcje.
   - { id: englisch, local: język angielski, foreign: Englisch, group: language }
   - { id: polnisch, local: język polski, foreign: Polnisch, group: language }
@@ -74,72 +73,6 @@ concepts:
   - { id: du-magst, local: ty lubisz, foreign: du magst, group: moegen }
   - { id: er-mag, local: on lubi, foreign: er mag, group: moegen }
   - { id: sie-mag, local: ona lubi, foreign: sie mag, group: moegen }
-  # Dziesiątki: -zig, z wyjątkiem dreißig.
-  - {
-      id: number-30,
-      local: trzydzieści,
-      foreign: dreißig,
-      hint: 30,
-      group: number/large,
-      core: true,
-    }
-  - {
-      id: number-40,
-      local: czterdzieści,
-      foreign: vierzig,
-      hint: 40,
-      group: number/large,
-      core: true,
-    }
-  - {
-      id: number-50,
-      local: pięćdziesiąt,
-      foreign: fünfzig,
-      hint: 50,
-      group: number/large,
-      core: true,
-    }
-  - {
-      id: number-60,
-      local: sześćdziesiąt,
-      foreign: sechzig,
-      hint: 60,
-      group: number/large,
-      core: true,
-    }
-  - {
-      id: number-70,
-      local: siedemdziesiąt,
-      foreign: siebzig,
-      hint: 70,
-      group: number/large,
-      core: true,
-    }
-  - {
-      id: number-80,
-      local: osiemdziesiąt,
-      foreign: achtzig,
-      hint: 80,
-      group: number/large,
-      core: true,
-    }
-  - {
-      id: number-90,
-      local: dziewięćdziesiąt,
-      foreign: neunzig,
-      hint: 90,
-      group: number/large,
-      core: true,
-    }
-  - {
-      id: number-100,
-      local: sto,
-      foreign: hundert,
-      alternatives: [einhundert],
-      hint: 100,
-      group: number/large,
-      core: true,
-    }
   # mein, dein przy der i das; meine, deine przy die.
   - { id: mein-bleistift, local: mój ołówek, foreign: mein Bleistift, group: possessive }
   - { id: meine-schultasche, local: mój tornister, foreign: meine Schultasche, group: possessive }
@@ -310,13 +243,6 @@ concepts:
       group: possessive,
     }
   # Liczby dwucyfrowe: jedności + und + dziesiątki, gdy już znane są obie części.
-  - {
-      id: number-21,
-      local: dwadzieścia jeden,
-      foreign: einundzwanzig,
-      hint: 21,
-      group: number/large,
-    }
   - {
       id: number-36,
       local: trzydzieści sześć,
