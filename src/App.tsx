@@ -7,7 +7,7 @@ import { EffortStatsPanel } from '@/components/effort-stats-panel';
 import { ExerciseScreen } from '@/components/exercise-screen';
 import { ProgressScreen } from '@/components/progress-screen';
 import { SessionProgress } from '@/components/session-progress';
-import { loadSetupChoice, saveSetupChoice } from '@/components/setup-choice';
+import { getMinNew, loadSetupChoice, saveSetupChoice } from '@/components/setup-choice';
 import { SetupScreen } from '@/components/setup-screen';
 import { SummaryScreen } from '@/components/summary-screen';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -79,6 +79,7 @@ export default function App() {
       concepts: content.concepts,
       cards: allCards,
       maxEffort: sessionMinutes * pace,
+      minNew: getMinNew(sessionMinutes),
     });
   // What the next session would hold, shown on the setup screen.
   const plan = session === null ? planSession() : null;

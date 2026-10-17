@@ -2,7 +2,7 @@ import { expect, test } from 'vitest';
 
 import { testContent as content } from '@/test/content';
 
-import { loadSetupChoice, saveSetupChoice } from './setup-choice';
+import { getMinNew, loadSetupChoice, SESSION_MINUTES, saveSetupChoice } from './setup-choice';
 
 const deck = (id: string) => content.decks.find((deck) => deck.id === id)!;
 const save = (value: unknown) => localStorage.setItem('memonaut:setup', JSON.stringify(value));
@@ -54,4 +54,8 @@ test('ignores a session length that is not offered, and unreadable data', () => 
 
   localStorage.setItem('memonaut:setup', '{oops');
   expect(loadSetupChoice(content).deck).toEqual(deck('english/core'));
+});
+
+test('a session starts at least 3 new words for every 5 minutes', () => {
+  expect(SESSION_MINUTES.map(getMinNew)).toEqual([3, 6, 9, 12]);
 });

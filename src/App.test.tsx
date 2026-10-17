@@ -530,8 +530,8 @@ test('a unit unlocks recognition choice, dictation, translation choice, then tra
   );
   const options = () =>
     within(screen.getByRole('group', { name: 'Options' })).getAllByRole('button');
-  // Each next exercise type unlocks on the next study day, before any new word, but a new word
-  // still comes in each session, on top of the unlocked ones that fit.
+  // Each next exercise type unlocks on the next study day, before any new word, but new words
+  // still come in each session, on top of the unlocked ones that fit.
   const startNewSession = async (now: Date, minutes: string) => {
     expect(screen.getByText(/Session results/)).toBeInTheDocument();
     vi.setSystemTime(now);
@@ -583,14 +583,16 @@ test('a unit unlocks recognition choice, dictation, translation choice, then tra
     }
   };
 
-  // 15 minutes fit just the 8 dictations, and a new word's recognition comes on top.
+  // 15 minutes fit just the 8 dictations, and 9 new words' recognitions come on top, 3 for every
+  // 5 minutes.
   await startNewSession(new Date(2026, 0, 6, 10), '15 min');
-  expect(await answerUntilOther()).toEqual({ recognitions: 2, dictations: 8 });
+  expect(await answerUntilOther()).toEqual({ recognitions: 18, dictations: 8 });
 
-  // Before the recognitions are due again at 10 AM: the last new word's dictation comes first, after
-  // the next new word's intro, whose recognition comes a couple of exercises later.
-  await startNewSession(new Date(2026, 0, 7, 5), '5 min');
-  expect(await answerUntilOther()).toEqual({ recognitions: 0, dictations: 1 });
+  // Before the recognitions are due again at 10 AM: 20 minutes fit the 9 dictations unlocked and
+  // some translation choices, and 12 new words come on top, their recognitions mixed in with the
+  // dictations as their intros come up.
+  await startNewSession(new Date(2026, 0, 7, 5), '20 min');
+  expect(await answerUntilOther()).toEqual({ recognitions: 12, dictations: 9 });
   // Translation choice: a wrong pick is rated Again, and the German word is read aloud.
   expect(screen.getByText('Which word is it?')).toBeInTheDocument();
   const local = screen.getByRole('heading', { level: 2 }).textContent;
@@ -604,7 +606,7 @@ test('a unit unlocks recognition choice, dictation, translation choice, then tra
   expect(screen.getByRole('status')).toHaveTextContent('Again');
   await user.click(screen.getByRole('button', { name: /Continue/ }));
   expect(screen.queryByRole('status')).not.toBeInTheDocument();
-});
+}, 20_000);
 
 test('switching subject selects its core set and English has no special characters', async () => {
   const user = userEvent.setup();
