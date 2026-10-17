@@ -17,7 +17,7 @@ import type { ExerciseType } from '@/domain/types';
 import { getCurrentCard, getCurrentIntro } from '@/session/session';
 
 export interface ExerciseScreenProps extends Omit<ExerciseProps, 'card' | 'concept'> {
-  /** Called once a new word's intro is read, to move on to the next exercise. */
+  /** Called once a new or tricky word's intro is read, to move on to the next exercise. */
   onIntroduced: () => void;
 }
 
@@ -35,8 +35,8 @@ const EXERCISE_COMPONENTS: Record<ExerciseType, ComponentType<ExerciseProps>> = 
 };
 
 /**
- * The session's current exercise, drawn by its Exercise Type's component, or a new word's intro
- * before its first one.
+ * The session's current exercise, drawn by its Exercise Type's component, or a new or tricky
+ * word's intro before it.
  */
 export function ExerciseScreen({ onIntroduced, ...props }: ExerciseScreenProps) {
   const card = getCurrentCard(props.session);
@@ -46,7 +46,14 @@ export function ExerciseScreen({ onIntroduced, ...props }: ExerciseScreenProps) 
   if (getCurrentIntro(props.session)) {
     // Keyed so the next word's intro plays its word again.
     return (
-      <WordIntro key={concept.id} {...props} card={card} concept={concept} onDone={onIntroduced} />
+      <WordIntro
+        key={concept.id}
+        {...props}
+        card={card}
+        concept={concept}
+        tricky={props.session.tricky.includes(concept.id)}
+        onDone={onIntroduced}
+      />
     );
   }
   const Exercise = EXERCISE_COMPONENTS[card.exerciseType];

@@ -32,6 +32,15 @@ export const LEARN_AHEAD_MS = 20 * 60 * 1000;
  */
 export const INTRO_GAP = 2;
 
+/**
+ * A word is tricky, like Anki's leeches but sooner, once one of its Cards was forgotten this many
+ * times after it was learned, or reached `TRICKY_DIFFICULTY`.
+ */
+export const TRICKY_LAPSES = 2;
+
+/** FSRS difficulty, 1–10, of a tricky word's Card: about three misses in a row, or two lapses. */
+export const TRICKY_DIFFICULTY = 9;
+
 /** Every Exercise Type, easiest first. A Concept unlocks them one at a time, in a Deck's order. */
 export const EXERCISE_TYPES: ExerciseType[] = [
   'recognition-choice',
@@ -126,6 +135,11 @@ export interface Session {
   intros: string[];
   /** Ids of the Concepts introduced so far. */
   introduced: string[];
+  /**
+   * Ids of the tricky Concepts picked, in a Deck that shows intros. One is still asked first, so its answer shows what's
+   * remembered, and introduced again only once it's missed, before it's asked again.
+   */
+  tricky: string[];
   reviews: Review[];
   /** Effort points the picked Cards were expected to take. */
   effort: number;
@@ -200,15 +214,20 @@ export function createSession({
           : step === Step.New
             ? [newOrder.indexOf(concept.id), 0]
             : [card.srs.due.getTime(), conceptIndex];
-      // A new word is introduced before its first exercise, so it isn't first met in a guess. A
-      // question isn't, as showing it with its answer would give it away.
-      const intro = step === Step.New && concept.kind === 'language';
+      // A new Concept is introduced before its first exercise, so it isn't first met in a guess,
+      // unless the Deck doesn't show intros.
+      const showIntro = deck.showIntro !== false;
+      const intro = showIntro && step === Step.New;
+      const tricky = showIntro && isTricky(conceptCards(concept.id));
       const effort = getCardEffort(card, now) + (intro ? INTRO_EFFORT : 0);
-      return { concept, card, step, intro, effort, sortKey: [step, ...sortKey] };
+      return { concept, card, step, intro, tricky, effort, sortKey: [step, ...sortKey] };
     }),
   );
   candidates.sort((a, b) => compareKeys(a.sortKey, b.sortKey));
   const picked = pickWithinEffort(candidates.slice(0, maxCards), maxEffort);
+  const pickedConceptIds = (filter: (candidate: (typeof picked)[number]) => boolean) => [
+    ...new Set(picked.filter(filter).map(({ concept }) => concept.id)),
+  ];
   // Grouped by Exercise Type so the queue below can keep them in order.
   const cards = exerciseTypes.flatMap((exerciseType) =>
     picked.map(({ card }) => card).filter((card) => card.exerciseType === exerciseType),
@@ -225,8 +244,9 @@ export function createSession({
         random,
       ),
     ),
-    intros: picked.filter(({ intro }) => intro).map(({ concept }) => concept.id),
+    intros: pickedConceptIds(({ intro }) => intro),
     introduced: [],
+    tricky: pickedConceptIds(({ tricky }) => tricky),
     reviews: [],
     effort: picked.reduce((total, { effort }) => total + effort, 0),
   };
@@ -301,6 +321,18 @@ function getCandidates(cards: Card[], now: Date, dueBy: Date): { card: Card; ste
   });
 }
 
+/**
+ * Whether a word keeps being forgotten or missed: one of its Cards lapsed `TRICKY_LAPSES` times or
+ * reached `TRICKY_DIFFICULTY`.
+ */
+export function isTricky(cards: Card[]): boolean {
+  return cards.some(
+    (card) =>
+      card.srs.state !== State.New &&
+      (card.srs.lapses >= TRICKY_LAPSES || card.srs.difficulty >= TRICKY_DIFFICULTY),
+  );
+}
+
 /** Whether a Card has reached Review, even if it lapsed since. */
 function hasGraduated(card: Card): boolean {
   return card.srs.state === State.Review || card.srs.state === State.Relearning;
@@ -365,7 +397,10 @@ export function getCurrentCard(session: Session): Card | undefined {
   return cardId ? session.cards[cardId] : undefined;
 }
 
-/** The new word to introduce before the current Card, if it's still to be introduced. */
+/**
+ * The word to introduce before the current Card, if it's still to be introduced: a new one, or a
+ * tricky one just missed.
+ */
 export function getCurrentIntro(session: Session): Concept | undefined {
   const card = getCurrentCard(session);
   return card && session.intros.includes(card.conceptId)
@@ -419,18 +454,20 @@ export interface SubmitReviewInput {
 }
 
 /**
- * The rating an answer to a Card is scheduled with. The first answer to a word just introduced
- * counts as Good at most: picking it fast moments after seeing it doesn't show it's easy to remember.
+ * The rating an answer to a Card is scheduled with. An answer to a word introduced in the session,
+ * new or tricky, counts as Good at most while its Card is still learning: picking it fast moments
+ * after seeing it doesn't show it's easy to remember.
  */
 export function getScheduledGrade(session: Session, card: Card, grade: Grade): Grade {
   const justIntroduced =
-    card.srs.state === State.New && session.introduced.includes(card.conceptId);
+    session.introduced.includes(card.conceptId) && card.srs.state !== State.Review;
   return justIntroduced && grade === Rating.Easy ? Rating.Good : grade;
 }
 
 /**
  * Applies a review to the current Card, with the rating it's scheduled with, and moves it to the
- * end of the queue if it's due again soon.
+ * end of the queue if it's due again soon. A tricky word missed is introduced again before that,
+ * once per session.
  */
 export function submitReview(session: Session, { now, ...input }: SubmitReviewInput): Session {
   const card = getCurrentCard(session);
@@ -442,11 +479,17 @@ export function submitReview(session: Session, { now, ...input }: SubmitReviewIn
   const { card: srsAfter, log } = reviewSrsCard(card.srs, answer.rating, now);
   const dueSoon = srsAfter.due.getTime() - now.getTime() <= LEARN_AHEAD_MS;
   const rest = session.queue.slice(1);
+  const reintroduce =
+    answer.rating === Rating.Again &&
+    session.tricky.includes(card.conceptId) &&
+    !session.introduced.includes(card.conceptId) &&
+    !session.intros.includes(card.conceptId);
 
   return {
     ...session,
     cards: { ...session.cards, [card.id]: { ...card, srs: srsAfter } },
     queue: dueSoon ? [...rest, card.id] : rest,
+    intros: reintroduce ? [...session.intros, card.conceptId] : session.intros,
     reviews: [...session.reviews, { cardId: card.id, ...answer, log, srsAfter }],
   };
 }

@@ -209,6 +209,30 @@ concepts:
   expect(shuffleNew('german/ordered')).toBeUndefined();
 });
 
+test('a deck shows intros unless it turns them off, and core.yaml sets it for the core deck', () => {
+  const { decks } = buildContent({
+    './german/subject.yaml': subject,
+    './german/core.yaml': 'showIntro: false\nconcepts:\n  - { id: a, local: x, foreign: y }\n',
+    './german/decks/quiet.yaml': `
+id: quiet
+name: Quiet
+showIntro: false
+concepts:
+  - { id: b, local: x, foreign: z }
+`,
+    './german/decks/shown.yaml': `
+id: shown
+name: Shown
+concepts:
+  - { id: c, local: x, foreign: w }
+`,
+  });
+  const showIntro = (id: string) => decks.find((deck) => deck.id === id)?.showIntro;
+  expect(showIntro('german/core')).toBe(false);
+  expect(showIntro('german/quiet')).toBe(false);
+  expect(showIntro('german/shown')).toBeUndefined();
+});
+
 test('a subject practises every exercise type unless it lists some, easiest first', () => {
   const exerciseTypes = (listed: string) =>
     buildContent({ './german/subject.yaml': subject + listed }).subjects[0].exerciseTypes;

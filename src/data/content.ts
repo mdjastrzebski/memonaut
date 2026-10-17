@@ -26,6 +26,12 @@ const flag = z
   .default('false')
   .transform((value) => value === 'true');
 
+/** A flag that is on unless set to false. */
+const onFlag = z
+  .enum(['true', 'false'])
+  .default('true')
+  .transform((value) => value === 'true');
+
 const subjectFields = {
   id,
   name: z.string(),
@@ -99,6 +105,7 @@ const deckSchema = (kind: SubjectKind) =>
     disabled: flag,
     strictSpelling: flag,
     shuffleNew: flag,
+    showIntro: onFlag,
     /** The Subject's if left out. */
     exerciseTypes: exerciseTypes.optional(),
     concepts: z.array(
@@ -116,6 +123,7 @@ const coreSchema = (kind: SubjectKind) =>
   z.strictObject({
     strictSpelling: flag,
     shuffleNew: flag,
+    showIntro: onFlag,
     exerciseTypes: exerciseTypes.optional(),
     concepts: z.array(
       z.strictObject({ id, ...CONCEPT_FIELDS[kind] }) as unknown as z.ZodType<ConceptFields>,
@@ -167,6 +175,7 @@ export function buildContent(files: Record<string, string>): Content {
     const usedIds = new Set<string>();
     let coreStrictSpelling = false;
     let coreShuffleNew = false;
+    let coreShowIntro = true;
     let coreExerciseTypes = subject.exerciseTypes;
 
     const getExerciseTypes = (path: string, listed?: ExerciseType[]) => {
@@ -242,6 +251,7 @@ export function buildContent(files: Record<string, string>): Content {
       const core = read(corePath, files[corePath], coreSchema(subject.kind));
       coreStrictSpelling = core.strictSpelling;
       coreShuffleNew = core.shuffleNew;
+      coreShowIntro = core.showIntro;
       coreExerciseTypes = getExerciseTypes(corePath, core.exerciseTypes);
       for (const fields of core.concepts) {
         checkUnique(listed, fields.id, `${corePath}: concept listed twice`);
@@ -273,6 +283,7 @@ export function buildContent(files: Record<string, string>): Content {
         conceptIds: conceptIds.map(prefix),
         ...(deck.strictSpelling && { strictSpelling: true }),
         ...(deck.shuffleNew && { shuffleNew: true }),
+        ...(!deck.showIntro && { showIntro: false }),
         ...getDeckExerciseTypes(path, conceptIds, exerciseTypes),
       });
     }
@@ -288,6 +299,7 @@ export function buildContent(files: Record<string, string>): Content {
         conceptIds: [...coreIds].map(prefix),
         ...(coreStrictSpelling && { strictSpelling: true }),
         ...(coreShuffleNew && { shuffleNew: true }),
+        ...(!coreShowIntro && { showIntro: false }),
         ...getDeckExerciseTypes(`./${dir}: core deck`, [...coreIds], coreExerciseTypes),
       });
     }

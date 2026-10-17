@@ -1,6 +1,8 @@
 id: reszta-kwadraty-szesciany
 name: Dzielenie z resztą, kwadraty i sześciany
 shuffleNew: true
+# Questions are worked out, so an intro with the answer would only give it away.
+showIntro: false
 concepts:
   # Dzielenie z resztą.
   - {
