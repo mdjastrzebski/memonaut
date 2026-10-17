@@ -530,8 +530,8 @@ test('a unit unlocks recognition choice, dictation, translation choice, then tra
   );
   const options = () =>
     within(screen.getByRole('group', { name: 'Options' })).getAllByRole('button');
-  // Each next exercise type unlocks on the next study day, before any new word. The minutes are
-  // picked to fit just the unlocked ones.
+  // Each next exercise type unlocks on the next study day, before any new word, but a new word
+  // still comes in each session, on top of the unlocked ones that fit.
   const startNewSession = async (now: Date, minutes: string) => {
     expect(screen.getByText(/Session results/)).toBeInTheDocument();
     vi.setSystemTime(now);
@@ -562,14 +562,35 @@ test('a unit unlocks recognition choice, dictation, translation choice, then tra
   }
   expect(recognitions).toBe(16);
 
-  await startNewSession(new Date(2026, 0, 6, 10), '15 min');
-  for (let i = 0; i < 8; i++) {
-    await user.type(screen.getByRole('textbox', { name: 'Answer' }), `${spoken.at(-1)}{Enter}`);
-    await user.keyboard('{Enter}');
-  }
+  // Answers recognitions and dictations correctly until another exercise comes or the session ends.
+  const answerUntilOther = async () => {
+    const answered = { recognitions: 0, dictations: 0 };
+    for (;;) {
+      await skipIntros(user);
+      if (screen.queryByText('What does it mean?')) {
+        const foreign = screen.getByRole('heading', { level: 2 }).textContent;
+        const { local } = concepts.find((concept) => concept.foreign === foreign)!;
+        const index = options().findIndex((option) => option.textContent?.endsWith(local!));
+        await user.keyboard(String(index + 1));
+        answered.recognitions++;
+      } else if (screen.queryByRole('textbox', { name: 'Answer' })) {
+        await user.type(screen.getByRole('textbox', { name: 'Answer' }), `${spoken.at(-1)}{Enter}`);
+        answered.dictations++;
+      } else {
+        return answered;
+      }
+      await user.keyboard('{Enter}');
+    }
+  };
 
-  // Before the recognitions are due again at 10 AM.
+  // 15 minutes fit just the 8 dictations, and a new word's recognition comes on top.
+  await startNewSession(new Date(2026, 0, 6, 10), '15 min');
+  expect(await answerUntilOther()).toEqual({ recognitions: 2, dictations: 8 });
+
+  // Before the recognitions are due again at 10 AM: the last new word's dictation comes first, after
+  // the next new word's intro, whose recognition comes a couple of exercises later.
   await startNewSession(new Date(2026, 0, 7, 5), '5 min');
+  expect(await answerUntilOther()).toEqual({ recognitions: 0, dictations: 1 });
   // Translation choice: a wrong pick is rated Again, and the German word is read aloud.
   expect(screen.getByText('Which word is it?')).toBeInTheDocument();
   const local = screen.getByRole('heading', { level: 2 }).textContent;

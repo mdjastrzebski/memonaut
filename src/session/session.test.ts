@@ -293,6 +293,39 @@ test('picks cards in the usual order while their effort fits, but at least one',
   ]);
 });
 
+test('introduces a new word even when due cards take up all the effort', () => {
+  const lastWeek = new Date(start.getTime() - 7 * 24 * 60 * 60_000);
+  const cards = byId(reviewed('one:dictation', lastWeek, { due: start }));
+  const session = createSession({ deck, concepts, cards, maxEffort: 1, now: start });
+  expect(Object.keys(session.cards)).toEqual(['one:dictation', 'two:dictation']);
+  expect(session.intros).toEqual(['two']);
+  // The new word comes on top of every due card that fits.
+  const three: Concept[] = [
+    ...concepts,
+    { id: 'three', subjectId: 'german', kind: 'language', local: 'trzy', foreign: 'drei' },
+  ];
+  const twoDue = byId(cards['one:dictation'], reviewed('two:dictation', lastWeek, { due: start }));
+  expect(
+    Object.keys(
+      createSession({
+        deck: { ...deck, conceptIds: ['one', 'two', 'three'] },
+        concepts: three,
+        cards: twoDue,
+        maxEffort: 8,
+        now: start,
+      }).cards,
+    ),
+  ).toEqual(['one:dictation', 'two:dictation', 'three:dictation']);
+  // With every word started, nothing new is added.
+  const started = byId(
+    cards['one:dictation'],
+    reviewed('two:dictation', lastWeek, { due: nextDay(start) }),
+  );
+  expect(
+    Object.keys(createSession({ deck, concepts, cards: started, maxEffort: 1, now: start }).cards),
+  ).toEqual(['one:dictation']);
+});
+
 test('fits fewer typed exercises than multiple choice ones in the same effort', () => {
   const count = (exerciseTypes: ExerciseType[]) =>
     Object.keys(

@@ -140,7 +140,8 @@ interface CreateSessionOptions {
   maxCards?: number;
   /**
    * Practise Cards, in the order of `Step`, while their expected effort points fit in this many,
-   * but at least one. It decides only how many are picked, never which come first.
+   * but at least one. It decides only how many are picked, never which come first, except that a
+   * new Concept left out for room is added anyway.
    */
   maxEffort?: number;
   now?: Date;
@@ -203,11 +204,11 @@ export function createSession({
       // question isn't, as showing it with its answer would give it away.
       const intro = step === Step.New && concept.kind === 'language';
       const effort = getCardEffort(card, now) + (intro ? INTRO_EFFORT : 0);
-      return { concept, card, intro, effort, sortKey: [step, ...sortKey] };
+      return { concept, card, step, intro, effort, sortKey: [step, ...sortKey] };
     }),
   );
   candidates.sort((a, b) => compareKeys(a.sortKey, b.sortKey));
-  const picked = takeWithinEffort(candidates.slice(0, maxCards), maxEffort);
+  const picked = pickWithinEffort(candidates.slice(0, maxCards), maxEffort);
   // Grouped by Exercise Type so the queue below can keep them in order.
   const cards = exerciseTypes.flatMap((exerciseType) =>
     picked.map(({ card }) => card).filter((card) => card.exerciseType === exerciseType),
@@ -229,6 +230,20 @@ export function createSession({
     reviews: [],
     effort: picked.reduce((total, { effort }) => total + effort, 0),
   };
+}
+
+/**
+ * The leading candidates whose expected effort fits in `maxEffort`, at least one, and so that
+ * reviews never crowd out learning, the first new Concept while there's one left, even if it
+ * doesn't fit.
+ */
+function pickWithinEffort<T extends { step: Step; effort: number }>(
+  candidates: T[],
+  maxEffort: number,
+): T[] {
+  const picked = takeWithinEffort(candidates, maxEffort);
+  const firstNew = candidates.find(({ step }) => step === Step.New);
+  return firstNew && !picked.includes(firstNew) ? [...picked, firstNew] : picked;
 }
 
 /** The leading candidates whose expected effort fits in `maxEffort`, at least one. */
