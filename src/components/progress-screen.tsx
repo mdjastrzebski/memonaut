@@ -1,4 +1,4 @@
-import { ChevronRight, Flame, Star } from 'lucide-react';
+import { ChevronDown, ChevronRight, Flame, Star } from 'lucide-react';
 import { useState, type CSSProperties, type ReactNode } from 'react';
 
 import { CONCEPT_NOUNS, getConceptText, plural } from '@/components/concept-text';
@@ -438,21 +438,27 @@ function DeckExercises({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <label className="flex min-w-0 items-center gap-2 font-semibold">
             Set
-            <select
-              value={deck.id}
-              onChange={(event) => setDeckId(event.target.value)}
-              className="min-w-0 cursor-pointer rounded-xl border-2 border-line bg-card px-3 py-1.5 font-normal outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-            >
-              {content.subjects.map((subject) => (
-                <optgroup key={subject.id} label={subject.name}>
-                  {getSubjectDecks(content.decks, subject.id).map((deck) => (
-                    <option key={deck.id} value={deck.id}>
-                      {deck.name}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
+            <span className="relative flex min-w-0">
+              <select
+                value={deck.id}
+                onChange={(event) => setDeckId(event.target.value)}
+                className="min-w-0 cursor-pointer appearance-none rounded-xl border-2 border-line bg-card py-1.5 pr-9 pl-3 font-normal outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+              >
+                {content.subjects.map((subject) => (
+                  <optgroup key={subject.id} label={subject.name}>
+                    {getSubjectDecks(content.decks, subject.id).map((deck) => (
+                      <option key={deck.id} value={deck.id}>
+                        {deck.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+              <ChevronDown
+                aria-hidden
+                className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground"
+              />
+            </span>
           </label>
           <span className="text-sm text-muted-foreground">{plural(total, 'card')}</span>
         </div>
