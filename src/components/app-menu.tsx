@@ -24,7 +24,7 @@ import {
   type VoiceStatus,
 } from '@/lib/speech';
 import { cn } from '@/lib/utils';
-import { createBackup, getBackupFileName, restoreBackup } from '@/progress/backup';
+import { createBackup, getBackupFileName, importBackup } from '@/progress/backup';
 
 const ITEM_CLASS =
   "gap-3 rounded-xl px-3 py-3 font-display text-lg font-semibold [&_svg:not([class*='size-'])]:size-5";
@@ -51,9 +51,14 @@ export function AppMenu({ onEnd }: { onEnd?: () => void }) {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
-    if (!window.confirm('Replace the progress on this device with the one from the file?')) return;
-    // Reloading loads the restored progress everywhere at once.
-    if (restoreBackup(await file.text())) window.location.reload();
+    if (
+      !window.confirm(
+        'Add the progress from the file to this device? For each word, the later practice counts.',
+      )
+    )
+      return;
+    // Reloading loads the merged progress everywhere at once.
+    if (importBackup(await file.text())) window.location.reload();
     else window.alert('Could not load progress from this file.');
   };
 
