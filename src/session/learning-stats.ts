@@ -1,4 +1,4 @@
-import { getWordProgress, type Progress } from '@/components/grades';
+import { getProgress, getWordProgress, type Progress } from '@/components/grades';
 import type { Card, Deck, ExerciseType } from '@/domain/types';
 import type { SessionLog } from '@/progress/effort-log';
 import { getCardId, getConceptExerciseTypes, getDayStart } from '@/session/session';
@@ -132,6 +132,29 @@ export function getDeckProgress(deck: Deck, cards: Record<string, Card>): Progre
   return deck.conceptIds.map((conceptId) =>
     getConceptProgress(conceptId, cards, getConceptExerciseTypes(deck, conceptId)),
   );
+}
+
+export interface ExerciseTypeCards {
+  exerciseType: ExerciseType;
+  /** How well each of the Deck's Cards of this Exercise Type is known, in Deck order. */
+  progress: Progress[];
+}
+
+/**
+ * A Deck's Cards per Exercise Type, in the Deck's order of Exercise Types: one per Concept practised
+ * with it. Exercise Types no Concept is practised with are left out.
+ */
+export function getDeckExerciseTypes(deck: Deck, cards: Record<string, Card>): ExerciseTypeCards[] {
+  return deck.exerciseTypes
+    .map((exerciseType) => ({
+      exerciseType,
+      progress: deck.conceptIds
+        .filter((conceptId) => getConceptExerciseTypes(deck, conceptId).includes(exerciseType))
+        .map((conceptId) =>
+          getProgress(cards[getCardId(conceptId, exerciseType)]?.srs.state ?? State.New),
+        ),
+    }))
+    .filter(({ progress }) => progress.length > 0);
 }
 
 /**

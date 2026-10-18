@@ -1,7 +1,8 @@
 import { ChevronRight, Flame, Star } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { useState, type CSSProperties, type ReactNode } from 'react';
 
 import { CONCEPT_NOUNS, getConceptText, plural } from '@/components/concept-text';
+import { EXERCISES } from '@/components/exercise-types';
 import { PROGRESS_LABELS, type Progress } from '@/components/grades';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Content } from '@/data/content';
@@ -16,6 +17,7 @@ import {
   getConceptsProgress,
   getDailyTotals,
   getDayStarts,
+  getDeckExerciseTypes,
   getDeckProgress,
   getDeckTimes,
   getHardestConcepts,
@@ -205,6 +207,12 @@ export function ProgressScreen({
           </ol>
         </Section>
       )}
+
+      <DeckExercises
+        content={content}
+        cards={cards}
+        initialDeck={topDecks.length > 0 ? findDeck(topDecks[0].deckId) : undefined}
+      />
 
       {subjects.map((subject) => (
         <SubjectProgress
@@ -408,6 +416,81 @@ const formatDay = (date: Date) =>
 
 const formatWeekday = (date: Date) => date.toLocaleDateString(undefined, { weekday: 'short' });
 
+/** A set's Cards per Exercise Type, with each one's share of the set and how well it's known. */
+function DeckExercises({
+  content,
+  cards,
+  initialDeck,
+}: {
+  content: Content;
+  cards: Record<string, Card>;
+  initialDeck?: Deck;
+}) {
+  const [deckId, setDeckId] = useState(() => (initialDeck ?? content.decks[0])?.id);
+  const deck = content.decks.find((deck) => deck.id === deckId);
+  if (!deck) return null;
+  const types = getDeckExerciseTypes(deck, cards);
+  const total = types.reduce((sum, { progress }) => sum + progress.length, 0);
+
+  return (
+    <Section title="Exercises per set" note="Cards of each exercise in a set">
+      <div className="flex flex-col gap-4 rounded-[2rem] border-2 border-line bg-card p-6 shadow-sticker sm:p-8">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <label className="flex min-w-0 items-center gap-2 font-semibold">
+            Set
+            <select
+              value={deck.id}
+              onChange={(event) => setDeckId(event.target.value)}
+              className="min-w-0 cursor-pointer rounded-xl border-2 border-line bg-card px-3 py-1.5 font-normal outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              {content.subjects.map((subject) => (
+                <optgroup key={subject.id} label={subject.name}>
+                  {getSubjectDecks(content.decks, subject.id).map((deck) => (
+                    <option key={deck.id} value={deck.id}>
+                      {deck.name}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </label>
+          <span className="text-sm text-muted-foreground">{plural(total, 'card')}</span>
+        </div>
+        <ul aria-label={`Exercises in ${deck.name}`} className="flex flex-col">
+          {types.map(({ exerciseType, progress }) => {
+            const { label, Icon } = EXERCISES[exerciseType];
+            const share = progress.length / total;
+            return (
+              <li
+                key={exerciseType}
+                aria-label={`${label}: ${plural(progress.length, 'card')}, ${formatPercent(share)}`}
+                className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 border-b border-foreground/10 py-2.5 last:border-b-0 sm:grid-cols-[minmax(0,12rem)_minmax(0,1fr)_auto]"
+              >
+                <span className="flex min-w-0 items-center gap-2 font-semibold">
+                  <Icon aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+                  <span className="truncate">{label}</span>
+                </span>
+                <span className="text-right text-sm text-muted-foreground tabular-nums sm:order-last">
+                  <span className="font-semibold text-foreground">{progress.length}</span> ·{' '}
+                  {formatPercent(share)}
+                </span>
+                <span className="col-span-2 flex sm:col-span-1">
+                  <ProgressBar
+                    progress={progress}
+                    className="min-w-3"
+                    style={{ width: `${share * 100}%` }}
+                  />
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+        <Legend />
+      </div>
+    </Section>
+  );
+}
+
 interface SubjectProgressProps {
   subject: Subject;
   content: Content;
@@ -548,7 +631,15 @@ const PROGRESS_FILLS: Record<Progress, string> = {
 };
 
 /** Learned, learning and new words as one bar, in that order. */
-function ProgressBar({ progress, className }: { progress: Progress[]; className?: string }) {
+function ProgressBar({
+  progress,
+  className,
+  style,
+}: {
+  progress: Progress[];
+  className?: string;
+  style?: CSSProperties;
+}) {
   const counts = PROGRESS_ORDER.map((status) => ({
     status,
     count: progress.filter((value) => value === status).length,
@@ -561,6 +652,7 @@ function ProgressBar({ progress, className }: { progress: Progress[]; className?
       role="img"
       aria-label={label}
       title={label}
+      style={style}
       className={cn(
         'flex h-3 gap-0.5 overflow-hidden rounded-full border-2 border-line bg-muted',
         className,
