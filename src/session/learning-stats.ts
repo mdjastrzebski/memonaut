@@ -9,40 +9,37 @@ import { Rating, State } from '@/srs/scheduler';
  * sessions, and the Cards' FSRS state, which holds how well each word is known.
  */
 
-/** Weeks shown in the weekly charts, this one last. */
-export const WEEKS = 8;
+/** Study days shown in the daily charts, today last. */
+export const DAYS = 7;
 
 /** FSRS difficulty a Card starts with when first answered Hard; a Good start is about 2. */
 const HARD_DIFFICULTY = 5;
 
-/** When the study week of `now` started: Monday's study day, at 4 AM. */
-export function getWeekStart(now: Date): Date {
-  const start = getDayStart(now);
-  start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
-  return start;
-}
-
-/** The starts of the last `weeks` study weeks, oldest first. */
-export function getWeekStarts(now: Date, weeks = WEEKS): Date[] {
-  const thisWeek = getWeekStart(now);
-  return Array.from({ length: weeks }, (_, index) => {
-    const start = new Date(thisWeek);
-    start.setDate(start.getDate() - 7 * (weeks - 1 - index));
+/** The starts of the last `days` study days, oldest first, ending with today's, each at 4 AM. */
+export function getDayStarts(now: Date, days = DAYS): Date[] {
+  const today = getDayStart(now);
+  return Array.from({ length: days }, (_, index) => {
+    const start = new Date(today);
+    start.setDate(start.getDate() - (days - 1 - index));
     return start;
   });
 }
 
-/** Active time per study week, oldest first, ending with this week. */
-export function getWeeklyTime(sessions: SessionLog[], now: Date, weeks = WEEKS): number[] {
-  const starts = getWeekStarts(now, weeks).map((start) => start.getTime());
-  const times = starts.map(() => 0);
+/** A total per study day, e.g. of active time or XP, oldest first, ending with today. */
+export function getDailyTotals<T extends { startedAt: string }>(
+  sessions: T[],
+  now: Date,
+  value: (session: T) => number,
+  days = DAYS,
+): number[] {
+  const starts = getDayStarts(now, days).map((start) => start.getTime());
+  const totals = starts.map(() => 0);
   for (const session of sessions) {
     const at = new Date(session.startedAt).getTime();
     if (at < starts[0] || at > now.getTime()) continue;
-    const week = starts.findLastIndex((start) => at >= start);
-    times[week] += session.activeMs;
+    totals[starts.findLastIndex((start) => at >= start)] += value(session);
   }
-  return times;
+  return totals;
 }
 
 export interface PeriodSummary {
@@ -106,13 +103,13 @@ export interface DeckTime {
   deckId: string;
   activeMs: number;
   sessions: number;
-  /** Active time per study week, oldest first, ending with this week. */
-  weekly: number[];
+  /** Active time per study day, oldest first, ending with today. */
+  daily: number[];
   lastPractised: Date;
 }
 
 /** Time spent in each Deck, most first. */
-export function getDeckTimes(sessions: SessionLog[], now: Date, weeks = WEEKS): DeckTime[] {
+export function getDeckTimes(sessions: SessionLog[], now: Date, days = DAYS): DeckTime[] {
   const byDeck = new Map<string, SessionLog[]>();
   for (const session of sessions) {
     byDeck.set(session.deckId, [...(byDeck.get(session.deckId) ?? []), session]);
@@ -123,7 +120,7 @@ export function getDeckTimes(sessions: SessionLog[], now: Date, weeks = WEEKS): 
       deckId: deckSessions[0].deckId,
       activeMs: deckSessions.reduce((total, session) => total + session.activeMs, 0),
       sessions: deckSessions.length,
-      weekly: getWeeklyTime(deckSessions, now, weeks),
+      daily: getDailyTotals(deckSessions, now, (session) => session.activeMs, days),
       lastPractised: new Date(Math.max(...deckSessions.map((s) => Date.parse(s.startedAt)))),
     }))
     .filter((deck) => deck.activeMs > 0)

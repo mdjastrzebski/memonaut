@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 import type { AnswerResult } from '@/exercises/type-answer';
-import { playCorrect } from '@/lib/sounds';
+import { playCorrect, playFast } from '@/lib/sounds';
 import { stopHint } from '@/lib/speech';
 import type { SubmitReviewInput } from '@/session/session';
 import { Rating } from '@/srs/scheduler';
@@ -16,7 +16,8 @@ export interface Answered {
 
 /**
  * When the exercise appeared and the learner's answer once given. `check` rates an answer by how
- * long it took and cheers a right one; `submit` reports it as the Card's review.
+ * long it took and cheers a right one, more so a fast one that earns double XP; `submit` reports it
+ * as the Card's review.
  */
 export function useAnswer(onReview: (review: SubmitReviewInput) => void) {
   const [shownAt] = useState(() => new Date());
@@ -28,7 +29,8 @@ export function useAnswer(onReview: (review: SubmitReviewInput) => void) {
     setAnswered({ input, result, at });
     // Once answered, a hint still to come would only talk over the feedback or the next word.
     stopHint();
-    if (result.grade === Rating.Good || result.grade === Rating.Easy) playCorrect();
+    if (result.grade === Rating.Easy) playFast();
+    else if (result.grade === Rating.Good) playCorrect();
   };
 
   const submit = () => {

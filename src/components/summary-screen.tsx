@@ -15,10 +15,17 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type { Card, Review, SubjectKind } from '@/domain/types';
-import { formatDuration, formatNumber, formatPercent, formatRelative } from '@/lib/format';
+import {
+  formatDuration,
+  formatNumber,
+  formatPercent,
+  formatRelative,
+  formatXp,
+} from '@/lib/format';
 import { playCompleted } from '@/lib/sounds';
 import { cn } from '@/lib/utils';
 import { getEffortDone, type Session } from '@/session/session';
+import { getSessionXp } from '@/session/xp';
 import { GRADES, Rating, State, type Grade } from '@/srs/scheduler';
 
 /** Learner-facing names for the ratings. */
@@ -43,6 +50,8 @@ interface SummaryScreenProps {
   activeMs: number;
   /** How long the session was expected to take, at the learner's pace when it started. */
   plannedMinutes: number;
+  /** XP earned so far, this session included. */
+  xpTotal: number;
   /** Goes back to the setup screen to choose the next session. */
   onNewSession: () => void;
 }
@@ -52,6 +61,7 @@ export function SummaryScreen({
   subjectKind,
   activeMs,
   plannedMinutes,
+  xpTotal,
   onNewSession,
 }: SummaryScreenProps) {
   const [now] = useState(() => new Date());
@@ -73,6 +83,7 @@ export function SummaryScreen({
   const noun = CONCEPT_NOUNS[subjectKind];
 
   const stats: [label: string, value: string, note?: string][] = [
+    ['XP', `+${formatXp(getSessionXp(session))}`, `${formatXp(xpTotal)} total`],
     ['Time', formatDuration(activeMs), `planned ${formatDuration(plannedMinutes * 60_000)}`],
     ['Effort points', String(Math.round(getEffortDone(session)))],
     [`Repeated ${noun.many}`, String(repeatedWords)],
@@ -95,11 +106,11 @@ export function SummaryScreen({
         </div>
       </section>
 
-      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         {stats.map(([label, value, note], index) => (
           <div
             key={label}
-            className="animate-rise rounded-2xl border-2 border-line bg-card p-4 shadow-sticker-sm"
+            className="animate-rise rounded-2xl border-2 border-line bg-card p-4 shadow-sticker-sm first:max-sm:col-span-2"
             style={{ animationDelay: `${150 + index * 60}ms` }}
           >
             <dt className="text-xs font-medium text-muted-foreground">{label}</dt>

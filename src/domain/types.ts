@@ -208,8 +208,10 @@ export interface Review {
   input: string;
   /** Time from showing the exercise to checking the answer. */
   elapsedMs: number;
-  /** Rating given automatically from the answer and how fast it was typed. */
+  /** The rating it's scheduled with: `earnedRating`, or Good at most right after the word's intro. */
   rating: Grade;
+  /** Rating given automatically from the answer and how fast it was typed; it tells the XP. */
+  earnedRating: Grade;
   /** Mistakes forgiven in an almost-correct answer rated Hard. */
   issues: AnswerIssue[];
   /** FSRS review log: the Card's memory state before this review. */

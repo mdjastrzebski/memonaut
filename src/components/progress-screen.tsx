@@ -1,4 +1,4 @@
-import { ChevronRight, Flame } from 'lucide-react';
+import { ChevronRight, Flame, Star } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 
 import { CONCEPT_NOUNS, getConceptText, plural } from '@/components/concept-text';
@@ -7,18 +7,19 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import type { Content } from '@/data/content';
 import { getSubjectDecks } from '@/data/decks';
 import type { Card, Deck, Subject } from '@/domain/types';
-import { formatMinutes, formatPercent } from '@/lib/format';
+import { formatMinutes, formatPercent, formatXp } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { loadEffortLog, type SessionLog } from '@/progress/effort-log';
+import { getTotalXp, loadSessions, type SessionRecord } from '@/progress/session-history';
 import {
+  DAYS,
   getConceptsProgress,
+  getDailyTotals,
+  getDayStarts,
   getDeckProgress,
   getDeckTimes,
   getHardestConcepts,
   getStreak,
-  getWeeklyTime,
-  getWeekStart,
-  getWeekStarts,
   summarizePeriod,
   type DeckTime,
 } from '@/session/learning-stats';
@@ -36,27 +37,37 @@ interface ProgressScreenProps {
   onSelectDeck: (deck: Deck) => void;
   /** Sessions to show; the logged ones if left out. */
   sessions?: SessionLog[];
+  /** Every session's XP and time to show; the saved ones if left out. */
+  history?: SessionRecord[];
   now?: Date;
 }
 
+type ChartMetric = 'xp' | 'minutes';
+
 /**
- * How the learner is doing: time spent per week, the sets practised most, and per Subject how many
- * words each set has learned and which words are hardest.
+ * How the learner is doing over the last 7 days: XP and time per day, the sets practised most, and
+ * per Subject how many words each set has learned and which words are hardest.
  */
 export function ProgressScreen({
   content,
   cards,
   onSelectDeck,
   sessions: givenSessions,
+  history: givenHistory,
   now: givenNow,
 }: ProgressScreenProps) {
   const [now] = useState(() => givenNow ?? new Date());
   const [sessions] = useState(() => givenSessions ?? loadEffortLog());
-  const weekStart = getWeekStart(now);
-  const lastWeekStart = new Date(weekStart);
-  lastWeekStart.setDate(lastWeekStart.getDate() - 7);
-  const thisWeek = summarizePeriod(sessions, weekStart, now);
-  const lastWeek = summarizePeriod(sessions, lastWeekStart, weekStart);
+  const [history] = useState(() => givenHistory ?? loadSessions());
+  const [metric, setMetric] = useState<ChartMetric>('xp');
+  // The last 7 study days, today included, and the 7 before them to compare with.
+  const periodStart = getDayStarts(now)[0];
+  const previousStart = new Date(periodStart);
+  previousStart.setDate(previousStart.getDate() - DAYS);
+  const recent = summarizePeriod(sessions, periodStart, now);
+  const previous = summarizePeriod(sessions, previousStart, periodStart);
+  const dailyXp = getDailyTotals(history, now, (session) => session.xp);
+  const recentXp = dailyXp.reduce((total, value) => total + value, 0);
   const streak = getStreak(sessions, now);
   const deckTimes = getDeckTimes(sessions, now);
   const findDeck = (id: string) => content.decks.find((deck) => deck.id === id);
@@ -67,40 +78,37 @@ export function ProgressScreen({
     .filter((subject) => allCards.some((card) => card.conceptId.startsWith(`${subject.id}/`)))
     .sort((a, b) => getSubjectTime(deckTimes, b.id) - getSubjectTime(deckTimes, a.id));
 
-  if (sessions.length === 0 && subjects.length === 0) {
+  if (sessions.length === 0 && subjects.length === 0 && history.length === 0) {
     return (
       <section className="flex animate-card-in flex-col items-center gap-3 rounded-[2rem] border-2 border-line bg-card p-10 text-center shadow-sticker-lg">
         <h2 className="font-display text-3xl font-extrabold tracking-tight">No progress yet</h2>
         <p className="text-muted-foreground">
-          Finish a session and your time, learned words and hardest words show up here.
+          Finish a session and your XP, time, learned words and hardest words show up here.
         </p>
       </section>
     );
   }
 
   const stats: [label: string, value: string, note: ReactNode][] = [
-    [
-      'Time this week',
-      formatMinutes(thisWeek.activeMs),
-      compareWeeks(thisWeek.activeMs, lastWeek.activeMs),
-    ],
+    ['XP', formatXp(recentXp), `${formatXp(getTotalXp(history))} total`],
+    ['Time', formatMinutes(recent.activeMs), comparePeriods(recent.activeMs, previous.activeMs)],
     [
       'Days practised',
-      `${thisWeek.days} of 7`,
+      `${recent.days} of ${DAYS}`,
       streak > 1 ? (
         <span className="flex items-center gap-1">
           <Flame aria-hidden className="size-3.5 text-rocket" />
           {streak} days in a row
         </span>
       ) : (
-        `${plural(thisWeek.sessions, 'session')} this week`
+        plural(recent.sessions, 'session')
       ),
     ],
-    ['New this week', String(thisWeek.newConcepts), `last week ${lastWeek.newConcepts}`],
+    ['New words', String(recent.newConcepts), `7 days before: ${previous.newConcepts}`],
     [
       'Right answers',
-      thisWeek.answers ? formatPercent(thisWeek.correct / thisWeek.answers) : '–',
-      `of ${plural(thisWeek.answers, 'answer')} this week`,
+      recent.answers ? formatPercent(recent.correct / recent.answers) : '–',
+      `of ${plural(recent.answers, 'answer')}`,
     ],
   ];
 
@@ -109,23 +117,52 @@ export function ProgressScreen({
       <section className="flex animate-card-in flex-col gap-6 rounded-[2rem] border-2 border-line bg-card p-6 shadow-sticker-lg sm:p-8">
         <div className="flex flex-col gap-1">
           <p className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
-            Your progress
+            Your progress · last 7 days
           </p>
           <h2 className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
-            {getHeadline(thisWeek.activeMs, lastWeek.activeMs)}
+            {getHeadline(recentXp, recent.activeMs, previous.activeMs)}
           </h2>
         </div>
-        <WeeklyChart weekly={getWeeklyTime(sessions, now)} now={now} />
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm font-medium text-muted-foreground">
+              {metric === 'xp' ? 'XP per day' : 'Minutes per day'}
+            </span>
+            <MetricToggle metric={metric} onChange={setMetric} />
+          </div>
+          {metric === 'xp' ? (
+            <DailyChart
+              label="XP per day"
+              values={dailyXp}
+              now={now}
+              max={10}
+              format={(value) => `${formatXp(value)} XP`}
+              short={(value) => formatXp(Math.round(value))}
+            />
+          ) : (
+            <DailyChart
+              label="Minutes per day"
+              values={getDailyTotals(sessions, now, (session) => session.activeMs)}
+              now={now}
+              max={60_000}
+              format={formatMinutes}
+              short={(ms) => String(Math.round(ms / 60_000))}
+            />
+          )}
+        </div>
       </section>
 
-      <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <dl className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         {stats.map(([label, value, note], index) => (
           <div
             key={label}
-            className="animate-rise rounded-2xl border-2 border-line bg-card p-4 shadow-sticker-sm"
+            className="animate-rise rounded-2xl border-2 border-line bg-card p-4 shadow-sticker-sm first:max-lg:col-span-2"
             style={{ animationDelay: `${100 + index * 60}ms` }}
           >
-            <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
+            <dt className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+              {label === 'XP' && <Star aria-hidden className="size-3.5 fill-almost" />}
+              {label}
+            </dt>
             <dd className="font-display text-3xl font-bold tabular-nums">{value}</dd>
             <dd className="text-xs text-muted-foreground">{note}</dd>
           </div>
@@ -159,7 +196,7 @@ export function ProgressScreen({
                         {plural(time.sessions, 'session')}
                       </span>
                     </span>
-                    <MiniWeeks weekly={time.weekly} className="max-sm:hidden" />
+                    <MiniDays daily={time.daily} className="max-sm:hidden" />
                     <ChevronRight aria-hidden className="size-5 shrink-0 text-muted-foreground" />
                   </button>
                 </li>
@@ -184,8 +221,8 @@ export function ProgressScreen({
 
       <p className="text-center text-xs text-muted-foreground">
         {sessions.length >= 100
-          ? 'Time counts your latest 100 sessions on this device.'
-          : 'Time counts your sessions on this device.'}
+          ? 'Time counts your latest 100 sessions on this device, XP all of them.'
+          : 'Time and XP count your sessions on this device.'}
       </p>
     </div>
   );
@@ -197,16 +234,60 @@ function getSubjectTime(deckTimes: DeckTime[], subjectId: string): number {
     .reduce((total, time) => total + time.activeMs, 0);
 }
 
-function getHeadline(thisWeekMs: number, lastWeekMs: number): string {
-  if (thisWeekMs < 60_000) return lastWeekMs ? 'A new week to practise!' : 'Ready for liftoff?';
-  if (thisWeekMs > lastWeekMs) return `${formatMinutes(thisWeekMs)} this week, keep going!`;
-  return `${formatMinutes(thisWeekMs)} practised this week`;
+function getHeadline(xp: number, recentMs: number, previousMs: number): string {
+  if (recentMs < 60_000 && xp === 0)
+    return previousMs ? 'Time for a new mission!' : 'Ready for liftoff?';
+  if (xp > 0)
+    return recentMs > previousMs ? `${formatXp(xp)} XP, keep going!` : `${formatXp(xp)} XP earned`;
+  return recentMs > previousMs
+    ? `${formatMinutes(recentMs)} practised, keep going!`
+    : `${formatMinutes(recentMs)} practised`;
 }
 
-function compareWeeks(thisWeekMs: number, lastWeekMs: number): string {
-  const diff = Math.round((thisWeekMs - lastWeekMs) / 60_000);
-  if (diff === 0) return `same as last week`;
-  return diff > 0 ? `${diff} min more than last week` : `last week ${formatMinutes(lastWeekMs)}`;
+/** The last 7 days' time against the 7 days before them. */
+function comparePeriods(recentMs: number, previousMs: number): string {
+  const diff = Math.round((recentMs - previousMs) / 60_000);
+  if (diff === 0) return 'same as the 7 days before';
+  return diff > 0
+    ? `${diff} min more than the 7 days before`
+    : `7 days before: ${formatMinutes(previousMs)}`;
+}
+
+function MetricToggle({
+  metric,
+  onChange,
+}: {
+  metric: ChartMetric;
+  onChange: (metric: ChartMetric) => void;
+}) {
+  const options: [ChartMetric, string][] = [
+    ['xp', 'XP'],
+    ['minutes', 'Minutes'],
+  ];
+  return (
+    <div
+      role="group"
+      aria-label="Chart"
+      className="flex rounded-full border-2 border-line bg-background p-0.5 text-xs font-bold"
+    >
+      {options.map(([value, label]) => (
+        <button
+          key={value}
+          type="button"
+          aria-pressed={metric === value}
+          onClick={() => onChange(value)}
+          className={cn(
+            'cursor-pointer rounded-full px-3 py-1 outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+            metric === value
+              ? 'bg-foreground text-background'
+              : 'text-muted-foreground hover:text-foreground',
+          )}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 function Section({
@@ -229,44 +310,51 @@ function Section({
   );
 }
 
-/** Minutes practised in each of the last weeks, as bars; this week is in full color. */
-function WeeklyChart({ weekly, now }: { weekly: number[]; now: Date }) {
-  const starts = getWeekStarts(now, weekly.length);
-  const max = Math.max(...weekly, 60_000);
+interface DailyChartProps {
+  label: string;
+  /** One value per study day, oldest first, ending with today. */
+  values: number[];
+  now: Date;
+  /** The lowest top of the scale, so a quiet week doesn't look full. */
+  max: number;
+  /** A value in full, e.g. "12 XP", for its label. */
+  format: (value: number) => string;
+  /** A value in short, e.g. "12", above its bar. */
+  short: (value: number) => string;
+}
+
+/** A value per day of the last 7, as bars; today is in full color. */
+function DailyChart({ label, values, now, max: minMax, format, short }: DailyChartProps) {
+  const starts = getDayStarts(now, values.length);
+  const max = Math.max(...values, minMax);
   return (
     <figure className="flex flex-col gap-2">
-      <figcaption className="text-sm font-medium text-muted-foreground">
-        Minutes per week
-      </figcaption>
-      <ol
-        aria-label="Minutes per week"
-        className="flex h-40 items-end gap-2 border-b-2 border-line sm:gap-3"
-      >
-        {weekly.map((ms, index) => {
-          const current = index === weekly.length - 1;
-          const label = current ? 'This week' : `Week of ${formatDay(starts[index])}`;
+      <ol aria-label={label} className="flex h-40 items-end gap-2 border-b-2 border-line sm:gap-3">
+        {values.map((value, index) => {
+          const today = index === values.length - 1;
+          const day = today ? 'Today' : formatDay(starts[index]);
           return (
             <li key={index} className="flex h-full flex-1 flex-col justify-end">
               <Tooltip>
                 <TooltipTrigger
-                  aria-label={`${label}: ${formatMinutes(ms)}`}
+                  aria-label={`${day}: ${format(value)}`}
                   className="group flex h-full cursor-help flex-col items-center justify-end gap-1 rounded-t-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                 >
-                  {ms > 0 && (
+                  {value > 0 && (
                     <span className="text-xs font-semibold text-muted-foreground tabular-nums group-hover:text-foreground">
-                      {Math.round(ms / 60_000)}
+                      {short(value)}
                     </span>
                   )}
                   <span
                     className={cn(
                       'w-full max-w-12 rounded-t-[4px] transition-colors',
-                      current ? 'bg-rocket' : 'bg-rocket/45 group-hover:bg-rocket/70',
+                      today ? 'bg-rocket' : 'bg-rocket/45 group-hover:bg-rocket/70',
                     )}
-                    style={{ height: `${(ms / max) * 100}%`, minHeight: ms > 0 ? 3 : 0 }}
+                    style={{ height: `${(value / max) * 100}%`, minHeight: value > 0 ? 3 : 0 }}
                   />
                 </TooltipTrigger>
                 <TooltipContent>
-                  {label}: {formatMinutes(ms)}
+                  {day}: {format(value)}
                 </TooltipContent>
               </Tooltip>
             </li>
@@ -282,7 +370,7 @@ function WeeklyChart({ weekly, now }: { weekly: number[]; now: Date }) {
             key={index}
             className={cn('flex-1', index === starts.length - 1 && 'font-bold text-foreground')}
           >
-            {index === starts.length - 1 ? 'Now' : formatDay(start)}
+            {index === starts.length - 1 ? 'Today' : formatWeekday(start)}
           </span>
         ))}
       </div>
@@ -290,10 +378,10 @@ function WeeklyChart({ weekly, now }: { weekly: number[]; now: Date }) {
   );
 }
 
-/** A small bar per week, to compare weeks at a glance; the full numbers are in its label. */
-function MiniWeeks({ weekly, className }: { weekly: number[]; className?: string }) {
-  const max = Math.max(...weekly, 60_000);
-  const label = `Minutes per week, oldest first: ${weekly.map((ms) => Math.round(ms / 60_000)).join(', ')}`;
+/** A small bar per day, to compare days at a glance; the full numbers are in its label. */
+function MiniDays({ daily, className }: { daily: number[]; className?: string }) {
+  const max = Math.max(...daily, 60_000);
+  const label = `Minutes per day, last 7 days: ${daily.map((ms) => Math.round(ms / 60_000)).join(', ')}`;
   return (
     <span
       role="img"
@@ -301,12 +389,12 @@ function MiniWeeks({ weekly, className }: { weekly: number[]; className?: string
       title={label}
       className={cn('flex h-8 items-end gap-0.5', className)}
     >
-      {weekly.map((ms, index) => (
+      {daily.map((ms, index) => (
         <span
           key={index}
           className={cn(
             'w-1.5 rounded-t-[2px]',
-            ms === 0 ? 'bg-muted' : index === weekly.length - 1 ? 'bg-rocket' : 'bg-rocket/45',
+            ms === 0 ? 'bg-muted' : index === daily.length - 1 ? 'bg-rocket' : 'bg-rocket/45',
           )}
           style={{ height: ms > 0 ? `${Math.max((ms / max) * 100, 12)}%` : 2 }}
         />
@@ -316,7 +404,9 @@ function MiniWeeks({ weekly, className }: { weekly: number[]; className?: string
 }
 
 const formatDay = (date: Date) =>
-  date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+  date.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+
+const formatWeekday = (date: Date) => date.toLocaleDateString(undefined, { weekday: 'short' });
 
 interface SubjectProgressProps {
   subject: Subject;
@@ -328,7 +418,10 @@ interface SubjectProgressProps {
   onSelectDeck: (deck: Deck) => void;
 }
 
-/** A Subject's words learned overall and per set, the set's weekly time, and its hardest words. */
+/**
+ * A Subject's words learned overall and per set, the set's time over the last 7 days, and its
+ * hardest words.
+ */
 function SubjectProgress({
   subject,
   content,
@@ -393,12 +486,12 @@ function SubjectProgress({
                 <span className="flex w-[8.5rem] items-center justify-end gap-2 text-xs text-muted-foreground max-sm:hidden">
                   {time ? (
                     <>
-                      <MiniWeeks weekly={time.weekly} />
+                      <MiniDays daily={time.daily} />
                       <span className="flex w-16 flex-col leading-tight">
                         <span className="font-semibold text-foreground tabular-nums">
-                          {formatMinutes(time.weekly.at(-1)!)}
+                          {formatMinutes(time.daily.reduce((total, ms) => total + ms, 0))}
                         </span>
-                        this week
+                        in 7 days
                       </span>
                     </>
                   ) : (

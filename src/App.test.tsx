@@ -260,8 +260,13 @@ test('the progress screen shows time and words of finished sessions, and opens a
   await user.click(screen.getByRole('button', { name: 'Progress' }));
 
   expect(screen.queryByText('No progress yet')).not.toBeInTheDocument();
-  expect(screen.getByText('Time this week')).toBeInTheDocument();
-  expect(screen.getByText('New this week').nextSibling).toHaveTextContent('1');
+  expect(screen.getByText('Your progress · last 7 days')).toBeInTheDocument();
+  expect(screen.getByText('New words').nextSibling).toHaveTextContent('1');
+  // The answer was wrong, so no XP yet; the chart can show minutes instead.
+  expect(screen.getByText('XP', { selector: 'dt' }).nextSibling).toHaveTextContent('0');
+  expect(screen.getByRole('list', { name: 'XP per day' })).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: 'Minutes' }));
+  expect(screen.getByRole('list', { name: 'Minutes per day' })).toBeInTheDocument();
   const german = screen.getByRole('region', { name: 'German' });
   expect(within(german).getByText(/learned per set/)).toBeInTheDocument();
 
@@ -329,15 +334,17 @@ test('dictation reads the word aloud and shows its meaning only after checking',
   // Read aloud in its intro, then again as the dictation appears.
   expect(spoken.filter((word) => word === foreign)).toHaveLength(2);
   expect(spoken.at(-1)).toBe(foreign);
-  expect(screen.queryByText(local)).not.toBeInTheDocument();
-  expect(screen.queryByText(hint!)).not.toBeInTheDocument();
+  // The hint, e.g. "0", is looked for only on the exercise, not in the header's XP.
+  const exercise = within(screen.getByRole('region', { name: 'Exercise' }));
+  expect(exercise.queryByText(local)).not.toBeInTheDocument();
+  expect(exercise.queryByText(hint!)).not.toBeInTheDocument();
 
   await user.click(screen.getByRole('button', { name: 'Listen' }));
   expect(spoken.slice(-2)).toEqual([foreign, foreign]);
 
   await user.type(screen.getByRole('textbox', { name: 'Answer' }), `${foreign}{Enter}`);
   expect(screen.getByRole('status')).toHaveTextContent(local);
-  expect(screen.queryByText(hint!)).not.toBeInTheDocument();
+  expect(exercise.queryByText(hint!)).not.toBeInTheDocument();
 });
 
 // Practises every word of the German core set through the whole app, so it takes a few seconds.
@@ -413,6 +420,35 @@ test('the logo leads back to the setup screen from the summary without asking', 
   await user.click(screen.getByRole('button', { name: 'Memonaut' }));
   expect(confirm).not.toHaveBeenCalled();
   expect(screen.getByRole('button', { name: 'Start session' })).toBeInTheDocument();
+});
+
+test('shows the XP of each answer, the session and in total, kept for the next session', async () => {
+  const user = userEvent.setup();
+  await startEssentialsSession(user);
+  // A fast answer earns twice a dictation's 2 points, even right after its intro.
+  await user.type(
+    screen.getByRole('textbox', { name: 'Answer' }),
+    `${currentConcept().foreign}{Enter}`,
+  );
+  expect(screen.getByRole('status')).toHaveTextContent('+4 XP');
+  expect(screen.getByLabelText('0 XP this session')).toBeInTheDocument();
+  await user.keyboard('{Enter}');
+  expect(screen.getByLabelText('4 XP this session')).toBeInTheDocument();
+  expect(screen.getByText('4 total')).toBeInTheDocument();
+  await finishSession(user);
+  expect(screen.getByText('+4')).toBeInTheDocument();
+  expect(screen.getByText('4 total')).toBeInTheDocument();
+
+  // A session without answers earns nothing and isn't kept.
+  await user.click(screen.getByRole('button', { name: 'Start a new session' }));
+  await user.click(screen.getByRole('button', { name: 'Start session' }));
+  await finishSession(user);
+  expect(screen.getByText('+0')).toBeInTheDocument();
+  expect(screen.getByText('4 total')).toBeInTheDocument();
+
+  const stored = JSON.parse(localStorage.getItem('memonaut:sessions')!);
+  expect(stored).toMatchObject({ sessions: [{ subjectId: 'german', xp: 4 }] });
+  expect(stored.sessions).toHaveLength(1);
 });
 
 test('Enter on a focused menu item picks it instead of checking the answer', async () => {

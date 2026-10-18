@@ -143,7 +143,7 @@ export function ChoiceExercise({
 
         {picked && (
           <div className="relative mt-4 flex flex-col gap-4">
-            <FeedbackPanel grade={picked.result.grade}>
+            <FeedbackPanel exerciseType={card.exerciseType} grade={picked.result.grade}>
               <p className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 font-display text-xl font-bold break-words">
                 {feedback}
               </p>

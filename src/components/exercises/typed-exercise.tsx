@@ -24,6 +24,7 @@ import { MarkedText } from '@/components/marked-text';
 import { SpecialCharacters } from '@/components/special-characters';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import type { ExerciseType } from '@/domain/types';
 import { alignAnswer, diffAnswer } from '@/exercises/answer-diff';
 import { splitTrickySpellings } from '@/exercises/tricky-spellings';
 import { getFastLimitMs, gradeAnyAnswer, normalizeSpacing } from '@/exercises/type-answer';
@@ -162,6 +163,7 @@ export function TypedExercise({
 
   const feedback = checked && (
     <TypedFeedback
+      exerciseType={card.exerciseType}
       grade={checked.result.grade}
       input={checked.input}
       answer={rightAnswer}
@@ -284,6 +286,7 @@ export function TypedExercise({
 }
 
 interface TypedFeedbackProps {
+  exerciseType: ExerciseType;
   grade: Grade;
   input: string;
   answer: string;
@@ -300,6 +303,7 @@ interface TypedFeedbackProps {
  * and the word's meaning and explanation.
  */
 function TypedFeedback({
+  exerciseType,
   grade,
   input,
   answer,
@@ -312,7 +316,7 @@ function TypedFeedback({
   const textSize = wrong || spelled ? 'text-lg text-muted-foreground' : 'text-2xl';
 
   return (
-    <FeedbackPanel grade={grade}>
+    <FeedbackPanel exerciseType={exerciseType} grade={grade}>
       <div className="flex min-w-0 flex-col gap-1">
         {wrong && <AnswerComparison input={input} answer={answer} shake={grade === Rating.Again} />}
         {spelled && <SpelledAnswer answer={answer} trickySpellings={trickySpellings} />}
