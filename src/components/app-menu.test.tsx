@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { expect, test } from 'vitest';
+import { expect, test, vi } from 'vitest';
 
 import { AppMenu } from './app-menu';
 
@@ -37,4 +37,32 @@ test('saves and removes the ElevenLabs key without showing it back', async () =>
   expect(screen.getByLabelText('New API key')).toHaveValue('');
   await user.click(screen.getByRole('button', { name: 'Remove key' }));
   expect(localStorage.getItem('memonaut:elevenlabs-key')).toBeNull();
+});
+
+test('imports progress from a file only outside a session', async () => {
+  const user = userEvent.setup();
+  const confirm = vi.fn(() => true);
+  const reload = vi.fn();
+  vi.stubGlobal('confirm', confirm);
+  vi.stubGlobal('location', { ...window.location, reload });
+  const { rerender } = render(<AppMenu onEnd={() => {}} />);
+  await user.click(screen.getByRole('button', { name: 'Menu' }));
+  expect(screen.getByRole('menuitem', { name: 'Export progress' })).toBeInTheDocument();
+  expect(screen.queryByRole('menuitem', { name: 'Import progress' })).not.toBeInTheDocument();
+
+  await user.keyboard('{Escape}');
+  rerender(<AppMenu />);
+  await user.click(screen.getByRole('button', { name: 'Menu' }));
+  expect(screen.getByRole('menuitem', { name: 'Import progress' })).toBeInTheDocument();
+  await user.keyboard('{Escape}');
+
+  const backup = { app: 'memonaut', version: 1, data: { 'memonaut:pace': '{"german":7}' } };
+  await user.upload(
+    screen.getByLabelText('Progress file'),
+    new File([JSON.stringify(backup)], 'memonaut-progress.json', { type: 'application/json' }),
+  );
+  await waitFor(() => expect(reload).toHaveBeenCalled());
+  expect(confirm).toHaveBeenCalled();
+  expect(localStorage.getItem('memonaut:pace')).toBe('{"german":7}');
+  vi.unstubAllGlobals();
 });

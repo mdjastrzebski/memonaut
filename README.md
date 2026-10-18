@@ -100,7 +100,7 @@ Words are read aloud by the browser's voice, which varies a lot by device. Optio
 
 ## Content
 
-Learning content lives in YAML files under `src/data/`, one folder per Subject. Only what to learn is stored there; learning state is kept separately, in the browser's localStorage under one key per Subject (`memonaut:progress:<subject>`), keyed by Concept id and Exercise Type. The learner's pace in each Subject is kept under `memonaut:pace`. Each Card's FSRS state is stored compactly. Saving only replaces the Cards that changed, so progress for words no longer in any Deck is kept, and data from a newer app version is never overwritten.
+Learning content lives in YAML files under `src/data/`, one folder per Subject. Only what to learn is stored there; learning state is kept separately, in the browser's localStorage under one key per Subject (`memonaut:progress:<subject>`), keyed by Concept id and Exercise Type. The learner's pace in each Subject is kept under `memonaut:pace`. Each Card's FSRS state is stored compactly. Saving only replaces the Cards that changed, so progress for words no longer in any Deck is kept, and data from a newer app version is never overwritten. The menu's **Export progress** saves all of it, except the ElevenLabs key and the theme, to a JSON file, and **Import progress** (outside a session) replaces it with a file's, e.g. to move progress to another device.
 
 ```yaml
 # src/data/german/decks/kapitel-0.yaml
