@@ -6,11 +6,11 @@ import { createSrsCard, Rating, State, type Grade } from '@/srs/scheduler';
 
 import {
   getConceptsProgress,
+  getDailyTotals,
+  getDayStarts,
   getDeckTimes,
   getHardestConcepts,
   getStreak,
-  getWeeklyTime,
-  getWeekStart,
   summarizePeriod,
 } from './learning-stats';
 
@@ -74,24 +74,33 @@ function card(conceptId: string, state: State, difficulty: number, lapses = 0): 
   };
 }
 
-test('a study week starts on Monday at 4 AM', () => {
-  expect(getWeekStart(now)).toEqual(new Date(2026, 9, 12, 4));
-  // Monday before 4 AM still belongs to the week before.
-  expect(getWeekStart(new Date(2026, 9, 12, 3))).toEqual(new Date(2026, 9, 5, 4));
+test('the last 7 study days end with today, each starting at 4 AM', () => {
+  const starts = getDayStarts(now);
+  expect(starts).toHaveLength(7);
+  expect(starts[0]).toEqual(new Date(2026, 9, 11, 4));
+  expect(starts.at(-1)).toEqual(new Date(2026, 9, 17, 4));
+  // Before 4 AM, today is still the study day before.
+  expect(getDayStarts(new Date(2026, 9, 17, 3)).at(-1)).toEqual(new Date(2026, 9, 16, 4));
 });
 
-test('adds up active time per week, oldest first', () => {
+test('adds up a value per study day, oldest first', () => {
   const sessions = [
-    session(new Date(2026, 9, 16, 18), 10 * MINUTE),
-    session(new Date(2026, 9, 13, 18), 5 * MINUTE),
-    session(new Date(2026, 9, 6, 18), 7 * MINUTE),
+    session(new Date(2026, 9, 17, 9), 10 * MINUTE),
+    // Before 4 AM counts as the study day before.
+    session(new Date(2026, 9, 17, 2), 5 * MINUTE),
+    session(new Date(2026, 9, 16, 18), 2 * MINUTE),
+    session(new Date(2026, 9, 15, 18), 7 * MINUTE),
     // Too long ago to show.
-    session(new Date(2026, 5, 1, 18), 9 * MINUTE),
+    session(new Date(2026, 9, 10, 18), 9 * MINUTE),
   ];
-  expect(getWeeklyTime(sessions, now, 3)).toEqual([0, 7 * MINUTE, 15 * MINUTE]);
+  expect(getDailyTotals(sessions, now, (session) => session.activeMs, 3)).toEqual([
+    7 * MINUTE,
+    7 * MINUTE,
+    10 * MINUTE,
+  ]);
 });
 
-test('summarizes a week: time, days, accuracy and new words', () => {
+test('summarizes a period: time, days, accuracy and new words', () => {
   const sessions = [
     session(new Date(2026, 9, 16, 18), 10 * MINUTE, {
       answers: [answer('german/a:translation'), answer('german/b:translation', Rating.Again)],
@@ -105,7 +114,7 @@ test('summarizes a week: time, days, accuracy and new words', () => {
       cards: [cardLog('german/c:dictation', State.New, 0)],
     }),
   ];
-  expect(summarizePeriod(sessions, getWeekStart(now), now)).toEqual({
+  expect(summarizePeriod(sessions, getDayStarts(now)[0], now)).toEqual({
     activeMs: 15 * MINUTE,
     sessions: 2,
     answers: 3,
@@ -130,13 +139,13 @@ test('ranks decks by time spent', () => {
       session(new Date(2026, 9, 14, 18), 4 * MINUTE),
     ],
     now,
-    2,
+    3,
   );
   expect(times.map(({ deckId, activeMs, sessions }) => [deckId, activeMs, sessions])).toEqual([
     ['german/core', 7 * MINUTE, 2],
     ['german/kapitel-1', 5 * MINUTE, 1],
   ]);
-  expect(times[0].weekly).toEqual([0, 7 * MINUTE]);
+  expect(times[0].daily).toEqual([3 * MINUTE, 0, 0]);
 });
 
 test('a word in several decks is learned once every exercise of them is', () => {

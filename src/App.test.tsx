@@ -260,8 +260,13 @@ test('the progress screen shows time and words of finished sessions, and opens a
   await user.click(screen.getByRole('button', { name: 'Progress' }));
 
   expect(screen.queryByText('No progress yet')).not.toBeInTheDocument();
-  expect(screen.getByText('Time this week')).toBeInTheDocument();
-  expect(screen.getByText('New this week').nextSibling).toHaveTextContent('1');
+  expect(screen.getByText('Your progress · last 7 days')).toBeInTheDocument();
+  expect(screen.getByText('New words').nextSibling).toHaveTextContent('1');
+  // The answer was wrong, so no XP yet; the chart can show minutes instead.
+  expect(screen.getByText('XP', { selector: 'dt' }).nextSibling).toHaveTextContent('0');
+  expect(screen.getByRole('list', { name: 'XP per day' })).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: 'Minutes' }));
+  expect(screen.getByRole('list', { name: 'Minutes per day' })).toBeInTheDocument();
   const german = screen.getByRole('region', { name: 'German' });
   expect(within(german).getByText(/learned per set/)).toBeInTheDocument();
 
