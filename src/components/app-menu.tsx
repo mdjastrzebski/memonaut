@@ -1,5 +1,5 @@
-import { AudioLines, Check, Flag, Menu } from 'lucide-react';
-import { useId, useState, type FormEvent } from 'react';
+import { AudioLines, Check, Download, Flag, Menu, Upload } from 'lucide-react';
+import { useId, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -24,14 +24,43 @@ import {
   type VoiceStatus,
 } from '@/lib/speech';
 import { cn } from '@/lib/utils';
+import { createBackup, getBackupFileName, importBackup } from '@/progress/backup';
 
 const ITEM_CLASS =
   "gap-3 rounded-xl px-3 py-3 font-display text-lg font-semibold [&_svg:not([class*='size-'])]:size-5";
 
-/** App actions behind a hamburger: voice settings, and during a session finishing early. */
+/**
+ * App actions behind a hamburger: voice settings, saving progress to a file and, outside a
+ * session, loading it back, and during a session finishing early.
+ */
 export function AppMenu({ onEnd }: { onEnd?: () => void }) {
   const [voiceOpen, setVoiceOpen] = useState(false);
   const voiceStatus = useVoiceStatus();
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  const exportProgress = () => {
+    const url = URL.createObjectURL(new Blob([createBackup()], { type: 'application/json' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = getBackupFileName();
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importProgress = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (
+      !window.confirm(
+        'Add the progress from the file to this device? For each word, the later practice counts.',
+      )
+    )
+      return;
+    // Reloading loads the merged progress everywhere at once.
+    if (importBackup(await file.text())) window.location.reload();
+    else window.alert('Could not load progress from this file.');
+  };
 
   return (
     <>
@@ -71,6 +100,14 @@ export function AppMenu({ onEnd }: { onEnd?: () => void }) {
               </span>
             )}
           </DropdownMenuItem>
+          <DropdownMenuItem className={ITEM_CLASS} onSelect={exportProgress}>
+            <Download /> Export progress
+          </DropdownMenuItem>
+          {!onEnd && (
+            <DropdownMenuItem className={ITEM_CLASS} onSelect={() => fileInput.current?.click()}>
+              <Upload /> Import progress
+            </DropdownMenuItem>
+          )}
           {onEnd && (
             <DropdownMenuItem
               className={ITEM_CLASS}
@@ -84,6 +121,14 @@ export function AppMenu({ onEnd }: { onEnd?: () => void }) {
         </DropdownMenuContent>
       </DropdownMenu>
       <VoiceDialog open={voiceOpen} onOpenChange={setVoiceOpen} />
+      <input
+        ref={fileInput}
+        type="file"
+        accept="application/json,.json"
+        aria-label="Progress file"
+        className="hidden"
+        onChange={importProgress}
+      />
     </>
   );
 }

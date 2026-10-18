@@ -144,6 +144,45 @@ export function saveProgress(subjectId: string, cards: Card[]) {
   write(getProgressKey(subjectId), JSON.stringify({ ...stored, version: VERSION, words }));
 }
 
+/**
+ * Stored progress of one Subject merged with another copy of it, e.g. from a backup: each word's
+ * Exercise Type keeps the entry reviewed last, so the later repetition wins, and the local one on a
+ * tie. When either copy can't be read or is from a newer version, the local one is kept as it is.
+ */
+export function mergeStoredProgress(local: string | null, imported: string): string {
+  const parse = (raw: string | null) => {
+    try {
+      const value: unknown = JSON.parse(raw ?? 'null');
+      return isObject(value) && isObject(value.words) && !(Number(value.version) > VERSION)
+        ? (value as StoredData)
+        : null;
+    } catch {
+      return null;
+    }
+  };
+  const ours = parse(local);
+  const theirs = parse(imported);
+  if (local === null) return imported;
+  if (!ours || !theirs) return local;
+
+  const words = { ...theirs.words, ...ours.words };
+  for (const [wordId, importedExercises] of Object.entries(theirs.words)) {
+    const exercises = ours.words[wordId];
+    if (!isObject(exercises) || !isObject(importedExercises)) continue;
+    const merged = { ...importedExercises, ...exercises };
+    for (const [type, entry] of Object.entries(importedExercises)) {
+      if (getLastReview(entry) > getLastReview(exercises[type])) merged[type] = entry;
+    }
+    words[wordId] = merged;
+  }
+  return JSON.stringify({ ...theirs, ...ours, words });
+}
+
+/** When an entry was last reviewed, in Unix seconds; never reviewed ones come first. */
+function getLastReview(entry: unknown): number {
+  return isObject(entry) && typeof entry.lr === 'number' ? entry.lr : -Infinity;
+}
+
 type ReadResult = { ok: true; value: StoredData } | { ok: false; raw: string | null };
 
 function read(subjectId: string): ReadResult {

@@ -10,7 +10,7 @@ import { getRetrievability, type Grade, type State } from '@/srs/scheduler';
  */
 const STORAGE_KEY = 'memonaut:effort-log';
 const VERSION = 1;
-const MAX_SESSIONS = 100;
+export const MAX_SESSIONS = 100;
 
 /** A Card picked for a session, with its memory state when the session started. */
 export interface CardLog {
