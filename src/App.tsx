@@ -25,6 +25,7 @@ import {
 } from '@/progress/effort-log';
 import { loadPace, savePace } from '@/progress/pace-storage';
 import { loadProgress, saveProgress } from '@/progress/progress-storage';
+import { loadXp, saveSessionXp } from '@/progress/xp-storage';
 import { updatePace } from '@/session/effort';
 import {
   createSession,
@@ -36,6 +37,7 @@ import {
   type SubmitReviewInput,
   withExerciseTypes,
 } from '@/session/session';
+import { getSessionXp } from '@/session/xp';
 
 export default function App() {
   // Remembered across reloads, so the next visit starts where the last one left off.
@@ -53,6 +55,8 @@ export default function App() {
   );
   // The current session's plan, and once it's over its answers, logged to tune the effort points.
   const [sessionLog, setSessionLog] = useState<SessionLog | null>(null);
+  // XP earned so far, across Subjects.
+  const [xpTotal, setXpTotal] = useState(() => loadXp().total);
   const [lastUnitIds, setLastUnitIds] = useState(initialChoice.lastUnitIds);
   const [ended, setEnded] = useState(false);
   const [showSpecialCharacters, setShowSpecialCharacters] = useState(false);
@@ -101,7 +105,21 @@ export default function App() {
     const cardId = next.reviews.at(-1)?.cardId;
     if (cardId) saveProgress(session.deck.subjectId, [next.cards[cardId]]);
     setSession(next);
-    if (!getCurrentCard(next)) measurePace(next);
+    if (getCurrentCard(next)) saveXp(next);
+    else measurePace(next);
+  };
+
+  // Saved after every answer and once the session is over, with the time it took so far.
+  const saveXp = (current: Session) => {
+    if (current.reviews.length === 0) return;
+    const saved = saveSessionXp({
+      startedAt: current.startedAt.toISOString(),
+      subjectId: current.deck.subjectId,
+      deckId: current.deck.id,
+      activeMs: Math.round(getActiveMs()),
+      xp: getSessionXp(current),
+    });
+    setXpTotal(saved.total);
   };
 
   // An intro changes nothing saved: the word's Card stays new until it's answered.
@@ -117,6 +135,7 @@ export default function App() {
     savePace(subjectId, updated);
     setPaces({ ...paces, [subjectId]: updated });
     if (sessionLog) appendEffortLog(finishSessionLog(sessionLog, over, activeMs, updated));
+    saveXp(over);
   };
 
   const end = () => {
@@ -226,6 +245,7 @@ export default function App() {
             subjectKind={subject.kind}
             activeMs={getActiveMs()}
             plannedMinutes={session.effort / (sessionLog?.pointsPerMinute ?? pace)}
+            xpTotal={xpTotal}
             onNewSession={goHome}
           />
         ) : (

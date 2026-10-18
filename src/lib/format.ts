@@ -39,3 +39,8 @@ export function formatMinutes(ms: number): string {
   const rest = minutes % 60;
   return rest ? `${Math.floor(minutes / 60)} h ${rest} min` : `${minutes / 60} h`;
 }
+
+/** XP with at most one decimal, e.g. "12", "4.5" or "2,340". */
+export function formatXp(value: number): string {
+  return value.toLocaleString('en-US', { maximumFractionDigits: 1 });
+}

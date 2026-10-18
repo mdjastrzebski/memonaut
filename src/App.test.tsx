@@ -415,6 +415,31 @@ test('the logo leads back to the setup screen from the summary without asking', 
   expect(screen.getByRole('button', { name: 'Start session' })).toBeInTheDocument();
 });
 
+test('the summary shows the XP of the session and in total, kept for the next one', async () => {
+  const user = userEvent.setup();
+  await startEssentialsSession(user);
+  // Right after its intro, a fast answer counts as Good: a dictation's 2 points, not doubled.
+  await user.type(
+    screen.getByRole('textbox', { name: 'Answer' }),
+    `${currentConcept().foreign}{Enter}`,
+  );
+  await user.keyboard('{Enter}');
+  await finishSession(user);
+  expect(screen.getByText('+2')).toBeInTheDocument();
+  expect(screen.getByText('2 total')).toBeInTheDocument();
+
+  // A session without answers earns nothing and isn't kept.
+  await user.click(screen.getByRole('button', { name: 'Start a new session' }));
+  await user.click(screen.getByRole('button', { name: 'Start session' }));
+  await finishSession(user);
+  expect(screen.getByText('+0')).toBeInTheDocument();
+  expect(screen.getByText('2 total')).toBeInTheDocument();
+
+  const stored = JSON.parse(localStorage.getItem('memonaut:xp')!);
+  expect(stored).toMatchObject({ total: 2, sessions: [{ subjectId: 'german', xp: 2 }] });
+  expect(stored.sessions).toHaveLength(1);
+});
+
 test('Enter on a focused menu item picks it instead of checking the answer', async () => {
   const user = userEvent.setup();
   await startEssentialsSession(user);
