@@ -1,4 +1,4 @@
-import { getProgress, getWordProgress, type Progress } from '@/components/grades';
+import { getProgress, type Progress } from '@/components/grades';
 import type { Card, Deck, ExerciseType } from '@/domain/types';
 import type { SessionLog } from '@/progress/effort-log';
 import { getCardId, getConceptExerciseTypes, getDayStart } from '@/session/session';
@@ -11,9 +11,6 @@ import { Rating, State } from '@/srs/scheduler';
 
 /** Study days shown in the daily charts, today last. */
 export const DAYS = 7;
-
-/** FSRS difficulty a Card starts with when first answered Hard; a Good start is about 2. */
-const HARD_DIFFICULTY = 5;
 
 /** The starts of the last `days` study days, oldest first, ending with today's, each at 4 AM. */
 export function getDayStarts(now: Date, days = DAYS): Date[] {
@@ -127,13 +124,6 @@ export function getDeckTimes(sessions: SessionLog[], now: Date, days = DAYS): De
     .sort((a, b) => b.activeMs - a.activeMs);
 }
 
-/** How well each of a Deck's Concepts is known, in Deck order. */
-export function getDeckProgress(deck: Deck, cards: Record<string, Card>): Progress[] {
-  return deck.conceptIds.map((conceptId) =>
-    getConceptProgress(conceptId, cards, getConceptExerciseTypes(deck, conceptId)),
-  );
-}
-
 export interface ExerciseTypeCards {
   exerciseType: ExerciseType;
   /** How well each of the Deck's Cards of this Exercise Type is known, in Deck order. */
@@ -155,89 +145,6 @@ export function getDeckExerciseTypes(deck: Deck, cards: Record<string, Card>): E
         ),
     }))
     .filter(({ progress }) => progress.length > 0);
-}
-
-/**
- * How well each Concept is known across the given Decks, e.g. all of a Subject's, keyed by Concept
- * id. A Concept in several Decks is learned once it is with every Exercise Type any of them uses.
- */
-export function getConceptsProgress(
-  decks: Deck[],
-  cards: Record<string, Card>,
-): Map<string, Progress> {
-  const types = new Map<string, Set<ExerciseType>>();
-  for (const deck of decks) {
-    for (const conceptId of deck.conceptIds) {
-      const set = types.get(conceptId) ?? new Set();
-      for (const type of getConceptExerciseTypes(deck, conceptId)) set.add(type);
-      types.set(conceptId, set);
-    }
-  }
-  return new Map(
-    [...types].map(([conceptId, set]) => [
-      conceptId,
-      getConceptProgress(conceptId, cards, [...set]),
-    ]),
-  );
-}
-
-function getConceptProgress(
-  conceptId: string,
-  cards: Record<string, Card>,
-  exerciseTypes: ExerciseType[],
-): Progress {
-  return getWordProgress(
-    exerciseTypes.map((type) => cards[getCardId(conceptId, type)]?.srs.state ?? State.New),
-  );
-}
-
-export interface HardConcept {
-  conceptId: string;
-  /** The highest FSRS difficulty of its Cards, 1–10. */
-  difficulty: number;
-  /** Times it was forgotten once learned. */
-  lapses: number;
-  /** Answers rated Again in the logged sessions. */
-  misses: number;
-}
-
-/**
- * The practised Concepts that are hardest for the learner, hardest first: by their hardest Card's
- * FSRS difficulty, which wrong and almost-right answers raise, then by how often they were
- * forgotten and missed. Concepts that went well from the start are left out.
- */
-export function getHardestConcepts(
-  conceptIds: string[],
-  cards: Card[],
-  sessions: SessionLog[],
-  limit: number,
-): HardConcept[] {
-  const included = new Set(conceptIds);
-  const misses = new Map<string, number>();
-  for (const answer of sessions.flatMap((session) => session.answers)) {
-    if (answer.rating !== Rating.Again) continue;
-    const conceptId = getConceptId(answer.cardId);
-    misses.set(conceptId, (misses.get(conceptId) ?? 0) + 1);
-  }
-
-  const byConcept = new Map<string, HardConcept>();
-  for (const card of cards) {
-    if (!included.has(card.conceptId) || card.srs.state === State.New) continue;
-    const hard = byConcept.get(card.conceptId) ?? {
-      conceptId: card.conceptId,
-      difficulty: 0,
-      lapses: 0,
-      misses: misses.get(card.conceptId) ?? 0,
-    };
-    hard.difficulty = Math.max(hard.difficulty, card.srs.difficulty);
-    hard.lapses += card.srs.lapses;
-    byConcept.set(card.conceptId, hard);
-  }
-
-  return [...byConcept.values()]
-    .filter((hard) => hard.difficulty >= HARD_DIFFICULTY || hard.lapses > 0)
-    .sort((a, b) => b.difficulty - a.difficulty || b.lapses - a.lapses || b.misses - a.misses)
-    .slice(0, limit);
 }
 
 /** The Concept a Card id belongs to: the id up to its Exercise Type. */
