@@ -24,7 +24,7 @@ export function playCorrect() {
   play(correctUrl);
 }
 
-/** A quick rising arpeggio with a sparkle for a fast right answer, in the same key as the chime. */
+/** A game-coin like two-step with a sparkle for a fast right answer, in the same key as the chime. */
 export function playFast() {
   play(fastUrl);
 }
