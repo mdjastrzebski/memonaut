@@ -54,7 +54,7 @@ export function ChoiceExercise({
   onPicked,
   renderOption = (option) => option,
 }: ChoiceExerciseProps) {
-  const { answered: picked, check, submit, now } = useAnswer(onReview);
+  const { answered: picked, check, submit, now } = useAnswer(session, card, onReview);
   const continueRef = useRef<HTMLButtonElement>(null);
   const [options] = useState(pickOptions);
 
@@ -143,7 +143,7 @@ export function ChoiceExercise({
 
         {picked && (
           <div className="relative mt-4 flex flex-col gap-4">
-            <FeedbackPanel grade={picked.result.grade}>
+            <FeedbackPanel session={session} card={card} grade={picked.result.grade}>
               <p className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 font-display text-xl font-bold break-words">
                 {feedback}
               </p>

@@ -24,10 +24,12 @@ import { MarkedText } from '@/components/marked-text';
 import { SpecialCharacters } from '@/components/special-characters';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import type { Card } from '@/domain/types';
 import { alignAnswer, diffAnswer } from '@/exercises/answer-diff';
 import { splitTrickySpellings } from '@/exercises/tricky-spellings';
 import { getFastLimitMs, gradeAnyAnswer, normalizeSpacing } from '@/exercises/type-answer';
 import { cn } from '@/lib/utils';
+import type { Session } from '@/session/session';
 import { Rating, type Grade } from '@/srs/scheduler';
 
 const INPUT_CLASS =
@@ -77,7 +79,7 @@ export function TypedExercise({
   strict: strictAnswer = false,
   onChecked,
 }: TypedExerciseProps) {
-  const { answered: checked, check, submit, now } = useAnswer(onReview);
+  const { answered: checked, check, submit, now } = useAnswer(session, card, onReview);
   const [input, setInput] = useState('');
   const [retyped, setRetyped] = useState('');
   // The right answer the input was rated against: the closest one when there are several.
@@ -162,6 +164,8 @@ export function TypedExercise({
 
   const feedback = checked && (
     <TypedFeedback
+      session={session}
+      card={card}
       grade={checked.result.grade}
       input={checked.input}
       answer={rightAnswer}
@@ -284,6 +288,8 @@ export function TypedExercise({
 }
 
 interface TypedFeedbackProps {
+  session: Session;
+  card: Card;
   grade: Grade;
   input: string;
   answer: string;
@@ -300,6 +306,8 @@ interface TypedFeedbackProps {
  * and the word's meaning and explanation.
  */
 function TypedFeedback({
+  session,
+  card,
   grade,
   input,
   answer,
@@ -312,7 +320,7 @@ function TypedFeedback({
   const textSize = wrong || spelled ? 'text-lg text-muted-foreground' : 'text-2xl';
 
   return (
-    <FeedbackPanel grade={grade}>
+    <FeedbackPanel session={session} card={card} grade={grade}>
       <div className="flex min-w-0 flex-col gap-1">
         {wrong && <AnswerComparison input={input} answer={answer} shake={grade === Rating.Again} />}
         {spelled && <SpelledAnswer answer={answer} trickySpellings={trickySpellings} />}

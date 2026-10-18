@@ -1,9 +1,10 @@
 import { useState } from 'react';
 
+import type { Card } from '@/domain/types';
 import type { AnswerResult } from '@/exercises/type-answer';
-import { playCorrect } from '@/lib/sounds';
+import { playCorrect, playFast } from '@/lib/sounds';
 import { stopHint } from '@/lib/speech';
-import type { SubmitReviewInput } from '@/session/session';
+import { getScheduledGrade, type Session, type SubmitReviewInput } from '@/session/session';
 import { Rating } from '@/srs/scheduler';
 
 /** The learner's answer to an exercise, rated when given. */
@@ -16,9 +17,14 @@ export interface Answered {
 
 /**
  * When the exercise appeared and the learner's answer once given. `check` rates an answer by how
- * long it took and cheers a right one; `submit` reports it as the Card's review.
+ * long it took and cheers a right one, more so a fast one that earns double XP; `submit` reports it
+ * as the Card's review.
  */
-export function useAnswer(onReview: (review: SubmitReviewInput) => void) {
+export function useAnswer(
+  session: Session,
+  card: Card,
+  onReview: (review: SubmitReviewInput) => void,
+) {
   const [shownAt] = useState(() => new Date());
   const [answered, setAnswered] = useState<Answered | null>(null);
 
@@ -28,7 +34,9 @@ export function useAnswer(onReview: (review: SubmitReviewInput) => void) {
     setAnswered({ input, result, at });
     // Once answered, a hint still to come would only talk over the feedback or the next word.
     stopHint();
-    if (result.grade === Rating.Good || result.grade === Rating.Easy) playCorrect();
+    const scheduled = getScheduledGrade(session, card, result.grade);
+    if (scheduled === Rating.Easy) playFast();
+    else if (scheduled === Rating.Good) playCorrect();
   };
 
   const submit = () => {

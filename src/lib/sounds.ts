@@ -1,5 +1,6 @@
 import completedUrl from '@/assets/sounds/completed.mp3';
 import correctUrl from '@/assets/sounds/correct.wav';
+import fastUrl from '@/assets/sounds/fast.wav';
 
 const VOLUME = 0.5;
 
@@ -21,6 +22,11 @@ function play(url: string) {
 /** A short chime for a right answer. */
 export function playCorrect() {
   play(correctUrl);
+}
+
+/** A quick rising arpeggio with a sparkle for a fast right answer, in the same key as the chime. */
+export function playFast() {
+  play(fastUrl);
 }
 
 /** A fanfare for finishing a session. */

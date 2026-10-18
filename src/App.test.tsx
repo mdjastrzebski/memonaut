@@ -329,15 +329,17 @@ test('dictation reads the word aloud and shows its meaning only after checking',
   // Read aloud in its intro, then again as the dictation appears.
   expect(spoken.filter((word) => word === foreign)).toHaveLength(2);
   expect(spoken.at(-1)).toBe(foreign);
-  expect(screen.queryByText(local)).not.toBeInTheDocument();
-  expect(screen.queryByText(hint!)).not.toBeInTheDocument();
+  // The hint, e.g. "0", is looked for only on the exercise, not in the header's XP.
+  const exercise = within(screen.getByRole('region', { name: 'Exercise' }));
+  expect(exercise.queryByText(local)).not.toBeInTheDocument();
+  expect(exercise.queryByText(hint!)).not.toBeInTheDocument();
 
   await user.click(screen.getByRole('button', { name: 'Listen' }));
   expect(spoken.slice(-2)).toEqual([foreign, foreign]);
 
   await user.type(screen.getByRole('textbox', { name: 'Answer' }), `${foreign}{Enter}`);
   expect(screen.getByRole('status')).toHaveTextContent(local);
-  expect(screen.queryByText(hint!)).not.toBeInTheDocument();
+  expect(exercise.queryByText(hint!)).not.toBeInTheDocument();
 });
 
 // Practises every word of the German core set through the whole app, so it takes a few seconds.
@@ -415,7 +417,7 @@ test('the logo leads back to the setup screen from the summary without asking', 
   expect(screen.getByRole('button', { name: 'Start session' })).toBeInTheDocument();
 });
 
-test('the summary shows the XP of the session and in total, kept for the next one', async () => {
+test('shows the XP of each answer, the session and in total, kept for the next session', async () => {
   const user = userEvent.setup();
   await startEssentialsSession(user);
   // Right after its intro, a fast answer counts as Good: a dictation's 2 points, not doubled.
@@ -423,7 +425,11 @@ test('the summary shows the XP of the session and in total, kept for the next on
     screen.getByRole('textbox', { name: 'Answer' }),
     `${currentConcept().foreign}{Enter}`,
   );
+  expect(screen.getByRole('status')).toHaveTextContent('+2 XP');
+  expect(screen.getByLabelText('0 XP this session')).toBeInTheDocument();
   await user.keyboard('{Enter}');
+  expect(screen.getByLabelText('2 XP this session')).toBeInTheDocument();
+  expect(screen.getByText('2 total')).toBeInTheDocument();
   await finishSession(user);
   expect(screen.getByText('+2')).toBeInTheDocument();
   expect(screen.getByText('2 total')).toBeInTheDocument();

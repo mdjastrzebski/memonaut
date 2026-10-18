@@ -183,7 +183,7 @@ export default function App() {
               <span className={cn(exercising && 'max-sm:sr-only')}>Memonaut</span>
             </button>
           </h1>
-          {exercising && session && <SessionProgress session={session} />}
+          {exercising && session && <SessionProgress session={session} xpTotal={xpTotal} />}
           <div className="ml-auto flex items-center gap-2">
             {session === null && (
               <Button

@@ -7,7 +7,7 @@ import { AdvancedPanel, SrsTermHint, StateBadge, type SrsTerm } from '@/componen
 import { Button } from '@/components/ui/button';
 import type { Card, Concept, Subject } from '@/domain/types';
 import type { AnswerResult } from '@/exercises/type-answer';
-import { formatNumber, formatRelative, formatSeconds } from '@/lib/format';
+import { formatNumber, formatRelative, formatSeconds, formatXp } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import {
   getScheduledGrade,
@@ -15,6 +15,7 @@ import {
   type Session,
   type SubmitReviewInput,
 } from '@/session/session';
+import { getAnswerXp } from '@/session/xp';
 import { previewReview, Rating, ratingName, State, type Grade } from '@/srs/scheduler';
 
 /** What every Exercise Type's component gets: the Card to practise and the screen's settings. */
@@ -73,15 +74,21 @@ export function PromptWord({ children }: { children: ReactNode }) {
 }
 
 interface FeedbackPanelProps {
+  session: Session;
+  card: Card;
   grade: Grade;
   children: ReactNode;
 }
 
-/** The result as an icon, celebrated when right, next to what to remember about the word. */
-export function FeedbackPanel({ grade, children }: FeedbackPanelProps) {
+/**
+ * The result as an icon, celebrated when right, next to what to remember about the word, and the XP
+ * it earns.
+ */
+export function FeedbackPanel({ session, card, grade, children }: FeedbackPanelProps) {
   const style = GRADE_STYLES[grade];
   const Icon = GRADE_ICONS[grade];
   const right = grade === Rating.Good || grade === Rating.Easy;
+  const xp = getAnswerXp(card.exerciseType, getScheduledGrade(session, card, grade));
 
   return (
     <div
@@ -104,6 +111,11 @@ export function FeedbackPanel({ grade, children }: FeedbackPanelProps) {
         {right && <Burst />}
       </span>
       {children}
+      {xp > 0 && (
+        <span className="ml-auto shrink-0 animate-pop self-start rounded-full border-2 border-line bg-almost px-2.5 py-0.5 font-display text-sm font-bold whitespace-nowrap text-foreground tabular-nums [animation-delay:150ms]">
+          +{formatXp(xp)} XP
+        </span>
+      )}
     </div>
   );
 }
