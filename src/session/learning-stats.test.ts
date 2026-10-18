@@ -5,11 +5,10 @@ import type { AnswerLog, CardLog, SessionLog } from '@/progress/effort-log';
 import { createSrsCard, Rating, State, type Grade } from '@/srs/scheduler';
 
 import {
-  getConceptsProgress,
   getDailyTotals,
   getDayStarts,
+  getDeckExerciseTypes,
   getDeckTimes,
-  getHardestConcepts,
   getStreak,
   summarizePeriod,
 } from './learning-stats';
@@ -148,55 +147,27 @@ test('ranks decks by time spent', () => {
   expect(times[0].daily).toEqual([3 * MINUTE, 0, 0]);
 });
 
-test('a word in several decks is learned once every exercise of them is', () => {
-  const deck = (id: string, exerciseTypes: Deck['exerciseTypes']): Deck => ({
-    id,
+test("counts a deck's cards per exercise type, with how well each is known", () => {
+  const deck: Deck = {
+    id: 'german/core',
     subjectId: 'german',
-    kind: 'unit',
-    name: id,
-    conceptIds: ['german/a'],
-    exerciseTypes,
-  });
+    kind: 'core',
+    name: 'Core',
+    conceptIds: ['german/a', 'german/b', 'german/c'],
+    exerciseTypes: ['dictation', 'plural-form', 'translation'],
+    conceptExerciseTypes: { 'german/b': ['dictation', 'translation'], 'german/c': ['dictation'] },
+  };
   const learned = card('german/a', State.Review, 2);
-  const cards = { [learned.id]: learned };
-  expect(getConceptsProgress([deck('one', ['translation'])], cards).get('german/a')).toBe(
-    'learned',
-  );
-  expect(
-    getConceptsProgress([deck('one', ['translation']), deck('two', ['dictation'])], cards).get(
-      'german/a',
-    ),
-  ).toBe('learning');
-});
-
-test('the hardest words are the most difficult, then most forgotten, leaving out easy ones', () => {
-  const cards = [
-    card('german/easy', State.Review, 2),
-    card('german/hard', State.Review, 8),
-    card('german/forgotten', State.Relearning, 4, 2),
-    card('german/harder', State.Learning, 9),
-    card('german/new', State.New, 9),
-    card('english/hard', State.Review, 9),
-  ];
-  const sessions = [
-    session(now, MINUTE, {
-      answers: [
-        answer('german/hard:translation', Rating.Again),
-        answer('german/hard:dictation', Rating.Again),
-      ],
-    }),
-  ];
-  const conceptIds = [
-    'german/easy',
-    'german/hard',
-    'german/forgotten',
-    'german/harder',
-    'german/new',
-  ];
-  expect(getHardestConcepts(conceptIds, cards, sessions, 10)).toEqual([
-    { conceptId: 'german/harder', difficulty: 9, lapses: 0, misses: 0 },
-    { conceptId: 'german/hard', difficulty: 8, lapses: 0, misses: 2 },
-    { conceptId: 'german/forgotten', difficulty: 4, lapses: 2, misses: 0 },
+  const learning = card('german/b', State.Learning, 2);
+  const cards = { [learned.id]: learned, [learning.id]: learning };
+  expect(getDeckExerciseTypes(deck, cards)).toEqual([
+    { exerciseType: 'dictation', progress: ['new', 'new', 'new'] },
+    { exerciseType: 'plural-form', progress: ['new'] },
+    { exerciseType: 'translation', progress: ['learned', 'learning'] },
   ]);
-  expect(getHardestConcepts(conceptIds, cards, sessions, 1)).toHaveLength(1);
+  expect(
+    getDeckExerciseTypes({ ...deck, conceptIds: ['german/c'] }, {}).map(
+      ({ exerciseType }) => exerciseType,
+    ),
+  ).toEqual(['dictation']);
 });

@@ -1,33 +1,29 @@
-import { ChevronRight, Flame, Star } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { ChevronDown, ChevronRight, Flame, Star } from 'lucide-react';
+import { useState, type CSSProperties, type ReactNode } from 'react';
 
-import { CONCEPT_NOUNS, getConceptText, plural } from '@/components/concept-text';
+import { plural } from '@/components/concept-text';
+import { EXERCISES } from '@/components/exercise-types';
 import { PROGRESS_LABELS, type Progress } from '@/components/grades';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Content } from '@/data/content';
 import { getSubjectDecks } from '@/data/decks';
-import type { Card, Deck, Subject } from '@/domain/types';
+import type { Card, Deck } from '@/domain/types';
 import { formatMinutes, formatPercent, formatXp } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { loadEffortLog, type SessionLog } from '@/progress/effort-log';
 import { getTotalXp, loadSessions, type SessionRecord } from '@/progress/session-history';
 import {
   DAYS,
-  getConceptsProgress,
   getDailyTotals,
   getDayStarts,
-  getDeckProgress,
+  getDeckExerciseTypes,
   getDeckTimes,
-  getHardestConcepts,
   getStreak,
   summarizePeriod,
-  type DeckTime,
 } from '@/session/learning-stats';
 
 /** Sets shown under "Most practised". */
 const TOP_DECKS = 5;
-/** Words shown under "Hardest" in each Subject. */
-const HARDEST = 6;
 
 interface ProgressScreenProps {
   content: Content;
@@ -46,7 +42,7 @@ type ChartMetric = 'xp' | 'minutes';
 
 /**
  * How the learner is doing over the last 7 days: XP and time per day, the sets practised most, and
- * per Subject how many words each set has learned and which words are hardest.
+ * a set's cards per exercise.
  */
 export function ProgressScreen({
   content,
@@ -72,19 +68,11 @@ export function ProgressScreen({
   const deckTimes = getDeckTimes(sessions, now);
   const findDeck = (id: string) => content.decks.find((deck) => deck.id === id);
   const topDecks = deckTimes.filter((time) => findDeck(time.deckId)).slice(0, TOP_DECKS);
-  const allCards = Object.values(cards);
-  // Subjects practised, the one with the most time first.
-  const subjects = content.subjects
-    .filter((subject) => allCards.some((card) => card.conceptId.startsWith(`${subject.id}/`)))
-    .sort((a, b) => getSubjectTime(deckTimes, b.id) - getSubjectTime(deckTimes, a.id));
-
-  if (sessions.length === 0 && subjects.length === 0 && history.length === 0) {
+  if (sessions.length === 0 && Object.keys(cards).length === 0 && history.length === 0) {
     return (
       <section className="flex animate-card-in flex-col items-center gap-3 rounded-[2rem] border-2 border-line bg-card p-10 text-center shadow-sticker-lg">
         <h2 className="font-display text-3xl font-extrabold tracking-tight">No progress yet</h2>
-        <p className="text-muted-foreground">
-          Finish a session and your XP, time, learned words and hardest words show up here.
-        </p>
+        <p className="text-muted-foreground">Finish a session and your XP and time show up here.</p>
       </section>
     );
   }
@@ -206,18 +194,11 @@ export function ProgressScreen({
         </Section>
       )}
 
-      {subjects.map((subject) => (
-        <SubjectProgress
-          key={subject.id}
-          subject={subject}
-          content={content}
-          cards={cards}
-          allCards={allCards}
-          sessions={sessions}
-          deckTimes={deckTimes}
-          onSelectDeck={onSelectDeck}
-        />
-      ))}
+      <DeckExercises
+        content={content}
+        cards={cards}
+        initialDeck={topDecks.length > 0 ? findDeck(topDecks[0].deckId) : undefined}
+      />
 
       <p className="text-center text-xs text-muted-foreground">
         {sessions.length >= 100
@@ -226,12 +207,6 @@ export function ProgressScreen({
       </p>
     </div>
   );
-}
-
-function getSubjectTime(deckTimes: DeckTime[], subjectId: string): number {
-  return deckTimes
-    .filter((time) => time.subjectId === subjectId)
-    .reduce((total, time) => total + time.activeMs, 0);
 }
 
 function getHeadline(xp: number, recentMs: number, previousMs: number): string {
@@ -408,135 +383,84 @@ const formatDay = (date: Date) =>
 
 const formatWeekday = (date: Date) => date.toLocaleDateString(undefined, { weekday: 'short' });
 
-interface SubjectProgressProps {
-  subject: Subject;
-  content: Content;
-  cards: Record<string, Card>;
-  allCards: Card[];
-  sessions: SessionLog[];
-  deckTimes: DeckTime[];
-  onSelectDeck: (deck: Deck) => void;
-}
-
-/**
- * A Subject's words learned overall and per set, the set's time over the last 7 days, and its
- * hardest words.
- */
-function SubjectProgress({
-  subject,
+/** A set's Cards per Exercise Type, with each one's share of the set and how well it's known. */
+function DeckExercises({
   content,
   cards,
-  allCards,
-  sessions,
-  deckTimes,
-  onSelectDeck,
-}: SubjectProgressProps) {
-  const decks = getSubjectDecks(content.decks, subject.id);
-  const progress = [...getConceptsProgress(decks, cards).values()];
-  const learned = progress.filter((value) => value === 'learned').length;
-  const noun = CONCEPT_NOUNS[subject.kind];
-  const concepts = new Map(
-    content.concepts
-      .filter((concept) => concept.subjectId === subject.id)
-      .map((concept) => [concept.id, concept]),
-  );
-  const hardest = getHardestConcepts([...concepts.keys()], allCards, sessions, HARDEST);
+  initialDeck,
+}: {
+  content: Content;
+  cards: Record<string, Card>;
+  initialDeck?: Deck;
+}) {
+  const [deckId, setDeckId] = useState(() => (initialDeck ?? content.decks[0])?.id);
+  const deck = content.decks.find((deck) => deck.id === deckId);
+  if (!deck) return null;
+  const types = getDeckExerciseTypes(deck, cards);
+  const total = types.reduce((sum, { progress }) => sum + progress.length, 0);
 
   return (
-    <section
-      aria-label={subject.name}
-      className="flex flex-col gap-6 rounded-[2rem] border-2 border-line bg-card p-6 shadow-sticker sm:p-8"
-    >
-      <div className="flex flex-col gap-1">
-        <p className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
-          {subject.emoji} {subject.name}
-        </p>
-        <h3 className="font-display text-2xl font-extrabold tracking-tight">
-          {learned} of {plural(progress.length, noun)} learned
-        </h3>
-        <ProgressBar progress={progress} className="mt-2" />
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-          <h4 className="font-display font-bold">{noun.Many} learned per set</h4>
-          <Legend />
+    <Section title="Exercises per set" note="Cards of each exercise in a set">
+      <div className="flex flex-col gap-4 rounded-[2rem] border-2 border-line bg-card p-6 shadow-sticker sm:p-8">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <label className="flex min-w-0 items-center gap-2 font-semibold">
+            Set
+            <span className="relative flex min-w-0">
+              <select
+                value={deck.id}
+                onChange={(event) => setDeckId(event.target.value)}
+                className="min-w-0 cursor-pointer appearance-none rounded-xl border-2 border-line bg-card py-1.5 pr-9 pl-3 font-normal outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+              >
+                {content.subjects.map((subject) => (
+                  <optgroup key={subject.id} label={subject.name}>
+                    {getSubjectDecks(content.decks, subject.id).map((deck) => (
+                      <option key={deck.id} value={deck.id}>
+                        {deck.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+              <ChevronDown
+                aria-hidden
+                className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground"
+              />
+            </span>
+          </label>
+          <span className="text-sm text-muted-foreground">{plural(total, 'card')}</span>
         </div>
-        <ul className="flex flex-col">
-          {decks.map((deck) => {
-            const deckProgress = getDeckProgress(deck, cards);
-            const time = deckTimes.find((time) => time.deckId === deck.id);
-            const deckLearned = deckProgress.filter((value) => value === 'learned').length;
+        <ul aria-label={`Exercises in ${deck.name}`} className="flex flex-col">
+          {types.map(({ exerciseType, progress }) => {
+            const { label, Icon } = EXERCISES[exerciseType];
+            const share = progress.length / total;
             return (
               <li
-                key={deck.id}
-                className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 border-b border-foreground/10 py-2.5 last:border-b-0 sm:grid-cols-[minmax(0,14rem)_minmax(0,1fr)_auto_auto]"
+                key={exerciseType}
+                aria-label={`${label}: ${plural(progress.length, 'card')}, ${formatPercent(share)}`}
+                className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 border-b border-foreground/10 py-2.5 last:border-b-0 sm:grid-cols-[minmax(0,12rem)_minmax(0,1fr)_auto]"
               >
-                <button
-                  type="button"
-                  onClick={() => onSelectDeck(deck)}
-                  className="cursor-pointer truncate rounded-md text-left font-semibold underline-offset-2 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
-                >
-                  {deck.name}
-                </button>
-                <span className="text-right text-sm text-muted-foreground tabular-nums sm:order-last">
-                  {deckLearned}/{deckProgress.length}
+                <span className="flex min-w-0 items-center gap-2 font-semibold">
+                  <Icon aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+                  <span className="truncate">{label}</span>
                 </span>
-                <ProgressBar progress={deckProgress} className="col-span-2 sm:col-span-1" />
-                <span className="flex w-[8.5rem] items-center justify-end gap-2 text-xs text-muted-foreground max-sm:hidden">
-                  {time ? (
-                    <>
-                      <MiniDays daily={time.daily} />
-                      <span className="flex w-16 flex-col leading-tight">
-                        <span className="font-semibold text-foreground tabular-nums">
-                          {formatMinutes(time.daily.reduce((total, ms) => total + ms, 0))}
-                        </span>
-                        in 7 days
-                      </span>
-                    </>
-                  ) : (
-                    <span>not practised</span>
-                  )}
+                <span className="text-right text-sm text-muted-foreground tabular-nums sm:order-last">
+                  <span className="font-semibold text-foreground">{progress.length}</span> ·{' '}
+                  {formatPercent(share)}
+                </span>
+                <span className="col-span-2 flex sm:col-span-1">
+                  <ProgressBar
+                    progress={progress}
+                    className="min-w-3"
+                    style={{ width: `${share * 100}%` }}
+                  />
                 </span>
               </li>
             );
           })}
         </ul>
+        <Legend />
       </div>
-
-      {hardest.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <h4 className="font-display font-bold">Hardest {noun.many}</h4>
-          <ol
-            aria-label={`Hardest ${noun.many} in ${subject.name}`}
-            className="grid gap-2 sm:grid-cols-2"
-          >
-            {hardest.map((hard) => {
-              const concept = concepts.get(hard.conceptId);
-              if (!concept) return null;
-              const { prompt, answer } = getConceptText(concept);
-              const [main, extra] =
-                concept.kind === 'knowledge' ? [prompt, answer] : [answer, prompt];
-              return (
-                <li
-                  key={hard.conceptId}
-                  className="flex items-center gap-3 rounded-2xl border-2 border-wrong/40 bg-wrong/10 px-3 py-2"
-                >
-                  <span className="flex min-w-0 flex-1 flex-col">
-                    <span className="font-semibold break-words">{main}</span>
-                    {extra && <span className="text-sm text-muted-foreground">{extra}</span>}
-                  </span>
-                  <span className="shrink-0 text-right text-xs font-medium text-wrong-ink">
-                    {hard.misses > 0 && <span className="block">missed {hard.misses}×</span>}
-                    {hard.lapses > 0 && <span className="block">forgotten {hard.lapses}×</span>}
-                  </span>
-                </li>
-              );
-            })}
-          </ol>
-        </div>
-      )}
-    </section>
+    </Section>
   );
 }
 
@@ -548,7 +472,15 @@ const PROGRESS_FILLS: Record<Progress, string> = {
 };
 
 /** Learned, learning and new words as one bar, in that order. */
-function ProgressBar({ progress, className }: { progress: Progress[]; className?: string }) {
+function ProgressBar({
+  progress,
+  className,
+  style,
+}: {
+  progress: Progress[];
+  className?: string;
+  style?: CSSProperties;
+}) {
   const counts = PROGRESS_ORDER.map((status) => ({
     status,
     count: progress.filter((value) => value === status).length,
@@ -561,6 +493,7 @@ function ProgressBar({ progress, className }: { progress: Progress[]; className?
       role="img"
       aria-label={label}
       title={label}
+      style={style}
       className={cn(
         'flex h-3 gap-0.5 overflow-hidden rounded-full border-2 border-line bg-muted',
         className,
