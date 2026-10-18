@@ -539,6 +539,9 @@ export function submitReview(session: Session, { now, ...input }: SubmitReviewIn
     cards: { ...session.cards, [card.id]: { ...card, srs: srsAfter } },
     queue: dueSoon ? [...rest, card.id] : rest,
     intros: reintroduce ? [...session.intros, card.conceptId] : session.intros,
-    reviews: [...session.reviews, { cardId: card.id, ...answer, log, srsAfter }],
+    reviews: [
+      ...session.reviews,
+      { cardId: card.id, ...answer, earnedRating: input.rating, log, srsAfter },
+    ],
   };
 }

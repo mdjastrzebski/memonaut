@@ -420,29 +420,29 @@ test('the logo leads back to the setup screen from the summary without asking', 
 test('shows the XP of each answer, the session and in total, kept for the next session', async () => {
   const user = userEvent.setup();
   await startEssentialsSession(user);
-  // Right after its intro, a fast answer counts as Good: a dictation's 2 points, not doubled.
+  // A fast answer earns twice a dictation's 2 points, even right after its intro.
   await user.type(
     screen.getByRole('textbox', { name: 'Answer' }),
     `${currentConcept().foreign}{Enter}`,
   );
-  expect(screen.getByRole('status')).toHaveTextContent('+2 XP');
+  expect(screen.getByRole('status')).toHaveTextContent('+4 XP');
   expect(screen.getByLabelText('0 XP this session')).toBeInTheDocument();
   await user.keyboard('{Enter}');
-  expect(screen.getByLabelText('2 XP this session')).toBeInTheDocument();
-  expect(screen.getByText('2 total')).toBeInTheDocument();
+  expect(screen.getByLabelText('4 XP this session')).toBeInTheDocument();
+  expect(screen.getByText('4 total')).toBeInTheDocument();
   await finishSession(user);
-  expect(screen.getByText('+2')).toBeInTheDocument();
-  expect(screen.getByText('2 total')).toBeInTheDocument();
+  expect(screen.getByText('+4')).toBeInTheDocument();
+  expect(screen.getByText('4 total')).toBeInTheDocument();
 
   // A session without answers earns nothing and isn't kept.
   await user.click(screen.getByRole('button', { name: 'Start a new session' }));
   await user.click(screen.getByRole('button', { name: 'Start session' }));
   await finishSession(user);
   expect(screen.getByText('+0')).toBeInTheDocument();
-  expect(screen.getByText('2 total')).toBeInTheDocument();
+  expect(screen.getByText('4 total')).toBeInTheDocument();
 
   const stored = JSON.parse(localStorage.getItem('memonaut:xp')!);
-  expect(stored).toMatchObject({ total: 2, sessions: [{ subjectId: 'german', xp: 2 }] });
+  expect(stored).toMatchObject({ total: 4, sessions: [{ subjectId: 'german', xp: 4 }] });
   expect(stored.sessions).toHaveLength(1);
 });
 

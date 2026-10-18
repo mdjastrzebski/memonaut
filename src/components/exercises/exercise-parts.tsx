@@ -5,7 +5,7 @@ import { Burst } from '@/components/burst';
 import { GRADE_ICONS, GRADE_STYLES } from '@/components/grades';
 import { AdvancedPanel, SrsTermHint, StateBadge, type SrsTerm } from '@/components/srs-stats';
 import { Button } from '@/components/ui/button';
-import type { Card, Concept, Subject } from '@/domain/types';
+import type { Card, Concept, ExerciseType, Subject } from '@/domain/types';
 import type { AnswerResult } from '@/exercises/type-answer';
 import { formatNumber, formatRelative, formatSeconds, formatXp } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -74,8 +74,7 @@ export function PromptWord({ children }: { children: ReactNode }) {
 }
 
 interface FeedbackPanelProps {
-  session: Session;
-  card: Card;
+  exerciseType: ExerciseType;
   grade: Grade;
   children: ReactNode;
 }
@@ -84,11 +83,11 @@ interface FeedbackPanelProps {
  * The result as an icon, celebrated when right, next to what to remember about the word, and the XP
  * it earns.
  */
-export function FeedbackPanel({ session, card, grade, children }: FeedbackPanelProps) {
+export function FeedbackPanel({ exerciseType, grade, children }: FeedbackPanelProps) {
   const style = GRADE_STYLES[grade];
   const Icon = GRADE_ICONS[grade];
   const right = grade === Rating.Good || grade === Rating.Easy;
-  const xp = getAnswerXp(card.exerciseType, getScheduledGrade(session, card, grade));
+  const xp = getAnswerXp(exerciseType, grade);
 
   return (
     <div

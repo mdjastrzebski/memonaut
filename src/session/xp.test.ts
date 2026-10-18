@@ -41,7 +41,7 @@ test('a session adds up its answers', () => {
   expect(getSessionXp(session)).toBe(5);
 });
 
-test('a fast answer right after the intro earns no bonus, as it counts as Good', () => {
+test('a fast answer right after the intro earns double, though it counts as Good', () => {
   let session = createSession({ deck, concepts, now });
   while (getCurrentIntro(session)) session = introduce(session);
   session = submitReview(session, {
@@ -51,5 +51,6 @@ test('a fast answer right after the intro earns no bonus, as it counts as Good',
     issues: [],
     now,
   });
-  expect(getSessionXp(session)).toBe(2.5);
+  expect(session.reviews[0]).toMatchObject({ rating: Rating.Good, earnedRating: Rating.Easy });
+  expect(getSessionXp(session)).toBe(5);
 });
