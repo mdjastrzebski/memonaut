@@ -250,7 +250,7 @@ test('the progress screen tells there is no progress before any session', async 
   expect(screen.getByText('No progress yet')).toBeInTheDocument();
 });
 
-test('the progress screen shows time, exercises and hardest words of finished sessions, and opens a set', async () => {
+test('the progress screen shows time and exercises of finished sessions, and opens a set', async () => {
   const user = userEvent.setup();
   await startEssentialsSession(user);
   await user.type(screen.getByRole('textbox', { name: 'Answer' }), 'falsch{Enter}');
@@ -268,9 +268,6 @@ test('the progress screen shows time, exercises and hardest words of finished se
   await user.click(screen.getByRole('button', { name: 'Minutes' }));
   expect(screen.getByRole('list', { name: 'Minutes per day' })).toBeInTheDocument();
   expect(screen.getByRole('list', { name: `Exercises in ${essentials.name}` })).toBeInTheDocument();
-  const german = screen.getByRole('region', { name: 'German' });
-  expect(within(german).queryByText(/learned per set/)).not.toBeInTheDocument();
-  expect(within(german).getByText('missed 1×')).toBeInTheDocument();
 
   await user.click(screen.getByRole('button', { name: `Practise ${essentials.name}` }));
   expect(screen.getByRole('button', { name: /Start session/ })).toBeInTheDocument();

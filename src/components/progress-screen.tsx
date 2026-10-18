@@ -1,13 +1,13 @@
 import { ChevronDown, ChevronRight, Flame, Star } from 'lucide-react';
 import { useState, type CSSProperties, type ReactNode } from 'react';
 
-import { CONCEPT_NOUNS, getConceptText, plural } from '@/components/concept-text';
+import { plural } from '@/components/concept-text';
 import { EXERCISES } from '@/components/exercise-types';
 import { PROGRESS_LABELS, type Progress } from '@/components/grades';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Content } from '@/data/content';
 import { getSubjectDecks } from '@/data/decks';
-import type { Card, Deck, Subject } from '@/domain/types';
+import type { Card, Deck } from '@/domain/types';
 import { formatMinutes, formatPercent, formatXp } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { loadEffortLog, type SessionLog } from '@/progress/effort-log';
@@ -18,16 +18,12 @@ import {
   getDayStarts,
   getDeckExerciseTypes,
   getDeckTimes,
-  getHardestConcepts,
   getStreak,
   summarizePeriod,
-  type DeckTime,
 } from '@/session/learning-stats';
 
 /** Sets shown under "Most practised". */
 const TOP_DECKS = 5;
-/** Words shown under "Hardest" in each Subject. */
-const HARDEST = 6;
 
 interface ProgressScreenProps {
   content: Content;
@@ -45,8 +41,8 @@ interface ProgressScreenProps {
 type ChartMetric = 'xp' | 'minutes';
 
 /**
- * How the learner is doing over the last 7 days: XP and time per day, the sets practised most, a
- * set's cards per exercise, and per Subject the hardest words.
+ * How the learner is doing over the last 7 days: XP and time per day, the sets practised most, and
+ * a set's cards per exercise.
  */
 export function ProgressScreen({
   content,
@@ -72,19 +68,11 @@ export function ProgressScreen({
   const deckTimes = getDeckTimes(sessions, now);
   const findDeck = (id: string) => content.decks.find((deck) => deck.id === id);
   const topDecks = deckTimes.filter((time) => findDeck(time.deckId)).slice(0, TOP_DECKS);
-  const allCards = Object.values(cards);
-  // Subjects practised, the one with the most time first.
-  const subjects = content.subjects
-    .filter((subject) => allCards.some((card) => card.conceptId.startsWith(`${subject.id}/`)))
-    .sort((a, b) => getSubjectTime(deckTimes, b.id) - getSubjectTime(deckTimes, a.id));
-
-  if (sessions.length === 0 && subjects.length === 0 && history.length === 0) {
+  if (sessions.length === 0 && Object.keys(cards).length === 0 && history.length === 0) {
     return (
       <section className="flex animate-card-in flex-col items-center gap-3 rounded-[2rem] border-2 border-line bg-card p-10 text-center shadow-sticker-lg">
         <h2 className="font-display text-3xl font-extrabold tracking-tight">No progress yet</h2>
-        <p className="text-muted-foreground">
-          Finish a session and your XP, time and hardest words show up here.
-        </p>
+        <p className="text-muted-foreground">Finish a session and your XP and time show up here.</p>
       </section>
     );
   }
@@ -212,16 +200,6 @@ export function ProgressScreen({
         initialDeck={topDecks.length > 0 ? findDeck(topDecks[0].deckId) : undefined}
       />
 
-      {subjects.map((subject) => (
-        <HardestConcepts
-          key={subject.id}
-          subject={subject}
-          content={content}
-          allCards={allCards}
-          sessions={sessions}
-        />
-      ))}
-
       <p className="text-center text-xs text-muted-foreground">
         {sessions.length >= 100
           ? 'Time counts your latest 100 sessions on this device, XP all of them.'
@@ -229,12 +207,6 @@ export function ProgressScreen({
       </p>
     </div>
   );
-}
-
-function getSubjectTime(deckTimes: DeckTime[], subjectId: string): number {
-  return deckTimes
-    .filter((time) => time.subjectId === subjectId)
-    .reduce((total, time) => total + time.activeMs, 0);
 }
 
 function getHeadline(xp: number, recentMs: number, previousMs: number): string {
@@ -489,63 +461,6 @@ function DeckExercises({
         <Legend />
       </div>
     </Section>
-  );
-}
-
-interface HardestConceptsProps {
-  subject: Subject;
-  content: Content;
-  allCards: Card[];
-  sessions: SessionLog[];
-}
-
-/** A Subject's hardest words; nothing if none are hard. */
-function HardestConcepts({ subject, content, allCards, sessions }: HardestConceptsProps) {
-  const noun = CONCEPT_NOUNS[subject.kind];
-  const concepts = new Map(
-    content.concepts
-      .filter((concept) => concept.subjectId === subject.id)
-      .map((concept) => [concept.id, concept]),
-  );
-  const hardest = getHardestConcepts([...concepts.keys()], allCards, sessions, HARDEST);
-  if (hardest.length === 0) return null;
-
-  return (
-    <section
-      aria-label={subject.name}
-      className="flex flex-col gap-3 rounded-[2rem] border-2 border-line bg-card p-6 shadow-sticker sm:p-8"
-    >
-      <p className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
-        {subject.emoji} {subject.name}
-      </p>
-      <h3 className="font-display text-2xl font-extrabold tracking-tight">Hardest {noun.many}</h3>
-      <ol
-        aria-label={`Hardest ${noun.many} in ${subject.name}`}
-        className="grid gap-2 sm:grid-cols-2"
-      >
-        {hardest.map((hard) => {
-          const concept = concepts.get(hard.conceptId);
-          if (!concept) return null;
-          const { prompt, answer } = getConceptText(concept);
-          const [main, extra] = concept.kind === 'knowledge' ? [prompt, answer] : [answer, prompt];
-          return (
-            <li
-              key={hard.conceptId}
-              className="flex items-center gap-3 rounded-2xl border-2 border-wrong/40 bg-wrong/10 px-3 py-2"
-            >
-              <span className="flex min-w-0 flex-1 flex-col">
-                <span className="font-semibold break-words">{main}</span>
-                {extra && <span className="text-sm text-muted-foreground">{extra}</span>}
-              </span>
-              <span className="shrink-0 text-right text-xs font-medium text-wrong-ink">
-                {hard.misses > 0 && <span className="block">missed {hard.misses}×</span>}
-                {hard.lapses > 0 && <span className="block">forgotten {hard.lapses}×</span>}
-              </span>
-            </li>
-          );
-        })}
-      </ol>
-    </section>
   );
 }
 

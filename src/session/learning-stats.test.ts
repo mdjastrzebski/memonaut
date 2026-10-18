@@ -9,7 +9,6 @@ import {
   getDayStarts,
   getDeckExerciseTypes,
   getDeckTimes,
-  getHardestConcepts,
   getStreak,
   summarizePeriod,
 } from './learning-stats';
@@ -146,38 +145,6 @@ test('ranks decks by time spent', () => {
     ['german/kapitel-1', 5 * MINUTE, 1],
   ]);
   expect(times[0].daily).toEqual([3 * MINUTE, 0, 0]);
-});
-
-test('the hardest words are the most difficult, then most forgotten, leaving out easy ones', () => {
-  const cards = [
-    card('german/easy', State.Review, 2),
-    card('german/hard', State.Review, 8),
-    card('german/forgotten', State.Relearning, 4, 2),
-    card('german/harder', State.Learning, 9),
-    card('german/new', State.New, 9),
-    card('english/hard', State.Review, 9),
-  ];
-  const sessions = [
-    session(now, MINUTE, {
-      answers: [
-        answer('german/hard:translation', Rating.Again),
-        answer('german/hard:dictation', Rating.Again),
-      ],
-    }),
-  ];
-  const conceptIds = [
-    'german/easy',
-    'german/hard',
-    'german/forgotten',
-    'german/harder',
-    'german/new',
-  ];
-  expect(getHardestConcepts(conceptIds, cards, sessions, 10)).toEqual([
-    { conceptId: 'german/harder', difficulty: 9, lapses: 0, misses: 0 },
-    { conceptId: 'german/hard', difficulty: 8, lapses: 0, misses: 2 },
-    { conceptId: 'german/forgotten', difficulty: 4, lapses: 2, misses: 0 },
-  ]);
-  expect(getHardestConcepts(conceptIds, cards, sessions, 1)).toHaveLength(1);
 });
 
 test("counts a deck's cards per exercise type, with how well each is known", () => {
