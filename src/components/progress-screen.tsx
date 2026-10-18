@@ -10,7 +10,7 @@ import type { Card, Deck, Subject } from '@/domain/types';
 import { formatMinutes, formatPercent, formatXp } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { loadEffortLog, type SessionLog } from '@/progress/effort-log';
-import { loadXp, type Xp } from '@/progress/xp-storage';
+import { getTotalXp, loadSessions, type SessionRecord } from '@/progress/session-history';
 import {
   DAYS,
   getConceptsProgress,
@@ -37,8 +37,8 @@ interface ProgressScreenProps {
   onSelectDeck: (deck: Deck) => void;
   /** Sessions to show; the logged ones if left out. */
   sessions?: SessionLog[];
-  /** XP to show; the saved one if left out. */
-  xp?: Xp;
+  /** Every session's XP and time to show; the saved ones if left out. */
+  history?: SessionRecord[];
   now?: Date;
 }
 
@@ -53,12 +53,12 @@ export function ProgressScreen({
   cards,
   onSelectDeck,
   sessions: givenSessions,
-  xp: givenXp,
+  history: givenHistory,
   now: givenNow,
 }: ProgressScreenProps) {
   const [now] = useState(() => givenNow ?? new Date());
   const [sessions] = useState(() => givenSessions ?? loadEffortLog());
-  const [xp] = useState(() => givenXp ?? loadXp());
+  const [history] = useState(() => givenHistory ?? loadSessions());
   const [metric, setMetric] = useState<ChartMetric>('xp');
   // The last 7 study days, today included, and the 7 before them to compare with.
   const periodStart = getDayStarts(now)[0];
@@ -66,7 +66,7 @@ export function ProgressScreen({
   previousStart.setDate(previousStart.getDate() - DAYS);
   const recent = summarizePeriod(sessions, periodStart, now);
   const previous = summarizePeriod(sessions, previousStart, periodStart);
-  const dailyXp = getDailyTotals(xp.sessions, now, (session) => session.xp);
+  const dailyXp = getDailyTotals(history, now, (session) => session.xp);
   const recentXp = dailyXp.reduce((total, value) => total + value, 0);
   const streak = getStreak(sessions, now);
   const deckTimes = getDeckTimes(sessions, now);
@@ -78,7 +78,7 @@ export function ProgressScreen({
     .filter((subject) => allCards.some((card) => card.conceptId.startsWith(`${subject.id}/`)))
     .sort((a, b) => getSubjectTime(deckTimes, b.id) - getSubjectTime(deckTimes, a.id));
 
-  if (sessions.length === 0 && subjects.length === 0 && xp.total === 0) {
+  if (sessions.length === 0 && subjects.length === 0 && history.length === 0) {
     return (
       <section className="flex animate-card-in flex-col items-center gap-3 rounded-[2rem] border-2 border-line bg-card p-10 text-center shadow-sticker-lg">
         <h2 className="font-display text-3xl font-extrabold tracking-tight">No progress yet</h2>
@@ -90,7 +90,7 @@ export function ProgressScreen({
   }
 
   const stats: [label: string, value: string, note: ReactNode][] = [
-    ['XP', formatXp(recentXp), `${formatXp(xp.total)} total`],
+    ['XP', formatXp(recentXp), `${formatXp(getTotalXp(history))} total`],
     ['Time', formatMinutes(recent.activeMs), comparePeriods(recent.activeMs, previous.activeMs)],
     [
       'Days practised',

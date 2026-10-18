@@ -446,8 +446,8 @@ test('shows the XP of each answer, the session and in total, kept for the next s
   expect(screen.getByText('+0')).toBeInTheDocument();
   expect(screen.getByText('4 total')).toBeInTheDocument();
 
-  const stored = JSON.parse(localStorage.getItem('memonaut:xp')!);
-  expect(stored).toMatchObject({ total: 4, sessions: [{ subjectId: 'german', xp: 4 }] });
+  const stored = JSON.parse(localStorage.getItem('memonaut:sessions')!);
+  expect(stored).toMatchObject({ sessions: [{ subjectId: 'german', xp: 4 }] });
   expect(stored.sessions).toHaveLength(1);
 });
 
