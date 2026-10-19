@@ -236,6 +236,17 @@ concepts:
       cloze: 'das ist das Handy [von Anna]',
       hint: to jest telefon Anny,
     }
+  # Czasowniki: najpierw regularne lernen, kennen, gehen, potem haben i mögen; po bezokoliczniku forma z ich.
+  - { id: lernen, local: uczyć się, foreign: lernen, group: verb }
+  - { id: ich-lerne, local: ja się uczę, foreign: ich lerne, group: lernen, core: true }
+  - { id: kennen, local: znać, foreign: kennen, group: verb }
+  - { id: ich-kenne, local: ja znam, foreign: ich kenne, group: kennen }
+  - { id: gehen, local: chodzić, foreign: gehen, group: verb }
+  - { id: ich-gehe, local: ja chodzę, foreign: ich gehe, group: gehen }
+  - { id: haben, local: mieć, foreign: haben, group: verb }
+  - { id: ich-habe, local: ja mam, foreign: ich habe, group: haben, core: true }
+  - { id: moegen, local: lubić, foreign: mögen, group: verb }
+  - { id: ich-mag, local: ja lubię, foreign: ich mag, group: moegen }
   # Dziesiątki: -zig, z wyjątkiem dreißig; 20 z Kapitel 1.
   - { id: number-20, local: dwadzieścia, foreign: zwanzig, hint: 20, group: number/tens }
   - {
@@ -359,6 +370,35 @@ concepts:
       foreign: neunundzwanzig,
       hint: 29,
       group: number/twenties,
+    }
+  # Liczby dwucyfrowe: jedności + und + dziesiątki, gdy już znane są obie części.
+  - {
+      id: number-36,
+      local: trzydzieści sześć,
+      foreign: sechsunddreißig,
+      hint: 36,
+      group: number/large,
+    }
+  - {
+      id: number-42,
+      local: czterdzieści dwa,
+      foreign: zweiundvierzig,
+      hint: 42,
+      group: number/large,
+    }
+  - {
+      id: number-67,
+      local: sześćdziesiąt siedem,
+      foreign: siebenundsechzig,
+      hint: 67,
+      group: number/large,
+    }
+  - {
+      id: number-99,
+      local: dziewięćdziesiąt dziewięć,
+      foreign: neunundneunzig,
+      hint: 99,
+      group: number/large,
     }
   # Sto.
   - {
