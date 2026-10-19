@@ -2,12 +2,6 @@ id: kapitel-2-more
 name: Kapitel 2 (more)
 disabled: true
 concepts:
-  # Zaimki, potrzebne do odmiany czasowników.
-  - { id: ich, local: ja, foreign: ich, group: pronoun, core: true }
-  - { id: du, local: ty, foreign: du, group: pronoun, core: true }
-  - { id: er, local: on, foreign: er, group: pronoun, core: true }
-  - { id: sie, local: ona, foreign: sie, group: pronoun, core: true }
-  - { id: es, local: ono, foreign: es, group: pronoun, core: true }
   # Tak, nie, no jasne: krótkie odpowiedzi.
   # - { id: na-klar, local: no jasne, foreign: na klar }
   # Słowa podobne do polskich i angielskich, od nich najłatwiej zacząć.
@@ -15,12 +9,8 @@ concepts:
   # - { id: der-sport, local: sport, foreign: der Sport, group: hobby }
   # - { id: der-fussball, local: piłka nożna, foreign: der Fußball, group: hobby }
   # Rodzina i przyjaciele.
-  # Pierwsze pytania: co to jest, kto to jest, i powtórka pytań o siebie z Kapitel 1.
-  - { id: was-ist-das, local: co to jest?, foreign: was ist das?, core: true }
-  - { id: wer-ist-das, local: kto to jest?, foreign: wer ist das? }
   #- { id: ich-bin-10-jahre-alt, local: mam 10 lat, foreign: ich bin 10 Jahre alt }
   # Przybory szkolne, zawsze z rodzajnikiem. Rzeczowniki na -e zwykle żeńskiego.
-  - { id: die-schulsachen, local: przybory szkolne, foreign: die Schulsachen, plural: true }
   # Pozostałe przedmioty osobiste i zwierzęta.
   - { id: der-schreibtisch, local: biurko, foreign: der Schreibtisch, group: thing/personal }
   # Szkoła: -in tworzy formę żeńską.
@@ -53,9 +43,9 @@ concepts:
   - { id: du-kennst, local: ty znasz, foreign: du kennst, group: kennen }
   - { id: er-kennt, local: on zna, foreign: er kennt, group: kennen }
   - { id: sie-kennt, local: ona zna, foreign: sie kennt, group: kennen }
-  - { id: du-gehst, local: ty chodzisz, foreign: du gehst, group: gehen }
-  - { id: er-geht, local: on chodzi, foreign: er geht, group: gehen }
-  - { id: sie-geht, local: ona chodzi, foreign: sie geht, group: gehen }
+  - { id: du-gehst, local: ty idziesz, foreign: du gehst, group: gehen }
+  - { id: er-geht, local: on idzie, foreign: er geht, group: gehen }
+  - { id: sie-geht, local: ona idzie, foreign: sie geht, group: gehen }
   - { id: du-hast, local: ty masz, foreign: du hast, group: haben, core: true }
   - { id: er-hat, local: on ma, foreign: er hat, group: haben, core: true }
   - { id: sie-hat, local: ona ma, foreign: sie hat, group: haben }

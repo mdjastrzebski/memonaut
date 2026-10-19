@@ -4,6 +4,12 @@ concepts:
   # Tak i nie: krótkie odpowiedzi.
   - { id: ja, local: tak, foreign: ja, core: true }
   - { id: nein, local: nie, foreign: nein, core: true }
+  # Zaimki, potrzebne do pytań i odmiany czasowników.
+  - { id: ich, local: ja, foreign: ich, group: pronoun, core: true }
+  - { id: du, local: ty, foreign: du, group: pronoun, core: true }
+  - { id: er, local: on, foreign: er, group: pronoun, core: true }
+  - { id: sie, local: ona, foreign: sie, group: pronoun, core: true }
+  - { id: es, local: ono, foreign: es, group: pronoun, core: true }
   # Pytania o siebie, z Kapitel 1.
   - { id: wer-bist-du, local: kim jesteś?, foreign: wer bist du? }
   - { id: wie-gehts-dir, local: jak się masz?, foreign: wie geht's dir? }
@@ -14,11 +20,14 @@ concepts:
   # Hobby, szkoła i świat.
   - { id: das-hobby, local: hobby, foreign: das Hobby }
   - { id: die-schule, local: szkoła, foreign: die Schule, explanation: 'na -[e] → zwykle [die]' }
-  - { id: die-schulsache, local: rzecz szkolna, foreign: die Schulsache }
+  - { id: die-schulsachen, local: przybory szkolne, foreign: die Schulsachen, plural: true }
   - { id: die-welt, local: świat, foreign: die Welt }
   # Początek zdania, do wskazywania rzeczy.
   - { id: das-ist, local: to jest, foreign: das ist }
   - { id: ist-das, local: czy to jest, foreign: ist das }
+  # Pierwsze pytania: co to jest, kto to jest.
+  - { id: was-ist-das, local: co to jest?, foreign: was ist das?, core: true }
+  - { id: wer-ist-das, local: kto to jest?, foreign: wer ist das? }
   # Rodzina i przyjaciele.
   - { id: die-mama, local: mama, foreign: die Mama }
   - { id: der-papa, local: tata, foreign: der Papa }
@@ -159,14 +168,6 @@ concepts:
       explanation: 'na -[e] → zwykle [die]',
       group: thing/school,
     }
-  - {
-      id: der-stift,
-      local: kredka lub pisak,
-      foreign: der Stift,
-      localPlural: kredki lub pisaki,
-      foreignPlural: die Stifte,
-      group: thing/school,
-    }
   - { id: bunt, local: kolorowy, foreign: bunt }
   - {
       id: der-bleistift,
@@ -241,8 +242,8 @@ concepts:
   - { id: ich-lerne, local: ja się uczę, foreign: ich lerne, group: lernen, core: true }
   - { id: kennen, local: znać, foreign: kennen, group: verb }
   - { id: ich-kenne, local: ja znam, foreign: ich kenne, group: kennen }
-  - { id: gehen, local: chodzić, foreign: gehen, group: verb }
-  - { id: ich-gehe, local: ja chodzę, foreign: ich gehe, group: gehen }
+  - { id: gehen, local: iść, foreign: gehen, group: verb }
+  - { id: ich-gehe, local: ja idę, foreign: ich gehe, group: gehen }
   - { id: haben, local: mieć, foreign: haben, group: verb }
   - { id: ich-habe, local: ja mam, foreign: ich habe, group: haben, core: true }
   - { id: moegen, local: lubić, foreign: mögen, group: verb }
