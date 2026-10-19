@@ -63,15 +63,15 @@ describe('almost correct answers are Hard', () => {
     ['Straße', 'Strasse', ['diacritics']],
     ['sieben', 'siben', ['typo']],
     ['sieben', 'siebem', ['typo']],
-    ['acht', 'achtt', ['typo']],
+    ['achtzig', 'achtzigg', ['typo']],
     // Mistakes accumulate.
     ['fünf', 'Funf', ['case', 'diacritics']],
     ['fünf', 'FUENF', ['case', 'diacritics']],
     ['über', 'Uber', ['case', 'diacritics']],
     ['sieben', 'Siebem', ['case', 'typo']],
-    ['fünf', 'funff', ['diacritics', 'typo']],
-    ['fünf', 'fuemf', ['diacritics', 'typo']],
-    ['fünf', 'Funff', ['case', 'diacritics', 'typo']],
+    ['fünfzig', 'funfzigg', ['diacritics', 'typo']],
+    ['fünfzig', 'fuemfzig', ['diacritics', 'typo']],
+    ['fünfzig', 'Funfzigg', ['case', 'diacritics', 'typo']],
     // Punctuation is forgiven on top.
     ["what's your name?", 'What’s your name', ['case']],
   ])('%s ← %s', (expected, input, issues) => {
@@ -122,8 +122,32 @@ test('a number must be exact, as one digit off is a wrong result', () => {
   expect(gradeAnswer('49', '4 9', 1000).grade).toBe(Rating.Again);
   expect(gradeAnswer('1000', '100', 1000).grade).toBe(Rating.Again);
   expect(gradeAnswer('49', ' 49 ', 1000).grade).toBe(Rating.Easy);
-  // Words still forgive a letter off.
-  expect(gradeAnswer('neun', 'nein', 1000).grade).toBe(Rating.Hard);
+  // Long words still forgive a letter off.
+  expect(gradeAnswer('neunzig', 'neinzig', 1000).grade).toBe(Rating.Hard);
+});
+
+describe('one letter off is forgiven only in a word of 6 letters or more', () => {
+  test.each([
+    ['neun', 'nein'],
+    ['der', 'den'],
+    ['das ist mein', 'das ist meine'],
+    ['das ist mein', 'das ist dein'],
+    ['das ist meine', 'das ist mein'],
+    ['von Julian', 'vom Julian'],
+  ])('%s as %s is Again', (expected, input) => {
+    expect(gradeAnswer(expected, input, SLOW).grade).toBe(Rating.Again);
+  });
+
+  test('one letter off in a long word is Hard', () => {
+    expect(gradeAnswer('mein Buntstift', 'mein Buntstif', SLOW)).toMatchObject({
+      grade: Rating.Hard,
+      issues: ['typo'],
+    });
+  });
+
+  test('wrong capitalization and missing umlauts are still forgiven in short words', () => {
+    expect(gradeAnswer('für mich', 'Fur mich', SLOW).grade).toBe(Rating.Hard);
+  });
 });
 
 describe('several right answers', () => {

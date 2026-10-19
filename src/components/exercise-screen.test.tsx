@@ -298,7 +298,7 @@ test('plural form shows the word and asks for its plural, then shows how it is m
   expect(utterances.map((utterance) => utterance.text)).toEqual(['die Bücher']);
 });
 
-test('cloze shows the word with a gap and its meaning, and forgives a typo in a phrase', async () => {
+test('cloze shows the word with a gap and its meaning, and forgives no typo in a short word of a phrase', async () => {
   const user = userEvent.setup();
   renderExercise('german/cloze-das-buch-von-anna', false, ['cloze']);
   expect(screen.getByRole('heading')).toHaveTextContent('das ist das Buch');
@@ -306,7 +306,7 @@ test('cloze shows the word with a gap and its meaning, and forgives a typo in a 
 
   await user.type(screen.getByRole('textbox', { name: 'Answer' }), 'von Ana{Enter}');
   const status = screen.getByRole('status');
-  expect(status).toHaveTextContent('Hard');
+  expect(status).toHaveTextContent('Again');
   expect(status).toHaveTextContent('das ist das Buch von Anna');
   expect(utterances.map((utterance) => utterance.text)).toEqual(['das ist das Buch von Anna']);
 });

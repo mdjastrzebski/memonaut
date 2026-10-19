@@ -8,6 +8,9 @@ const FAST_BASE_MS = 4000;
 const FAST_PER_CHAR_MS = 1000;
 const FAST_PER_SPECIAL_CHAR_MS = 2500;
 
+/** One letter off is forgiven only in a word at least this long, as in a shorter one it's often another word. */
+const MIN_TYPO_WORD_LENGTH = 6;
+
 /** A forgiven mistake in an almost-correct answer. */
 export type AnswerIssue = 'case' | 'diacritics' | 'typo';
 
@@ -44,8 +47,9 @@ interface GradeOptions {
  * - Easy: exact and typed within the fast limit
  * - Good: exact
  * - Hard: exact after forgiving any combination of wrong capitalization, missing umlauts or ß
- *   ("Funf", "fuenf") and one letter off; only wrong capitalization when `strict`; nothing when
- *   the answer is a number, as one digit off is a wrong result, not a typo
+ *   ("Funf", "fuenf") and one letter off in a word of 6 letters or more, as in a shorter one it's
+ *   often another word, e.g. "mein" for "meine" or "den" for "der"; only wrong capitalization when
+ *   `strict`; nothing when the answer is a number, as one digit off is a wrong result, not a typo
  * - Again: anything else
  *
  * Forgiven mistakes accumulate: the answer is compared with all of them forgiven at once, and
@@ -75,7 +79,7 @@ export function gradeAnswer(
   }
 
   const remaining = distanceIgnoringDiacritics(lower(given), lower(target));
-  if (remaining > 1) {
+  if (remaining > 1 || (remaining === 1 && isTypoInShortWord(lower(given), lower(target)))) {
     return result(Rating.Again);
   }
 
@@ -102,6 +106,20 @@ export function gradeAnyAnswer(
     if (!best || result.grade > best.result.grade) best = { answer, result };
   }
   return best!;
+}
+
+/**
+ * Whether a word shorter than `MIN_TYPO_WORD_LENGTH` differs, when both answers have as many words,
+ * e.g. "mein" for "meine".
+ */
+function isTypoInShortWord(given: string, target: string): boolean {
+  const givenWords = given.split(' ');
+  const targetWords = target.split(' ');
+  if (givenWords.length !== targetWords.length) return false;
+  return targetWords.some(
+    (word, i) =>
+      word.length < MIN_TYPO_WORD_LENGTH && distanceIgnoringDiacritics(word, givenWords[i]) > 0,
+  );
 }
 
 /** "9", "-3", "2,5" or "1000". */

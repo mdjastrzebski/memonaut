@@ -237,6 +237,28 @@ concepts:
       cloze: 'das ist das Handy [von Anna]',
       hint: to jest telefon Anny,
     }
+  # Odpowiedź na pytanie z dein: das ist na początku, potem mein lub meine.
+  - {
+      id: cloze-ist-das-dein-bleistift-nein-das-ist-mein-buntstift,
+      cloze: "ist das dein Bleistift?\nnein, [das ist mein] Buntstift",
+      hint: 'czy to twój ołówek? nie, to moja kredka',
+    }
+  - {
+      id: cloze-ist-das-deine-brille-ja-das-ist-meine-brille,
+      cloze: "ist das deine Brille?\nja, [das ist meine] Brille",
+      hint: 'czy to są twoje okulary? tak, to są moje okulary',
+      explanation: 'die Brille to jedna rzecz → das [ist] [meine] Brille',
+    }
+  - {
+      id: cloze-ist-das-dein-heft-nein-das-ist-mein-buch,
+      cloze: "ist das dein Heft?\nnein, [das ist mein] Buch",
+      hint: 'czy to twój zeszyt? nie, to moja książka',
+    }
+  - {
+      id: cloze-ist-das-dein-taschentuch-ja-das-ist-mein-taschentuch,
+      cloze: "ist das dein Taschentuch?\nja, [das ist mein] Taschentuch",
+      hint: 'czy to twoja chusteczka? tak, to moja chusteczka',
+    }
   # Czasowniki: najpierw regularne lernen, kennen, gehen, potem haben i mögen; po bezokoliczniku forma z ich.
   - { id: lernen, local: uczyć się, foreign: lernen, group: verb }
   - { id: ich-lerne, local: ja się uczę, foreign: ich lerne, group: lernen, core: true }

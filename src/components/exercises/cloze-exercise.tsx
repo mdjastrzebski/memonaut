@@ -19,7 +19,7 @@ export function ClozeExercise(props: ExerciseProps) {
       {...props}
       prompt={
         <>
-          <h2 className="min-w-0 font-display text-3xl font-extrabold tracking-tight break-words sm:text-4xl">
+          <h2 className="min-w-0 font-display text-3xl font-extrabold tracking-tight break-words whitespace-pre-wrap sm:text-4xl">
             {before}
             <span
               aria-label="gap"
