@@ -46,29 +46,19 @@ concepts:
   - { id: spanisch, local: język hiszpański, foreign: Spanisch, group: language }
   - { id: die-sprache, local: język, foreign: die Sprache, explanation: 'na -[e] → zwykle [die]' }
   - { id: der-unterricht, local: 'lekcje, zajęcia', foreign: der Unterricht }
-  # Czasowniki z rozdziału, potem ich odmiana: najpierw regularne lernen, kennen, gehen, potem haben i mögen.
-  - { id: lernen, local: uczyć się, foreign: lernen, group: verb }
-  - { id: kennen, local: znać, foreign: kennen, group: verb }
-  - { id: gehen, local: chodzić, foreign: gehen, group: verb }
-  - { id: haben, local: mieć, foreign: haben, group: verb }
-  - { id: moegen, local: lubić, foreign: mögen, group: verb }
-  - { id: ich-lerne, local: ja się uczę, foreign: ich lerne, group: lernen, core: true }
+  # Odmiana czasowników z Kapitel 2: du, er, sie.
   - { id: du-lernst, local: ty się uczysz, foreign: du lernst, group: lernen, core: true }
   - { id: er-lernt, local: on się uczy, foreign: er lernt, group: lernen, core: true }
   - { id: sie-lernt, local: ona się uczy, foreign: sie lernt, group: lernen }
-  - { id: ich-kenne, local: ja znam, foreign: ich kenne, group: kennen }
   - { id: du-kennst, local: ty znasz, foreign: du kennst, group: kennen }
   - { id: er-kennt, local: on zna, foreign: er kennt, group: kennen }
   - { id: sie-kennt, local: ona zna, foreign: sie kennt, group: kennen }
-  - { id: ich-gehe, local: ja chodzę, foreign: ich gehe, group: gehen }
   - { id: du-gehst, local: ty chodzisz, foreign: du gehst, group: gehen }
   - { id: er-geht, local: on chodzi, foreign: er geht, group: gehen }
   - { id: sie-geht, local: ona chodzi, foreign: sie geht, group: gehen }
-  - { id: ich-habe, local: ja mam, foreign: ich habe, group: haben, core: true }
   - { id: du-hast, local: ty masz, foreign: du hast, group: haben, core: true }
   - { id: er-hat, local: on ma, foreign: er hat, group: haben, core: true }
   - { id: sie-hat, local: ona ma, foreign: sie hat, group: haben }
-  - { id: ich-mag, local: ja lubię, foreign: ich mag, group: moegen }
   - { id: du-magst, local: ty lubisz, foreign: du magst, group: moegen }
   - { id: er-mag, local: on lubi, foreign: er mag, group: moegen }
   - { id: sie-mag, local: ona lubi, foreign: sie mag, group: moegen }
@@ -240,33 +230,4 @@ concepts:
       local: to są moje książki,
       foreign: das sind meine Bücher,
       group: possessive,
-    }
-  # Liczby dwucyfrowe: jedności + und + dziesiątki, gdy już znane są obie części.
-  - {
-      id: number-36,
-      local: trzydzieści sześć,
-      foreign: sechsunddreißig,
-      hint: 36,
-      group: number/large,
-    }
-  - {
-      id: number-42,
-      local: czterdzieści dwa,
-      foreign: zweiundvierzig,
-      hint: 42,
-      group: number/large,
-    }
-  - {
-      id: number-67,
-      local: sześćdziesiąt siedem,
-      foreign: siebenundsechzig,
-      hint: 67,
-      group: number/large,
-    }
-  - {
-      id: number-99,
-      local: dziewięćdziesiąt dziewięć,
-      foreign: neunundneunzig,
-      hint: 99,
-      group: number/large,
     }
