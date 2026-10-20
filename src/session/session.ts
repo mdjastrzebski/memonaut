@@ -191,7 +191,7 @@ const Step = {
   /** The next Exercise Type of a started Concept, easiest type first, then in Deck order. */
   Unlocked: 1,
   /**
-   * A new Concept's first Exercise Type, in Deck order or shuffled for a Deck with `shuffleNew`,
+   * A new Concept's first Exercise Type, in Deck order, or for a Deck with `shuffleNew` shuffled,
    * its priority Concepts first.
    */
   New: 2,
@@ -225,10 +225,16 @@ export function createSession({
   const newConceptIds = deckConcepts
     .map((concept) => concept.id)
     .filter((conceptId) => conceptCards(conceptId).every((card) => card.srs.state === State.New));
-  const isPriority = (conceptId: string) => deck.priorityConceptIds?.includes(conceptId) ?? false;
-  const newOrder = (deck.shuffleNew ? shuffle(newConceptIds, random) : newConceptIds).sort(
-    (a, b) => Number(isPriority(b)) - Number(isPriority(a)),
-  );
+  const isPriority = (conceptId: string) => deck.priorityConceptIds?.includes(conceptId);
+  const newOrder = deck.shuffleNew
+    ? [
+        ...shuffle(newConceptIds.filter(isPriority), random),
+        ...shuffle(
+          newConceptIds.filter((conceptId) => !isPriority(conceptId)),
+          random,
+        ),
+      ]
+    : newConceptIds;
 
   const candidates = deckConcepts.flatMap((concept, conceptIndex) =>
     getCandidates(conceptCards(concept.id), now, now).map(({ card, step }) => {

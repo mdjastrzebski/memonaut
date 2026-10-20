@@ -299,14 +299,16 @@ export function buildContent(files: Record<string, string>): Content {
       const deck = read(path, files[path], deckSchema(subject.kind));
       checkUnique(deckIds, deck.id, `${path}: duplicate deck id`);
       const listed = new Set<string>();
+      const priorityIds: string[] = [];
       for (const { core, priority, ...fields } of deck.concepts) {
         checkUnique(listed, fields.id, `${path}: concept listed twice`);
         if (priority && !deck.shuffleNew) {
-          throw new Error(
-            `${path}: concept "${fields.id}" is marked priority, but the deck lists new concepts in order`,
-          );
+          throw new Error(`${path}: concept "${fields.id}" is marked priority without shuffleNew`);
         }
         addConcept(path, fields);
+        if (priority) {
+          priorityIds.push(fields.id);
+        }
         if (core && !deck.disabled) {
           coreIds.add(fields.id);
         }
@@ -315,7 +317,6 @@ export function buildContent(files: Record<string, string>): Content {
       const exerciseTypes = getExerciseTypes(path, deck.exerciseTypes);
       const conceptIds = deck.concepts.map((concept) => concept.id);
       conceptIds.forEach((conceptId) => usedIds.add(conceptId));
-      const priorityIds = deck.concepts.filter((concept) => concept.priority).map(({ id }) => id);
       content.decks.push({
         id: prefix(deck.id),
         subjectId: subject.id,

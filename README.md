@@ -81,7 +81,7 @@ A session's Cards are picked in this order:
 
 1. due Cards, most overdue first; of a Concept's due Cards, the one most likely forgotten, the easier type on a tie
 2. the next unlocked Exercise Type of a started Concept, easiest type first, then in Deck order
-3. new Concepts, with their first Exercise Type after the word's intro, in Deck order; with `shuffleNew: true` (also settable in `core.yaml`) in random order instead, but those marked `priority: true` first, e.g. words the class is learning now. Only a shuffled Deck takes `priority`, as an ordered one can list them first
+3. new Concepts, with their first Exercise Type after the word's intro, in Deck order; with `shuffleNew: true` (also settable in `core.yaml`) in random order instead, those marked `priority: true` first, e.g. words the class is learning now; an ordered Deck lists those first instead
 4. Cards held back for today: due ones, then unlocked ones
 5. Cards not yet due, reviewed ahead, soonest due first
 

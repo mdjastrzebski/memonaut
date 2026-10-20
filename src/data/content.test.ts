@@ -225,7 +225,7 @@ concepts:
   expect(decks[0].priorityConceptIds).toEqual(['german/b']);
   expect(() =>
     buildContent({ './german/subject.yaml': subject, './german/decks/words.yaml': deck(false) }),
-  ).toThrow('concept "b" is marked priority, but the deck lists new concepts in order');
+  ).toThrow('concept "b" is marked priority without shuffleNew');
 });
 
 test('a deck shows intros unless it turns them off, and core.yaml sets it for the core deck', () => {
