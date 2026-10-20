@@ -209,6 +209,25 @@ concepts:
   expect(shuffleNew('german/ordered')).toBeUndefined();
 });
 
+test('a shuffled deck lists its priority concepts, which an ordered deck rejects', () => {
+  const deck = (shuffleNew: boolean) => `
+id: words
+name: Words
+shuffleNew: ${shuffleNew}
+concepts:
+  - { id: a, local: x, foreign: y }
+  - { id: b, local: x, foreign: z, priority: true }
+`;
+  const { decks } = buildContent({
+    './german/subject.yaml': subject,
+    './german/decks/words.yaml': deck(true),
+  });
+  expect(decks[0].priorityConceptIds).toEqual(['german/b']);
+  expect(() =>
+    buildContent({ './german/subject.yaml': subject, './german/decks/words.yaml': deck(false) }),
+  ).toThrow('concept "b" is marked priority without shuffleNew');
+});
+
 test('a deck shows intros unless it turns them off, and core.yaml sets it for the core deck', () => {
   const { decks } = buildContent({
     './german/subject.yaml': subject,
