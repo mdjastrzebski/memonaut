@@ -54,6 +54,8 @@ export interface Deck {
   strictSpelling?: boolean;
   /** Introduces new Concepts in random order instead of Deck order. */
   shuffleNew?: boolean;
+  /** Concepts introduced before the Deck's other new ones, in a Deck with `shuffleNew`. */
+  priorityConceptIds?: string[];
   /**
    * Shows a new Concept, and a tricky one once missed, with its answer before it's asked. True if
    * left out; off for e.g. math, whose questions are worked out rather than remembered.

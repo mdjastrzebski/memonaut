@@ -2,7 +2,7 @@ id: trudne-slowka
 name: Trudne słówka
 # Spelling practice: a missing Polish letter or a letter off is wrong, not almost right.
 strictSpelling: true
-# New words come in random order, not the order listed.
+# New words come in random order, not the order listed, those marked priority first.
 shuffleNew: true
 concepts:
   - { id: baltyk, foreign: Bałtyk }
@@ -15,6 +15,7 @@ concepts:
   - { id: borowka, foreign: borówka }
   - { id: boze-narodzenie, foreign: Boże Narodzenie }
   - { id: brud, foreign: brud }
+  - { id: brudny, foreign: brudny, priority: true }
   - { id: brzeg, foreign: brzeg }
   - { id: brzoza, foreign: brzoza }
   - { id: brzuch, foreign: brzuch }
@@ -102,6 +103,7 @@ concepts:
   - { id: harcerz, foreign: harcerz }
   - { id: harmonia, foreign: harmonia }
   - { id: harmonijka, foreign: harmonijka }
+  - { id: hej, foreign: hej, priority: true }
   - { id: helikopter, foreign: helikopter }
   - { id: herb, foreign: herb }
   - { id: herbata, foreign: herbata }
@@ -166,6 +168,8 @@ concepts:
   - { id: korzen, foreign: korzeń }
   - { id: korzysc, foreign: korzyść }
   - { id: kosc, foreign: kość }
+  - { id: kosztuje, foreign: kosztuje, priority: true }
+  - { id: koszula, foreign: koszula, priority: true }
   - { id: kolko, foreign: kółko }
   - { id: krakow, foreign: Kraków }
   - { id: kroj, foreign: krój }
@@ -188,6 +192,7 @@ concepts:
   - { id: ktory, foreign: który }
   - { id: kucharz, foreign: kucharz }
   - { id: kuchnia, foreign: kuchnia }
+  - { id: kurtka, foreign: kurtka, priority: true }
   - { id: lekarz, foreign: lekarz }
   - { id: lezak, foreign: leżak }
   - { id: lezec, foreign: leżeć }
@@ -212,6 +217,7 @@ concepts:
   - { id: moze, foreign: może, spokenHint: przypuszczenie }
   - { id: moj, foreign: mój }
   - { id: mozg, foreign: mózg }
+  - { id: mowic, foreign: mówić, priority: true }
   - { id: mrowka, foreign: mrówka }
   - { id: mroz, foreign: mróz }
   - { id: mucha, foreign: mucha }

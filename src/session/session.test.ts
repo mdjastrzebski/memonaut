@@ -152,6 +152,21 @@ test('picks new concepts in deck order, or shuffled for a deck with shuffleNew',
   expect(pickNew({ ...deck, shuffleNew: true })).toEqual(['two']);
 });
 
+test('picks priority concepts before the other new ones in a shuffled deck', () => {
+  const pickNew = (random: () => number) =>
+    Object.keys(
+      createSession({
+        deck: { ...deck, shuffleNew: true, priorityConceptIds: ['one'] },
+        concepts,
+        maxCards: 1,
+        now: start,
+        random,
+      }).concepts,
+    );
+  expect(pickNew(() => 0)).toEqual(['one']);
+  expect(pickNew(() => 0.99)).toEqual(['one']);
+});
+
 test('reviews ahead with the room left, queuing every dictation before the translations', () => {
   const cards = byId(reviewed('one:dictation', start), reviewed('two:dictation', start));
   for (const value of [0, 0.5, 0.99]) {

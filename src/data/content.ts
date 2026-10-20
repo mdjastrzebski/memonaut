@@ -141,7 +141,9 @@ const deckSchema = (kind: SubjectKind) =>
       conceptSchema(kind, {
         /** Puts the Concept in the Subject's core Deck. */
         core: flag,
-      }) as unknown as z.ZodType<ConceptFields & { core: boolean }>,
+        /** Introduces the Concept before the Deck's other new ones; needs `shuffleNew`. */
+        priority: flag,
+      }) as unknown as z.ZodType<ConceptFields & { core: boolean; priority: boolean }>,
     ),
   });
 
@@ -297,8 +299,13 @@ export function buildContent(files: Record<string, string>): Content {
       const deck = read(path, files[path], deckSchema(subject.kind));
       checkUnique(deckIds, deck.id, `${path}: duplicate deck id`);
       const listed = new Set<string>();
-      for (const { core, ...fields } of deck.concepts) {
+      for (const { core, priority, ...fields } of deck.concepts) {
         checkUnique(listed, fields.id, `${path}: concept listed twice`);
+        if (priority && !deck.shuffleNew) {
+          throw new Error(
+            `${path}: concept "${fields.id}" is marked priority, but the deck lists new concepts in order`,
+          );
+        }
         addConcept(path, fields);
         if (core && !deck.disabled) {
           coreIds.add(fields.id);
@@ -308,6 +315,7 @@ export function buildContent(files: Record<string, string>): Content {
       const exerciseTypes = getExerciseTypes(path, deck.exerciseTypes);
       const conceptIds = deck.concepts.map((concept) => concept.id);
       conceptIds.forEach((conceptId) => usedIds.add(conceptId));
+      const priorityIds = deck.concepts.filter((concept) => concept.priority).map(({ id }) => id);
       content.decks.push({
         id: prefix(deck.id),
         subjectId: subject.id,
@@ -316,6 +324,7 @@ export function buildContent(files: Record<string, string>): Content {
         conceptIds: conceptIds.map(prefix),
         ...(deck.strictSpelling && { strictSpelling: true }),
         ...(deck.shuffleNew && { shuffleNew: true }),
+        ...(priorityIds.length > 0 && { priorityConceptIds: priorityIds.map(prefix) }),
         ...(!deck.showIntro && { showIntro: false }),
         ...getDeckExerciseTypes(path, conceptIds, exerciseTypes),
       });
