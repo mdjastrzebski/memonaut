@@ -1,5 +1,16 @@
-import { ArrowDown, ChevronDown } from 'lucide-react';
-import { useId, useState } from 'react';
+import {
+  AlarmClock,
+  ArrowDown,
+  Brain,
+  CalendarClock,
+  ChevronDown,
+  Circle,
+  Gauge,
+  Repeat,
+  RotateCcw,
+  type LucideIcon,
+} from 'lucide-react';
+import { useId, useState, type ReactNode } from 'react';
 
 import { CONCEPT_NOUNS, getConceptText } from '@/components/concept-text';
 import { EXERCISES } from '@/components/exercise-types';
@@ -23,24 +34,31 @@ const STATS: Record<
   CardStat,
   {
     label: string;
+    Icon: LucideIcon;
     /** Sorts a column by it, the most worth a look first, e.g. the hardest Cards. */
     value: (srs: FsrsCard, now: Date) => number;
     descending: boolean;
-    format: (srs: FsrsCard, now: Date) => string;
+    format: (srs: FsrsCard, now: Date) => ReactNode;
     /** Whether a Card's value is worth a look, e.g. overdue, shown in red. */
     warn: (srs: FsrsCard, now: Date) => boolean;
   }
 > = {
   due: {
     label: 'Next review',
+    Icon: CalendarClock,
     value: (srs) => srs.due.getTime(),
     descending: false,
     format: (srs, now) =>
-      srs.due <= now ? 'due' : formatDuration(srs.due.getTime() - now.getTime()),
+      srs.due <= now ? (
+        <Symbol Icon={AlarmClock} label="due" />
+      ) : (
+        formatDuration(srs.due.getTime() - now.getTime())
+      ),
     warn: (srs, now) => srs.due <= now,
   },
   recall: {
     label: 'Recall',
+    Icon: Brain,
     value: (srs, now) => getRetrievability(srs, now),
     descending: false,
     format: (srs, now) => formatPercent(getRetrievability(srs, now)),
@@ -48,6 +66,7 @@ const STATS: Record<
   },
   difficulty: {
     label: 'Difficulty',
+    Icon: Gauge,
     value: (srs) => srs.difficulty,
     descending: true,
     format: (srs) => srs.difficulty.toFixed(1),
@@ -55,6 +74,7 @@ const STATS: Record<
   },
   reviews: {
     label: 'Reviews',
+    Icon: Repeat,
     value: (srs) => srs.reps,
     descending: true,
     format: (srs) => String(srs.reps),
@@ -62,6 +82,7 @@ const STATS: Record<
   },
   lapses: {
     label: 'Forgotten',
+    Icon: RotateCcw,
     value: (srs) => srs.lapses,
     descending: true,
     format: (srs) => String(srs.lapses),
@@ -70,7 +91,7 @@ const STATS: Record<
 };
 
 const STAT_OPTIONS = Object.entries(STATS).map(
-  ([stat, { label }]) => [stat, label] as [CardStat, string],
+  ([stat, { label, Icon }]) => [stat, label, Icon] as [CardStat, string, LucideIcon],
 );
 
 const PROGRESS_TINTS: Record<Progress, string> = {
@@ -241,7 +262,7 @@ function StatCell({
         title={`${label}: not practised yet`}
         className="text-center text-muted-foreground"
       >
-        –
+        <Symbol Icon={Circle} label="new" className="size-3 opacity-50" />
       </TableCell>
     );
   }
@@ -294,4 +315,22 @@ function sortConcepts<T>(
   const rest = keyed.filter(({ key }) => key === undefined);
   practised.sort((a, b) => (descending ? b.key! - a.key! : a.key! - b.key!));
   return [...practised, ...rest].map(({ concept }) => concept);
+}
+
+/** A symbol in place of a word, which screen readers still read. */
+function Symbol({
+  Icon,
+  label,
+  className,
+}: {
+  Icon: LucideIcon;
+  label: string;
+  className?: string;
+}) {
+  return (
+    <>
+      <Icon aria-hidden className={cn('mx-auto size-4', className)} />
+      <span className="sr-only">{label}</span>
+    </>
+  );
 }

@@ -95,8 +95,8 @@ test("shows a set's words by exercise, sorted by the stat shown", async () => {
   expect(translations()).toEqual([
     ['Mondayponiedziałek', '5d'],
     ['Tuesdaywtorek', 'due'],
-    ['Wednesdayśroda', '–'],
-    ['Thursdayczwartek', '–'],
+    ['Wednesdayśroda', 'new'],
+    ['Thursdayczwartek', 'new'],
   ]);
 
   await user.click(screen.getByRole('button', { name: 'Difficulty' }));
@@ -104,7 +104,7 @@ test("shows a set's words by exercise, sorted by the stat shown", async () => {
   expect(translations()).toEqual([
     ['Tuesdaywtorek', '8.0'],
     ['Mondayponiedziałek', '3.0'],
-    ['Wednesdayśroda', '–'],
-    ['Thursdayczwartek', '–'],
+    ['Wednesdayśroda', 'new'],
+    ['Thursdayczwartek', 'new'],
   ]);
 });
