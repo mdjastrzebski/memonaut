@@ -391,14 +391,82 @@ test('introduces a new word even when due cards take up all the effort', () => {
       }).cards,
     ),
   ).toEqual(['one:dictation', 'two:dictation', 'three:dictation']);
-  // With every word started, nothing new is added.
+  // With every word started, the next exercise type of one is added instead.
   const started = byId(
     cards['one:dictation'],
     reviewed('two:dictation', lastWeek, { due: nextDay(start) }),
   );
   expect(
     Object.keys(createSession({ deck, concepts, cards: started, maxEffort: 1, now: start }).cards),
-  ).toEqual(['one:dictation']);
+  ).toEqual(['one:dictation', 'two:translation']);
+});
+
+/**
+ * Session over six words, the first `started` of them with dictation learned a week ago and due
+ * next week, so their translation is unlocked. Nothing fits but the first Card.
+ */
+function createWithStarted(started: number, minNew: number) {
+  const ids = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'];
+  const six: Concept[] = ids.map((id) => ({
+    id,
+    subjectId: 'german',
+    kind: 'language',
+    local: id,
+    foreign: id,
+  }));
+  const lastWeek = new Date(start.getTime() - 7 * 24 * 60 * 60_000);
+  const nextWeek = new Date(start.getTime() + 7 * 24 * 60 * 60_000);
+  const cards = byId(
+    ...ids.slice(0, started).map((id) => reviewed(`${id}:dictation`, lastWeek, { due: nextWeek })),
+  );
+  return Object.keys(
+    createSession({
+      deck: { ...deck, conceptIds: ids },
+      concepts: six,
+      cards,
+      maxEffort: 0,
+      minNew,
+      now: start,
+    }).cards,
+  );
+}
+
+test('splits minNew between new words and deeper exercise types, a third deeper at least', () => {
+  // One of six words started: the least deeper share, 1 of 3.
+  expect(createWithStarted(1, 3)).toEqual(['c2:dictation', 'c3:dictation', 'c1:translation']);
+  // Half started: still 1 of 3, as it leans wider.
+  expect(createWithStarted(3, 3)).toEqual(['c4:dictation', 'c5:dictation', 'c1:translation']);
+  // Five of six started: 2 of 3 go deeper.
+  expect(createWithStarted(5, 3)).toEqual(['c6:dictation', 'c1:translation', 'c2:translation']);
+});
+
+test('fills minNew with the other kind when new words or deeper exercise types run short', () => {
+  // Only one deeper type: new words make up for it.
+  expect(createWithStarted(1, 6)).toEqual([
+    'c2:dictation',
+    'c3:dictation',
+    'c4:dictation',
+    'c5:dictation',
+    'c6:dictation',
+    'c1:translation',
+  ]);
+  // Only one new word: deeper types make up for it.
+  expect(createWithStarted(5, 6)).toEqual([
+    'c6:dictation',
+    'c1:translation',
+    'c2:translation',
+    'c3:translation',
+    'c4:translation',
+    'c5:translation',
+  ]);
+});
+
+test('goes deeper with an exercise type held back for today', () => {
+  const lastWeek = new Date(start.getTime() - 7 * 24 * 60 * 60_000);
+  // One is due, so its translation is held back, yet it still counts as going deeper.
+  const cards = byId(reviewed('one:dictation', lastWeek, { due: start }));
+  const session = createSession({ deck, concepts, cards, maxEffort: 1, minNew: 3, now: start });
+  expect(Object.keys(session.cards)).toEqual(['one:dictation', 'two:dictation', 'one:translation']);
 });
 
 test('starts at least minNew new words, on top of what fits', () => {

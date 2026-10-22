@@ -171,10 +171,14 @@ interface CreateSessionOptions {
   /**
    * Practise Cards, in the order of `Step`, while their expected effort points fit in this many,
    * but at least one. It decides only how many are picked, never which come first, except that
-   * new Concepts left out for room are added anyway, up to `minNew`.
+   * new Cards left out for room are added anyway, up to `minNew`.
    */
   maxEffort?: number;
-  /** Start at least this many new Concepts while there are some left, even if they don't fit. */
+  /**
+   * Start at least this many new Cards while there are some left, even if they don't fit: new
+   * Concepts and the next unlocked Exercise Types of started ones, even those held back, as
+   * `pickNewCards` splits them.
+   */
   minNew?: number;
   now?: Date;
   random?: () => number;
@@ -255,7 +259,9 @@ export function createSession({
     }),
   );
   candidates.sort((a, b) => compareKeys(a.sortKey, b.sortKey));
-  const picked = pickWithinEffort(candidates.slice(0, maxCards), maxEffort, minNew);
+  const startedShare =
+    deckConcepts.length === 0 ? 0 : 1 - newConceptIds.length / deckConcepts.length;
+  const picked = pickWithinEffort(candidates.slice(0, maxCards), maxEffort, minNew, startedShare);
   const pickedConceptIds = (filter: (candidate: (typeof picked)[number]) => boolean) => [
     ...new Set(picked.filter(filter).map(({ concept }) => concept.id)),
   ];
@@ -285,17 +291,46 @@ export function createSession({
 
 /**
  * The leading candidates whose expected effort fits in `maxEffort`, at least one, and so that
- * reviews never crowd out learning, the first `minNew` new Concepts while there are some left,
- * even if they don't fit.
+ * reviews never crowd out learning, `minNew` new Cards while there are some left, even if they
+ * don't fit.
  */
 function pickWithinEffort<T extends { step: Step; effort: number }>(
   candidates: T[],
   maxEffort: number,
   minNew: number,
+  startedShare: number,
 ): T[] {
   const picked = takeWithinEffort(candidates, maxEffort);
-  const firstNew = candidates.filter(({ step }) => step === Step.New).slice(0, minNew);
-  return [...picked, ...firstNew.filter((candidate) => !picked.includes(candidate))];
+  const newCards = pickNewCards(candidates, minNew, startedShare);
+  return [...picked, ...newCards.filter((candidate) => !picked.includes(candidate))];
+}
+
+/**
+ * The least share of new Cards that go deeper, while there are some: a third, e.g. 2 of 6 in 10
+ * minutes, so that a wide Deck still moves on to harder Exercise Types.
+ */
+export const MIN_DEEPER_SHARE = 1 / 3;
+
+/**
+ * `count` Cards not practised yet, split between going wider, with new Concepts, and deeper, with
+ * the next Exercise Type of started ones, held back or not. Wider first: the deeper share grows
+ * with the share of the Deck's Concepts started, from `MIN_DEEPER_SHARE`. When one kind runs
+ * short, the other makes up for it.
+ */
+function pickNewCards<T extends { step: Step }>(
+  candidates: T[],
+  count: number,
+  startedShare: number,
+): T[] {
+  const wider = candidates.filter(({ step }) => step === Step.New);
+  const deeper = candidates.filter(
+    ({ step }) => step === Step.Unlocked || step === Step.HeldUnlocked,
+  );
+
+  const deeperWanted = Math.floor(count * Math.max(MIN_DEEPER_SHARE, startedShare));
+  const deeperCount = Math.min(deeper.length, Math.max(deeperWanted, count - wider.length));
+  const widerCount = Math.min(wider.length, count - deeperCount);
+  return [...wider.slice(0, widerCount), ...deeper.slice(0, deeperCount)];
 }
 
 /** The leading candidates whose expected effort fits in `maxEffort`, at least one. */
