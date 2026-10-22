@@ -22,6 +22,8 @@ const STATS: Record<
   CardStat,
   {
     label: string;
+    /** In the column's header. */
+    short: string;
     /** Sorts a column by it, the most worth a look first, e.g. the hardest Cards. */
     value: (srs: FsrsCard) => number;
     descending: boolean;
@@ -32,6 +34,7 @@ const STATS: Record<
 > = {
   due: {
     label: 'Next review',
+    short: 'Next',
     value: (srs) => srs.due.getTime(),
     descending: false,
     format: (srs, now) =>
@@ -44,9 +47,10 @@ const STATS: Record<
   },
   difficulty: {
     label: 'Difficulty',
+    short: 'Diff.',
     value: (srs) => srs.difficulty,
     descending: true,
-    format: (srs) => srs.difficulty.toFixed(1),
+    format: (srs) => String(Math.round(srs.difficulty)),
     warn: (srs) => srs.difficulty >= HARD_DIFFICULTY,
   },
 };
@@ -126,16 +130,18 @@ export function ConceptTable({ content, deck, cards, exerciseTypes, now }: Conce
                   </button>
                 </TableHead>
                 {exerciseTypes.map((exerciseType) => {
-                  const { label, Icon } = EXERCISES[exerciseType];
+                  const { label, short, Icon } = EXERCISES[exerciseType];
                   return (
                     <TableHead
                       key={exerciseType}
                       colSpan={STAT_COLUMNS.length}
-                      className="h-8 border-l border-foreground/10 text-center"
+                      title={label}
+                      className="h-8 border-l border-foreground/10 px-1 text-center text-xs"
                     >
                       <span className="flex items-center justify-center gap-1">
                         <Icon aria-hidden className="size-3.5 shrink-0" />
-                        {label}
+                        <span aria-hidden>{short}</span>
+                        <span className="sr-only">{label}</span>
                       </span>
                     </TableHead>
                   );
@@ -146,13 +152,13 @@ export function ConceptTable({ content, deck, cards, exerciseTypes, now }: Conce
                   STAT_COLUMNS.map((stat, index) => {
                     const sorted =
                       sortColumn?.exerciseType === exerciseType && sortColumn.stat === stat;
-                    const { label, descending } = STATS[stat];
+                    const { label, short, descending } = STATS[stat];
                     return (
                       <TableHead
                         key={`${exerciseType}:${stat}`}
                         aria-sort={sorted ? (descending ? 'descending' : 'ascending') : undefined}
                         className={cn(
-                          'h-8 text-center text-xs',
+                          'h-7 px-1 text-center text-xs',
                           index === 0 && 'border-l border-foreground/10',
                         )}
                       >
@@ -162,11 +168,11 @@ export function ConceptTable({ content, deck, cards, exerciseTypes, now }: Conce
                           aria-label={`${EXERCISES[exerciseType].label}: ${label}`}
                           title={`Sort by ${label.toLowerCase()} in ${EXERCISES[exerciseType].label.toLowerCase()}`}
                           className={cn(
-                            'mx-auto flex cursor-pointer items-center gap-1 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+                            'mx-auto flex cursor-pointer items-center gap-0.5 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
                             !sorted && 'text-muted-foreground hover:text-foreground',
                           )}
                         >
-                          {label}
+                          {short}
                           {sorted && <ArrowDown aria-hidden className="size-3 shrink-0" />}
                         </button>
                       </TableHead>
@@ -233,14 +239,16 @@ function StatCell({
   className?: string;
 }) {
   if (srs === undefined) {
-    return <TableCell aria-label="Not practised with this exercise" className={className} />;
+    return (
+      <TableCell aria-label="Not practised with this exercise" className={cn('px-1', className)} />
+    );
   }
   const label = EXERCISES[exerciseType].label;
   if (!srs || srs.state === State.New) {
     return (
       <TableCell
         title={`${label}: not practised yet`}
-        className={cn('text-center text-muted-foreground', className)}
+        className={cn('px-1 text-center text-muted-foreground', className)}
       >
         {stat === STAT_COLUMNS[0] && (
           <Symbol Icon={Circle} label="new" className="size-3 opacity-50" />
@@ -254,7 +262,7 @@ function StatCell({
     <TableCell
       title={describeCard(label, srs, now)}
       className={cn(
-        'text-center tabular-nums',
+        'px-1 text-center text-xs tabular-nums',
         PROGRESS_TINTS[progress],
         warn(srs, now) && 'font-bold text-wrong-ink',
         className,

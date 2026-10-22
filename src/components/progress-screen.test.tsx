@@ -95,8 +95,8 @@ test("shows a set's words with each exercise's next review and difficulty", asyn
       )
       .map((cells) => [cells[0], ...cells.slice(-2)]);
   expect(translations()).toEqual([
-    ['Mondayponiedziałek', '5d', '3.0'],
-    ['Tuesdaywtorek', 'due', '8.0'],
+    ['Mondayponiedziałek', '5d', '3'],
+    ['Tuesdaywtorek', 'due', '8'],
     ['Wednesdayśroda', 'new', ''],
     ['Thursdayczwartek', 'new', ''],
   ]);
