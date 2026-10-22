@@ -26,22 +26,22 @@ test('saves, switches off and removes the ElevenLabs key without showing it back
   render(<AppMenu />);
 
   await openVoiceSettings(user, 'TTS: Browser');
-  expect(screen.getByText(/^Off:/)).toBeInTheDocument();
-  await user.type(screen.getByLabelText('API key'), 'secret-key');
-  await user.click(screen.getByRole('button', { name: 'Save key' }));
+  expect(screen.queryByRole('group', { name: 'Voice' })).not.toBeInTheDocument();
+  await user.type(screen.getByLabelText('ElevenLabs key'), 'secret-key');
+  await user.click(screen.getByRole('button', { name: 'Save' }));
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   expect(localStorage.getItem('memonaut:elevenlabs-key')).toBe('secret-key');
 
   await openVoiceSettings(user, 'TTS: ElevenLabs');
-  expect(screen.getByText(/^On:/)).toBeInTheDocument();
+  const elevenLabs = screen.getByRole('button', { name: 'ElevenLabs' });
+  expect(elevenLabs).toHaveAttribute('aria-pressed', 'true');
   await user.click(screen.getByRole('button', { name: 'Browser' }));
   expect(screen.getByRole('button', { name: 'Browser' })).toHaveAttribute('aria-pressed', 'true');
-  expect(screen.getByText(/stays saved/)).toBeInTheDocument();
   expect(localStorage.getItem('memonaut:elevenlabs-key')).toBe('secret-key');
-  await user.click(screen.getByRole('button', { name: 'ElevenLabs' }));
-  expect(screen.getByText(/^On:/)).toBeInTheDocument();
-  expect(screen.getByLabelText('New API key')).toHaveValue('');
-  await user.click(screen.getByRole('button', { name: 'Remove key' }));
+  await user.click(elevenLabs);
+  expect(elevenLabs).toHaveAttribute('aria-pressed', 'true');
+  expect(screen.getByLabelText('ElevenLabs key')).toHaveValue('');
+  await user.click(screen.getByRole('button', { name: 'Remove' }));
   expect(localStorage.getItem('memonaut:elevenlabs-key')).toBeNull();
 });
 
@@ -106,7 +106,7 @@ test('picks a browser voice per language, kept on this device', async () => {
   expect(german).toHaveValue('eddy');
   expect(JSON.parse(localStorage.getItem('memonaut:browser-voices')!)).toEqual({ 'de-DE': 'eddy' });
 
-  await user.click(screen.getByRole('button', { name: 'Try the German voice' }));
+  await user.click(screen.getByRole('button', { name: 'Try German' }));
   expect(spoken.at(-1)?.voice?.name).toBe('Eddy');
   vi.unstubAllGlobals();
 });

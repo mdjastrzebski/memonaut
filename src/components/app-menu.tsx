@@ -28,9 +28,7 @@ import {
   useBrowserVoices,
   usePickedVoice,
   useVoiceStatus,
-  type VoiceStatus,
 } from '@/lib/speech';
-import { cn } from '@/lib/utils';
 import { createBackup, getBackupFileName, importBackup } from '@/progress/backup';
 
 const ITEM_CLASS =
@@ -141,14 +139,6 @@ export function AppMenu({ onEnd }: { onEnd?: () => void }) {
   );
 }
 
-const VOICE_STATUS_TEXTS: Record<VoiceStatus, string> = {
-  off: "Off: your browser's voice reads words aloud.",
-  standby: "Off: your browser's voice reads words aloud. The ElevenLabs key stays saved for later.",
-  on: 'On: ElevenLabs reads words aloud.',
-  paused:
-    "Paused: ElevenLabs rejected the key or ran out of credits, so your browser's voice reads words aloud. Save a key to try again.",
-};
-
 /** Optional ElevenLabs voice, set up with a parent's API key. */
 function VoiceDialog({
   open,
@@ -184,32 +174,25 @@ function VoiceDialog({
         <DialogHeader>
           <DialogTitle className="font-display text-2xl font-bold">Text-to-speech</DialogTitle>
           <DialogDescription>
-            Browser voices vary a lot by device and can mispronounce words. With an{' '}
             <a
               href="https://elevenlabs.io/app/settings/api-keys"
               target="_blank"
               rel="noreferrer"
               className="underline underline-offset-2"
             >
-              ElevenLabs API key
+              Get an ElevenLabs key
             </a>
-            , a natural voice reads words instead. Optional: the key stays on this device and each
-            new word uses some of its credits.
           </DialogDescription>
         </DialogHeader>
         {status !== 'off' && <EngineSwitch elevenLabsOn={status !== 'standby'} />}
-        <p
-          className={cn(
-            'rounded-xl border-2 border-line px-4 py-3 font-medium',
-            status === 'on' && 'bg-correct/25',
-            status === 'paused' && 'bg-almost/40',
-          )}
-        >
-          {VOICE_STATUS_TEXTS[status]}
-        </p>
+        {status === 'paused' && (
+          <p className="rounded-xl border-2 border-line bg-almost/40 px-4 py-3 font-medium">
+            Key rejected or out of credits
+          </p>
+        )}
         <form id={`${inputId}-form`} onSubmit={save} className="grid gap-2">
           <label htmlFor={inputId} className="font-semibold">
-            {status === 'off' ? 'API key' : 'New API key'}
+            ElevenLabs key
           </label>
           {/* The saved key is never shown back. */}
           <Input
@@ -218,14 +201,13 @@ function VoiceDialog({
             autoComplete="off"
             value={key}
             onChange={(event) => setKey(event.target.value)}
-            placeholder="Paste the ElevenLabs API key"
             className="h-11 rounded-xl border-2 border-line px-3 text-base"
           />
         </form>
         <DialogFooter className="sm:justify-between">
           {status !== 'off' ? (
             <Button variant="ghost" size="lg" onClick={remove}>
-              Remove key
+              Remove
             </Button>
           ) : (
             <span />
@@ -238,7 +220,7 @@ function VoiceDialog({
             className="rounded-xl px-4"
             disabled={!key.trim()}
           >
-            Save key
+            Save
           </Button>
         </DialogFooter>
         <BrowserVoices />
@@ -295,12 +277,7 @@ const LANGUAGE_SUBJECTS = content.subjects.filter(
 function BrowserVoices() {
   return (
     <section className="grid gap-3 border-t-2 border-line pt-5">
-      <div className="grid gap-1">
-        <h3 className="font-semibold">Browser voices</h3>
-        <p className="text-sm text-muted-foreground">
-          If a voice reads words with the wrong accent, try another one here.
-        </p>
-      </div>
+      <h3 className="font-semibold">Browser voices</h3>
       {LANGUAGE_SUBJECTS.map((subject) => (
         <BrowserVoicePicker key={subject.foreignLanguage} subject={subject} />
       ))}
@@ -313,7 +290,7 @@ function BrowserVoicePicker({ subject }: { subject: LanguageSubject }) {
   const voices = useBrowserVoices(lang);
   const picked = usePickedVoice(lang);
   const selectId = useId();
-  // A picked voice this browser no longer has is read automatically, so it shows as such.
+  // A picked voice this browser no longer has is left to the browser, so it shows as Default.
   const value = voices.some((voice) => voice.voiceURI === picked) ? picked! : '';
 
   const pick = (voiceURI: string) => {
@@ -333,7 +310,7 @@ function BrowserVoicePicker({ subject }: { subject: LanguageSubject }) {
         disabled={voices.length === 0}
         className="h-11 min-w-0 rounded-xl border-2 border-line bg-card px-3 text-base"
       >
-        <option value="">{voices.length > 0 ? 'Automatic' : 'No voices on this device'}</option>
+        <option value="">{voices.length > 0 ? 'Default' : 'None'}</option>
         {voices.map((voice) => (
           <option key={voice.voiceURI} value={voice.voiceURI}>
             {voice.name} · {voice.lang}
@@ -344,7 +321,7 @@ function BrowserVoicePicker({ subject }: { subject: LanguageSubject }) {
         type="button"
         variant="ghost"
         size="icon-lg"
-        aria-label={`Try the ${subject.name} voice`}
+        aria-label={`Try ${subject.name}`}
         onClick={() => previewBrowserVoice(lang)}
         disabled={voices.length === 0}
       >
