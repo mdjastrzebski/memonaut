@@ -276,15 +276,7 @@ function pause(key: string) {
   notify();
 }
 
-/** Errors that reading with `lang` alone, leaving the voice to the browser, may get around. */
-const VOICE_ERRORS = new Set([
-  'language-unavailable',
-  'synthesis-failed',
-  'synthesis-unavailable',
-  'voice-unavailable',
-]);
-
-// Chrome loads its voices only once asked, so ask early for them to be ready by the first word.
+// Chrome loads its voices only once asked, so ask early for the picked one to be ready in time.
 if ('speechSynthesis' in globalThis) speechSynthesis.getVoices?.();
 
 /** The browser voice picked per language, e.g. {"de-DE": "<voiceURI>"}, kept on this device only. */
@@ -299,8 +291,8 @@ function loadPickedVoices(): Record<string, string> {
   }
 }
 
-/** The `voiceURI` of the browser voice picked for `lang`, or null to pick one automatically. */
-export function getPickedVoice(lang: string) {
+/** The `voiceURI` of the browser voice picked for `lang`, or null to leave it to the browser. */
+function getPickedVoice(lang: string) {
   return loadPickedVoices()[lang] ?? null;
 }
 
@@ -315,8 +307,8 @@ export function usePickedVoice(lang: string) {
 }
 
 /**
- * Saves the browser voice to read `lang` with, by its `voiceURI`, or null to pick one
- * automatically. Returns false when it can't be saved.
+ * Saves the browser voice to read `lang` with, by its `voiceURI`, or null to leave it to the
+ * browser. Returns false when it can't be saved.
  */
 export function pickBrowserVoice(lang: string, voiceURI: string | null) {
   const picked = loadPickedVoices();
@@ -364,25 +356,6 @@ export function useBrowserVoices(lang: string) {
   return voices;
 }
 
-/**
- * The browser's voice for `lang`: the one picked in the menu, else one for that exact language,
- * preferably offline and the default, else one for the same language elsewhere. Null when there
- * is none or the voices haven't loaded yet, leaving the choice to the browser.
- */
-export function findVoice(lang: string) {
-  const voices = getBrowserVoices(lang);
-  const picked = getPickedVoice(lang);
-  const pickedVoice = picked && voices.find((voice) => voice.voiceURI === picked);
-  if (pickedVoice) return pickedVoice;
-
-  const wanted = normalizeLang(lang);
-  const rank = (voice: SpeechSynthesisVoice) =>
-    (normalizeLang(voice.lang) === wanted ? 4 : 0) +
-    (voice.localService ? 2 : 0) +
-    (voice.default ? 1 : 0);
-  return voices.sort((a, b) => rank(b) - rank(a))[0] ?? null;
-}
-
 /** Reads a sample sentence in `lang` with the browser's voice, to try the voice picked for it. */
 export function previewBrowserVoice(lang: string) {
   stopHint();
@@ -390,15 +363,14 @@ export function previewBrowserVoice(lang: string) {
 }
 
 /**
- * Reads `text` with the browser's voice. Does nothing where the browser has no speech synthesis,
- * or while the same word is still being read or waiting to be.
+ * Reads `text` with the browser's voice: the one picked in the menu, else the one the browser
+ * picks for `lang`, which can be wrong, e.g. Anna reads German with an English voice in Brave. Does
+ * nothing where the browser has no speech synthesis, or while the same word is still being read or
+ * waiting to be.
  *
- * Picks the voice for `lang` itself, as some browsers read with their default voice, e.g. an
- * English one, whatever `lang` says. If that voice fails, e.g. one Brave altered for
- * fingerprinting protection, the word is read again with `lang` alone, like memo-bot's fallback.
- * No `cancel()`, which also trips up Brave.
+ * Deliberately minimal, like memo-bot's fallback that works in Brave: no `cancel()`.
  */
-function speakWithBrowser(text: string, lang: string, hint?: string, pickVoice = true) {
+function speakWithBrowser(text: string, lang: string, hint?: string) {
   if (!('speechSynthesis' in globalThis)) return;
 
   const busy = speechSynthesis.speaking || speechSynthesis.pending;
@@ -406,16 +378,12 @@ function speakWithBrowser(text: string, lang: string, hint?: string, pickVoice =
 
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = lang;
-  const voice = pickVoice ? findVoice(lang) : null;
+  const picked = getPickedVoice(lang);
+  const voice = picked && getBrowserVoices(lang).find((voice) => voice.voiceURI === picked);
   if (voice) utterance.voice = voice;
   // Slow, as in memo-bot, so a child can follow each sound.
   utterance.rate = 0.6;
   utterance.onerror = (event) => {
-    if (voice && VOICE_ERRORS.has(event.error)) {
-      if (latest === utterance) latest = null;
-      speakWithBrowser(text, lang, hintPending === utterance ? hint : undefined, false);
-      return;
-    }
     // "not-allowed" means the page hasn't been interacted with yet.
     console.warn(`Could not read "${text}" aloud: ${event.error}`);
   };

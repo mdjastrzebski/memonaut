@@ -1,9 +1,8 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import {
-  findVoice,
+  getBrowserVoices,
   getNormalizingGain,
-  getPickedVoice,
   getVoiceStatus,
   HINT_DELAY_MS,
   pickBrowserVoice,
@@ -17,7 +16,6 @@ interface FakeUtterance {
   text: string;
   voice?: { name: string };
   onend?: () => void;
-  onerror?: (event: { error: string }) => void;
 }
 
 /** The browser's voices, as `getVoices()` returns them. */
@@ -274,51 +272,37 @@ test('reads the hint with ElevenLabs too, a moment after the word', async () => 
   expect(spoken).toEqual([]);
 });
 
-test('picks a voice for the language, preferring an offline one', () => {
+test('lists the voices for the language, those for its exact region first', () => {
   voices = [
-    { name: 'English', lang: 'en-US', localService: true, default: true },
-    { name: 'Google Deutsch', lang: 'de-DE', localService: false },
-    { name: 'Anna', lang: 'de_DE', localService: true },
+    { name: 'Helena', lang: 'de-AT' },
+    { name: 'Daniel', lang: 'en-GB' },
+    { name: 'Anna', lang: 'de_DE' },
   ];
-  expect(findVoice('de-DE')?.name).toBe('Anna');
-  expect(findVoice('pl-PL')).toBeNull();
-
-  speak('drei', 'de-DE');
-  expect(queue[0].voice?.name).toBe('Anna');
-});
-
-test('falls back to a voice for the same language elsewhere', () => {
-  voices = [{ name: 'Helena', lang: 'de-AT', localService: true }];
-  expect(findVoice('de-DE')?.name).toBe('Helena');
-});
-
-test('reads the word again without the voice when the voice fails', () => {
-  voices = [{ name: 'Anna', lang: 'de-DE', localService: true }];
-  speak('drei', 'de-DE');
-  const failed = queue.shift()!;
-  failed.onerror?.({ error: 'voice-unavailable' });
-
-  expect(spoken).toEqual(['drei', 'drei']);
-  expect(queue[0].voice).toBeUndefined();
+  expect(getBrowserVoices('de-DE').map((voice) => voice.name)).toEqual(['Anna', 'Helena']);
 });
 
 test('reads with the voice picked for the language, kept on this device', () => {
   voices = [
-    { name: 'Anna', lang: 'de-DE', localService: true, voiceURI: 'anna' },
-    { name: 'Eddy', lang: 'de-DE', localService: true, voiceURI: 'eddy' },
+    { name: 'Anna', lang: 'de-DE', voiceURI: 'anna' },
+    { name: 'Eddy', lang: 'de-DE', voiceURI: 'eddy' },
   ];
-  expect(pickBrowserVoice('de-DE', 'eddy')).toBe(true);
-  expect(getPickedVoice('de-DE')).toBe('eddy');
   speak('drei', 'de-DE');
-  expect(queue[0].voice?.name).toBe('Eddy');
+  expect(queue.shift()?.voice).toBeUndefined();
+
+  expect(pickBrowserVoice('de-DE', 'eddy')).toBe(true);
+  expect(localStorage.getItem('memonaut:browser-voices')).toBe('{"de-DE":"eddy"}');
+  speak('vier', 'de-DE');
+  expect(queue.shift()?.voice?.name).toBe('Eddy');
 
   pickBrowserVoice('de-DE', null);
   expect(localStorage.getItem('memonaut:browser-voices')).toBe('{}');
-  expect(findVoice('de-DE')?.name).toBe('Anna');
+  speak('fünf', 'de-DE');
+  expect(queue.shift()?.voice).toBeUndefined();
 });
 
-test('picks a voice automatically when the picked one is gone', () => {
-  voices = [{ name: 'Anna', lang: 'de-DE', localService: true, voiceURI: 'anna' }];
+test('leaves the voice to the browser when the picked one is gone', () => {
+  voices = [{ name: 'Anna', lang: 'de-DE', voiceURI: 'anna' }];
   pickBrowserVoice('de-DE', 'eddy');
-  expect(findVoice('de-DE')?.name).toBe('Anna');
+  speak('drei', 'de-DE');
+  expect(queue[0].voice).toBeUndefined();
 });
