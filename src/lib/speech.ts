@@ -276,14 +276,47 @@ function pause(key: string) {
   notify();
 }
 
+/** Errors that reading with `lang` alone, leaving the voice to the browser, may get around. */
+const VOICE_ERRORS = new Set([
+  'language-unavailable',
+  'synthesis-failed',
+  'synthesis-unavailable',
+  'voice-unavailable',
+]);
+
+// Chrome loads its voices only once asked, so ask early for them to be ready by the first word.
+if ('speechSynthesis' in globalThis) speechSynthesis.getVoices?.();
+
+/**
+ * The browser's voice for `lang`, e.g. "de-DE": one for that exact language, preferably offline
+ * and the default, else one for the same language elsewhere, e.g. "de-AT". Null when there is none
+ * or the voices haven't loaded yet, leaving the choice to the browser.
+ */
+export function findVoice(lang: string) {
+  const voices = speechSynthesis.getVoices?.() ?? [];
+  const normalize = (tag: string) => tag.replace('_', '-').toLowerCase();
+  const wanted = normalize(lang);
+  const base = wanted.split('-')[0];
+  const rank = (voice: SpeechSynthesisVoice) =>
+    (voice.localService ? 2 : 0) + (voice.default ? 1 : 0);
+  const best = (matching: SpeechSynthesisVoice[]) =>
+    matching.sort((a, b) => rank(b) - rank(a))[0] ?? null;
+  return (
+    best(voices.filter((voice) => normalize(voice.lang) === wanted)) ??
+    best(voices.filter((voice) => normalize(voice.lang).split('-')[0] === base))
+  );
+}
+
 /**
  * Reads `text` with the browser's voice. Does nothing where the browser has no speech synthesis,
  * or while the same word is still being read or waiting to be.
  *
- * Deliberately minimal, like memo-bot's fallback that works in Brave: no `cancel()` and no voice
- * picked from `getVoices()`, which Brave alters for fingerprinting protection.
+ * Picks the voice for `lang` itself, as some browsers read with their default voice, e.g. an
+ * English one, whatever `lang` says. If that voice fails, e.g. one Brave altered for
+ * fingerprinting protection, the word is read again with `lang` alone, like memo-bot's fallback.
+ * No `cancel()`, which also trips up Brave.
  */
-function speakWithBrowser(text: string, lang: string, hint?: string) {
+function speakWithBrowser(text: string, lang: string, hint?: string, pickVoice = true) {
   if (!('speechSynthesis' in globalThis)) return;
 
   const busy = speechSynthesis.speaking || speechSynthesis.pending;
@@ -291,9 +324,16 @@ function speakWithBrowser(text: string, lang: string, hint?: string) {
 
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = lang;
+  const voice = pickVoice ? findVoice(lang) : null;
+  if (voice) utterance.voice = voice;
   // Slow, as in memo-bot, so a child can follow each sound.
   utterance.rate = 0.6;
   utterance.onerror = (event) => {
+    if (voice && VOICE_ERRORS.has(event.error)) {
+      if (latest === utterance) latest = null;
+      speakWithBrowser(text, lang, hintPending === utterance ? hint : undefined, false);
+      return;
+    }
     // "not-allowed" means the page hasn't been interacted with yet.
     console.warn(`Could not read "${text}" aloud: ${event.error}`);
   };

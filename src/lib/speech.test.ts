@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import {
+  findVoice,
   getNormalizingGain,
   getVoiceStatus,
   HINT_DELAY_MS,
@@ -12,8 +13,13 @@ import {
 
 interface FakeUtterance {
   text: string;
+  voice?: { name: string };
   onend?: () => void;
+  onerror?: (event: { error: string }) => void;
 }
+
+/** The browser's voices, as `getVoices()` returns them. */
+let voices: Partial<SpeechSynthesisVoice>[] = [];
 
 const queue: FakeUtterance[] = [];
 const spoken: string[] = [];
@@ -74,6 +80,7 @@ beforeEach(() => {
   queue.length = 0;
   spoken.length = 0;
   played.length = 0;
+  voices = [];
   fetchMock.mockReset();
   vi.stubGlobal(
     'SpeechSynthesisUtterance',
@@ -90,6 +97,7 @@ beforeEach(() => {
       return queue.length > 0;
     },
     pending: false,
+    getVoices: () => voices,
     speak: (utterance: FakeUtterance) => {
       queue.push(utterance);
       spoken.push(utterance.text);
@@ -262,4 +270,32 @@ test('reads the hint with ElevenLabs too, a moment after the word', async () => 
     text: 'zbiornik słonej wody',
   });
   expect(spoken).toEqual([]);
+});
+
+test('picks a voice for the language, preferring an offline one', () => {
+  voices = [
+    { name: 'English', lang: 'en-US', localService: true, default: true },
+    { name: 'Google Deutsch', lang: 'de-DE', localService: false },
+    { name: 'Anna', lang: 'de_DE', localService: true },
+  ];
+  expect(findVoice('de-DE')?.name).toBe('Anna');
+  expect(findVoice('pl-PL')).toBeNull();
+
+  speak('drei', 'de-DE');
+  expect(queue[0].voice?.name).toBe('Anna');
+});
+
+test('falls back to a voice for the same language elsewhere', () => {
+  voices = [{ name: 'Helena', lang: 'de-AT', localService: true }];
+  expect(findVoice('de-DE')?.name).toBe('Helena');
+});
+
+test('reads the word again without the voice when the voice fails', () => {
+  voices = [{ name: 'Anna', lang: 'de-DE', localService: true }];
+  speak('drei', 'de-DE');
+  const failed = queue.shift()!;
+  failed.onerror?.({ error: 'voice-unavailable' });
+
+  expect(spoken).toEqual(['drei', 'drei']);
+  expect(queue[0].voice).toBeUndefined();
 });
