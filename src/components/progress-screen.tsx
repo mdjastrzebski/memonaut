@@ -1,9 +1,11 @@
 import { ChevronDown, ChevronRight, Flame, Star } from 'lucide-react';
 import { useState, type CSSProperties, type ReactNode } from 'react';
 
+import { ConceptTable } from '@/components/concept-table';
 import { plural } from '@/components/concept-text';
 import { EXERCISES } from '@/components/exercise-types';
 import { PROGRESS_LABELS, type Progress } from '@/components/grades';
+import { SegmentedToggle } from '@/components/segmented-toggle';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Content } from '@/data/content';
 import { getSubjectDecks } from '@/data/decks';
@@ -116,7 +118,15 @@ export function ProgressScreen({
             <span className="text-sm font-medium text-muted-foreground">
               {metric === 'xp' ? 'XP per day' : 'Minutes per day'}
             </span>
-            <MetricToggle metric={metric} onChange={setMetric} />
+            <SegmentedToggle
+              label="Chart"
+              options={[
+                ['xp', 'XP'],
+                ['minutes', 'Minutes'],
+              ]}
+              value={metric}
+              onChange={setMetric}
+            />
           </div>
           {metric === 'xp' ? (
             <DailyChart
@@ -197,6 +207,7 @@ export function ProgressScreen({
       <DeckExercises
         content={content}
         cards={cards}
+        now={now}
         initialDeck={topDecks.length > 0 ? findDeck(topDecks[0].deckId) : undefined}
       />
 
@@ -226,43 +237,6 @@ function comparePeriods(recentMs: number, previousMs: number): string {
   return diff > 0
     ? `${diff} min more than the 7 days before`
     : `7 days before: ${formatMinutes(previousMs)}`;
-}
-
-function MetricToggle({
-  metric,
-  onChange,
-}: {
-  metric: ChartMetric;
-  onChange: (metric: ChartMetric) => void;
-}) {
-  const options: [ChartMetric, string][] = [
-    ['xp', 'XP'],
-    ['minutes', 'Minutes'],
-  ];
-  return (
-    <div
-      role="group"
-      aria-label="Chart"
-      className="flex rounded-full border-2 border-line bg-background p-0.5 text-xs font-bold"
-    >
-      {options.map(([value, label]) => (
-        <button
-          key={value}
-          type="button"
-          aria-pressed={metric === value}
-          onClick={() => onChange(value)}
-          className={cn(
-            'cursor-pointer rounded-full px-3 py-1 outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
-            metric === value
-              ? 'bg-foreground text-background'
-              : 'text-muted-foreground hover:text-foreground',
-          )}
-        >
-          {label}
-        </button>
-      ))}
-    </div>
-  );
 }
 
 function Section({
@@ -383,14 +357,19 @@ const formatDay = (date: Date) =>
 
 const formatWeekday = (date: Date) => date.toLocaleDateString(undefined, { weekday: 'short' });
 
-/** A set's Cards per Exercise Type, with each one's share of the set and how well it's known. */
+/**
+ * A set's Cards per Exercise Type, with each one's share of the set and how well it's known, and
+ * its words by Exercise Type.
+ */
 function DeckExercises({
   content,
   cards,
+  now,
   initialDeck,
 }: {
   content: Content;
   cards: Record<string, Card>;
+  now: Date;
   initialDeck?: Deck;
 }) {
   const [deckId, setDeckId] = useState(() => (initialDeck ?? content.decks[0])?.id);
@@ -459,6 +438,13 @@ function DeckExercises({
           })}
         </ul>
         <Legend />
+        <ConceptTable
+          content={content}
+          deck={deck}
+          cards={cards}
+          exerciseTypes={types.map(({ exerciseType }) => exerciseType)}
+          now={now}
+        />
       </div>
     </Section>
   );

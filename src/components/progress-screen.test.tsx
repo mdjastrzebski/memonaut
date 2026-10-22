@@ -51,3 +51,60 @@ test('shows the cards of each exercise in the chosen set', async () => {
     within(kapitelList).getByRole('listitem', { name: /^Cloze: 2 cards/ }),
   ).toBeInTheDocument();
 });
+
+test("shows a set's words by exercise, sorted by the stat shown", async () => {
+  const user = userEvent.setup();
+  const deck = testContent.decks[0];
+  const review = (conceptId: string, difficulty: number, dueInDays: number): Card => ({
+    id: `${conceptId}:translation`,
+    conceptId,
+    exerciseType: 'translation',
+    srs: {
+      ...createSrsCard(now),
+      state: State.Review,
+      difficulty,
+      stability: 10,
+      reps: 3,
+      last_review: now,
+      due: new Date(now.getTime() + dueInDays * 86_400_000),
+    },
+  });
+  const cards = [review('english/monday', 3, 5), review('english/tuesday', 8, -1)];
+  render(
+    <TooltipProvider>
+      <ProgressScreen
+        content={testContent}
+        cards={Object.fromEntries(cards.map((card) => [card.id, card]))}
+        onSelectDeck={() => {}}
+        sessions={[]}
+        now={now}
+      />
+    </TooltipProvider>,
+  );
+
+  await user.click(screen.getByRole('button', { name: /Words by exercise/ }));
+  const table = screen.getByRole('table', { name: `Words in ${deck.name}` });
+  const translations = () =>
+    within(table)
+      .getAllByRole('row')
+      .slice(1)
+      .map((row) => {
+        const cells = within(row).getAllByRole('cell');
+        return [cells[0].textContent, cells.at(-1)!.textContent];
+      });
+  expect(translations()).toEqual([
+    ['Mondayponiedziałek', '5d'],
+    ['Tuesdaywtorek', 'due'],
+    ['Wednesdayśroda', '–'],
+    ['Thursdayczwartek', '–'],
+  ]);
+
+  await user.click(screen.getByRole('button', { name: 'Difficulty' }));
+  await user.click(within(table).getByRole('button', { name: 'Translation' }));
+  expect(translations()).toEqual([
+    ['Tuesdaywtorek', '8.0'],
+    ['Mondayponiedziałek', '3.0'],
+    ['Wednesdayśroda', '–'],
+    ['Thursdayczwartek', '–'],
+  ]);
+});
