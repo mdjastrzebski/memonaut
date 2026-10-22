@@ -9,10 +9,13 @@ import type { Deck } from '@/domain/types';
 export const SESSION_MINUTES = [5, 10, 15, 20];
 const DEFAULT_SESSION_MINUTES = 10;
 
-/** While a set has new words, a session starts at least this many per 5 minutes picked. */
+/**
+ * While a set has new Cards, a session starts at least this many per 5 minutes picked: new words
+ * first, then the next Exercise Types of words already started.
+ */
 const MIN_NEW_PER_5_MINUTES = 3;
 
-/** The fewest new words a session of this many minutes starts, e.g. 6 in 10 minutes. */
+/** The fewest new Cards a session of this many minutes starts, e.g. 6 in 10 minutes. */
 export function getMinNew(sessionMinutes: number) {
   return Math.ceil((sessionMinutes / 5) * MIN_NEW_PER_5_MINUTES);
 }

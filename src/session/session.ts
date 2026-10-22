@@ -171,10 +171,13 @@ interface CreateSessionOptions {
   /**
    * Practise Cards, in the order of `Step`, while their expected effort points fit in this many,
    * but at least one. It decides only how many are picked, never which come first, except that
-   * new Concepts left out for room are added anyway, up to `minNew`.
+   * new Cards left out for room are added anyway, up to `minNew`.
    */
   maxEffort?: number;
-  /** Start at least this many new Concepts while there are some left, even if they don't fit. */
+  /**
+   * Start at least this many new Cards while there are some left, even if they don't fit: new
+   * Concepts first, then the next unlocked Exercise Types of started ones, even those held back.
+   */
   minNew?: number;
   now?: Date;
   random?: () => number;
@@ -285,8 +288,8 @@ export function createSession({
 
 /**
  * The leading candidates whose expected effort fits in `maxEffort`, at least one, and so that
- * reviews never crowd out learning, the first `minNew` new Concepts while there are some left,
- * even if they don't fit.
+ * reviews never crowd out learning, the first `minNew` new Cards while there are some left, even
+ * if they don't fit: new Concepts first, then the next Exercise Types of started ones, held or not.
  */
 function pickWithinEffort<T extends { step: Step; effort: number }>(
   candidates: T[],
@@ -294,9 +297,14 @@ function pickWithinEffort<T extends { step: Step; effort: number }>(
   minNew: number,
 ): T[] {
   const picked = takeWithinEffort(candidates, maxEffort);
-  const firstNew = candidates.filter(({ step }) => step === Step.New).slice(0, minNew);
+  const firstNew = NEW_CARD_STEPS.flatMap((newStep) =>
+    candidates.filter(({ step }) => step === newStep),
+  ).slice(0, minNew);
   return [...picked, ...firstNew.filter((candidate) => !picked.includes(candidate))];
 }
+
+/** The steps of Cards not practised yet, which count towards `minNew`, in the order they do. */
+const NEW_CARD_STEPS: Step[] = [Step.New, Step.Unlocked, Step.HeldUnlocked];
 
 /** The leading candidates whose expected effort fits in `maxEffort`, at least one. */
 function takeWithinEffort<T extends { effort: number }>(candidates: T[], maxEffort: number) {

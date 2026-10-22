@@ -391,14 +391,48 @@ test('introduces a new word even when due cards take up all the effort', () => {
       }).cards,
     ),
   ).toEqual(['one:dictation', 'two:dictation', 'three:dictation']);
-  // With every word started, nothing new is added.
+  // With every word started, the next exercise type of one is added instead.
   const started = byId(
     cards['one:dictation'],
     reviewed('two:dictation', lastWeek, { due: nextDay(start) }),
   );
   expect(
     Object.keys(createSession({ deck, concepts, cards: started, maxEffort: 1, now: start }).cards),
-  ).toEqual(['one:dictation']);
+  ).toEqual(['one:dictation', 'two:translation']);
+});
+
+test('fills minNew with the next exercise types of started words once new words run out', () => {
+  const lastWeek = new Date(start.getTime() - 7 * 24 * 60 * 60_000);
+  const three: Concept[] = [
+    ...concepts,
+    { id: 'three', subjectId: 'german', kind: 'language', local: 'trzy', foreign: 'drei' },
+  ];
+  // One is due, so its translation is held back; two isn't, so its translation is unlocked.
+  const cards = byId(
+    reviewed('one:dictation', lastWeek, { due: start }),
+    reviewed('two:dictation', lastWeek, { due: nextDay(start) }),
+  );
+  const create = (minNew: number) =>
+    Object.keys(
+      createSession({
+        deck: { ...deck, conceptIds: ['one', 'two', 'three'] },
+        concepts: three,
+        cards,
+        maxEffort: 1,
+        minNew,
+        now: start,
+      }).cards,
+    );
+  // New words first.
+  expect(create(1)).toEqual(['one:dictation', 'three:dictation']);
+  // Then unlocked types, then held-back ones, so a due type doesn't block the next one.
+  expect(create(2)).toEqual(['one:dictation', 'three:dictation', 'two:translation']);
+  expect(create(5)).toEqual([
+    'one:dictation',
+    'three:dictation',
+    'two:translation',
+    'one:translation',
+  ]);
 });
 
 test('starts at least minNew new words, on top of what fits', () => {
