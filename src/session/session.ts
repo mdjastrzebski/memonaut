@@ -53,6 +53,12 @@ export const MAX_SESSION_MISSES = 2;
  */
 export const MISSED_CARD_DELAY_MS = 3 * 60 * 60 * 1000;
 
+/**
+ * A due Card still this likely remembered gives its Concept's day to the next unlocked Exercise
+ * Type, as a right answer to that reviews it too. FSRS schedules a Card for when this drops to 0.9.
+ */
+export const GO_DEEPER_RETRIEVABILITY = 0.85;
+
 /** Every Exercise Type, easiest first. A Concept unlocks them one at a time, in a Deck's order. */
 export const EXERCISE_TYPES: ExerciseType[] = [
   'recognition-choice',
@@ -156,6 +162,11 @@ export interface Session {
    * remembered, and introduced again only once it's missed, before it's asked again.
    */
   tricky: string[];
+  /**
+   * Started Cards of the session's Concepts that it doesn't practise, keyed by id. A right answer
+   * to a harder Card of the same Concept reviews them too, see `reviewEasierCards`.
+   */
+  siblings: Record<string, Card>;
   reviews: Review[];
   /** Effort points the picked Cards were expected to take. */
   effort: number;
@@ -269,6 +280,11 @@ export function createSession({
   const cards = exerciseTypes.flatMap((exerciseType) =>
     picked.map(({ card }) => card).filter((card) => card.exerciseType === exerciseType),
   );
+  const cardIds = cards.map((card) => card.id);
+  const allPickedConceptIds = pickedConceptIds(() => true);
+  const siblings = allPickedConceptIds
+    .flatMap(conceptCards)
+    .filter((card) => card.srs.state !== State.New && !cardIds.includes(card.id));
 
   return {
     startedAt: now,
@@ -284,6 +300,7 @@ export function createSession({
     intros: pickedConceptIds(({ intro }) => intro),
     introduced: [],
     tricky: pickedConceptIds(({ tricky }) => tricky),
+    siblings: Object.fromEntries(siblings.map((card) => [card.id, card])),
     reviews: [],
     effort: picked.reduce((total, { effort }) => total + effort, 0),
   };
@@ -366,6 +383,7 @@ function getCandidates(cards: Card[], now: Date, dueBy: Date): { card: Card; ste
     today = practisedToday.filter(isDue);
   } else {
     // The due Card most likely forgotten, the easier type on a tie, or else the easiest unlocked.
+    // A due Card still well remembered gives way to the unlocked one, to go deeper.
     const due = cards.filter(isDue);
     const mostForgotten = due.reduce<Card | undefined>(
       (best, card) =>
@@ -373,7 +391,9 @@ function getCandidates(cards: Card[], now: Date, dueBy: Date): { card: Card; ste
       undefined,
     );
     const unlocked = cards.find(isUnlocked);
-    const first = mostForgotten ?? unlocked;
+    const wellRemembered =
+      mostForgotten && getRetrievability(mostForgotten.srs, now) >= GO_DEEPER_RETRIEVABILITY;
+    const first = wellRemembered ? (unlocked ?? mostForgotten) : (mostForgotten ?? unlocked);
     today = first ? [first] : [];
   }
 
@@ -581,14 +601,44 @@ export function submitReview(session: Session, { now, ...input }: SubmitReviewIn
     !session.introduced.includes(card.conceptId) &&
     !session.intros.includes(card.conceptId);
 
+  const rightFirstTime = answer.rating >= Rating.Good && countMisses(session, card.id) === 0;
+
   return {
     ...session,
     cards: { ...session.cards, [card.id]: { ...card, srs: srsAfter } },
+    siblings: rightFirstTime ? reviewEasierCards(session, card, now) : session.siblings,
     queue: dueSoon ? [...rest, card.id] : rest,
     intros: reintroduce ? [...session.intros, card.conceptId] : session.intros,
     reviews: [
       ...session.reviews,
       { cardId: card.id, ...answer, earnedRating: input.rating, log, srsAfter },
     ],
+  };
+}
+
+/**
+ * The session's siblings after a right answer to `card`: those of its Concept with an easier
+ * Exercise Type are reviewed too, rated Good, as answering the harder one shows they're remembered.
+ * Only learned ones not reviewed today are: FSRS lengthens a Card's interval less the more likely
+ * it's still remembered, so an early review moves it only a little later.
+ */
+function reviewEasierCards(session: Session, card: Card, now: Date): Record<string, Card> {
+  const exerciseTypes = getConceptExerciseTypes(session.deck, card.conceptId);
+  const isEasier = (sibling: Card) =>
+    sibling.conceptId === card.conceptId &&
+    exerciseTypes.indexOf(sibling.exerciseType) < exerciseTypes.indexOf(card.exerciseType);
+  const dayStart = getDayStart(now);
+  const reviewedToday = (sibling: Card) =>
+    !!sibling.srs.last_review && sibling.srs.last_review.getTime() >= dayStart.getTime();
+
+  const reviewed = Object.values(session.siblings)
+    .filter(
+      (sibling) =>
+        isEasier(sibling) && sibling.srs.state === State.Review && !reviewedToday(sibling),
+    )
+    .map((sibling) => ({ ...sibling, srs: reviewSrsCard(sibling.srs, Rating.Good, now).card }));
+  return {
+    ...session.siblings,
+    ...Object.fromEntries(reviewed.map((sibling) => [sibling.id, sibling])),
   };
 }
