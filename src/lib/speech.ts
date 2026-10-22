@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 
 /** Pause between a word and its spoken hint, as in memo-bot. */
 export const HINT_DELAY_MS = 700;
@@ -287,24 +287,106 @@ const VOICE_ERRORS = new Set([
 // Chrome loads its voices only once asked, so ask early for them to be ready by the first word.
 if ('speechSynthesis' in globalThis) speechSynthesis.getVoices?.();
 
+/** The browser voice picked per language, e.g. {"de-DE": "<voiceURI>"}, kept on this device only. */
+const BROWSER_VOICES_STORAGE_KEY = 'memonaut:browser-voices';
+
+function loadPickedVoices(): Record<string, string> {
+  try {
+    const parsed: unknown = JSON.parse(localStorage.getItem(BROWSER_VOICES_STORAGE_KEY) ?? '{}');
+    return parsed && typeof parsed === 'object' ? (parsed as Record<string, string>) : {};
+  } catch {
+    return {};
+  }
+}
+
+/** The `voiceURI` of the browser voice picked for `lang`, or null to pick one automatically. */
+export function getPickedVoice(lang: string) {
+  return loadPickedVoices()[lang] ?? null;
+}
+
+export function usePickedVoice(lang: string) {
+  return useSyncExternalStore(
+    (listener) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    () => getPickedVoice(lang),
+  );
+}
+
 /**
- * The browser's voice for `lang`, e.g. "de-DE": one for that exact language, preferably offline
- * and the default, else one for the same language elsewhere, e.g. "de-AT". Null when there is none
- * or the voices haven't loaded yet, leaving the choice to the browser.
+ * Saves the browser voice to read `lang` with, by its `voiceURI`, or null to pick one
+ * automatically. Returns false when it can't be saved.
+ */
+export function pickBrowserVoice(lang: string, voiceURI: string | null) {
+  const picked = loadPickedVoices();
+  if (voiceURI) picked[lang] = voiceURI;
+  else delete picked[lang];
+  try {
+    localStorage.setItem(BROWSER_VOICES_STORAGE_KEY, JSON.stringify(picked));
+  } catch {
+    return false;
+  }
+  notify();
+  return true;
+}
+
+const normalizeLang = (tag: string) => tag.replace('_', '-').toLowerCase();
+
+/**
+ * The browser's voices for the language of `lang`, e.g. "de-DE": those for that exact language
+ * first, then those for the same language elsewhere, e.g. "de-AT". Empty while they load.
+ */
+export function getBrowserVoices(lang: string) {
+  if (!('speechSynthesis' in globalThis)) return [];
+  const voices = speechSynthesis.getVoices?.() ?? [];
+  const wanted = normalizeLang(lang);
+  const base = wanted.split('-')[0];
+  const exact = voices.filter((voice) => normalizeLang(voice.lang) === wanted);
+  const related = voices.filter(
+    (voice) =>
+      normalizeLang(voice.lang) !== wanted && normalizeLang(voice.lang).split('-')[0] === base,
+  );
+  return [...exact, ...related];
+}
+
+/** The browser's voices for `lang`, updated once the browser has loaded them. */
+export function useBrowserVoices(lang: string) {
+  const [voices, setVoices] = useState(() => getBrowserVoices(lang));
+  useEffect(() => {
+    if (!('speechSynthesis' in globalThis)) return;
+    const synthesis = speechSynthesis;
+    const update = () => setVoices(getBrowserVoices(lang));
+    update();
+    synthesis.addEventListener?.('voiceschanged', update);
+    return () => synthesis.removeEventListener?.('voiceschanged', update);
+  }, [lang]);
+  return voices;
+}
+
+/**
+ * The browser's voice for `lang`: the one picked in the menu, else one for that exact language,
+ * preferably offline and the default, else one for the same language elsewhere. Null when there
+ * is none or the voices haven't loaded yet, leaving the choice to the browser.
  */
 export function findVoice(lang: string) {
-  const voices = speechSynthesis.getVoices?.() ?? [];
-  const normalize = (tag: string) => tag.replace('_', '-').toLowerCase();
-  const wanted = normalize(lang);
-  const base = wanted.split('-')[0];
+  const voices = getBrowserVoices(lang);
+  const picked = getPickedVoice(lang);
+  const pickedVoice = picked && voices.find((voice) => voice.voiceURI === picked);
+  if (pickedVoice) return pickedVoice;
+
+  const wanted = normalizeLang(lang);
   const rank = (voice: SpeechSynthesisVoice) =>
-    (voice.localService ? 2 : 0) + (voice.default ? 1 : 0);
-  const best = (matching: SpeechSynthesisVoice[]) =>
-    matching.sort((a, b) => rank(b) - rank(a))[0] ?? null;
-  return (
-    best(voices.filter((voice) => normalize(voice.lang) === wanted)) ??
-    best(voices.filter((voice) => normalize(voice.lang).split('-')[0] === base))
-  );
+    (normalizeLang(voice.lang) === wanted ? 4 : 0) +
+    (voice.localService ? 2 : 0) +
+    (voice.default ? 1 : 0);
+  return voices.sort((a, b) => rank(b) - rank(a))[0] ?? null;
+}
+
+/** Reads a sample sentence in `lang` with the browser's voice, to try the voice picked for it. */
+export function previewBrowserVoice(lang: string) {
+  stopHint();
+  speakWithBrowser(PREVIOUS_TEXTS[lang] ?? lang, lang);
 }
 
 /**

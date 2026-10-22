@@ -3,8 +3,10 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import {
   findVoice,
   getNormalizingGain,
+  getPickedVoice,
   getVoiceStatus,
   HINT_DELAY_MS,
+  pickBrowserVoice,
   removeElevenLabsKey,
   saveElevenLabsKey,
   speak,
@@ -298,4 +300,25 @@ test('reads the word again without the voice when the voice fails', () => {
 
   expect(spoken).toEqual(['drei', 'drei']);
   expect(queue[0].voice).toBeUndefined();
+});
+
+test('reads with the voice picked for the language, kept on this device', () => {
+  voices = [
+    { name: 'Anna', lang: 'de-DE', localService: true, voiceURI: 'anna' },
+    { name: 'Eddy', lang: 'de-DE', localService: true, voiceURI: 'eddy' },
+  ];
+  expect(pickBrowserVoice('de-DE', 'eddy')).toBe(true);
+  expect(getPickedVoice('de-DE')).toBe('eddy');
+  speak('drei', 'de-DE');
+  expect(queue[0].voice?.name).toBe('Eddy');
+
+  pickBrowserVoice('de-DE', null);
+  expect(localStorage.getItem('memonaut:browser-voices')).toBe('{}');
+  expect(findVoice('de-DE')?.name).toBe('Anna');
+});
+
+test('picks a voice automatically when the picked one is gone', () => {
+  voices = [{ name: 'Anna', lang: 'de-DE', localService: true, voiceURI: 'anna' }];
+  pickBrowserVoice('de-DE', 'eddy');
+  expect(findVoice('de-DE')?.name).toBe('Anna');
 });

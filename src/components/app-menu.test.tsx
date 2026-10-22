@@ -66,3 +66,41 @@ test('imports progress from a file only outside a session', async () => {
   expect(localStorage.getItem('memonaut:pace')).toBe('{"german":7}');
   vi.unstubAllGlobals();
 });
+
+test('picks a browser voice per language, kept on this device', async () => {
+  const user = userEvent.setup();
+  const spoken: { text: string; voice?: { name: string } }[] = [];
+  vi.stubGlobal(
+    'SpeechSynthesisUtterance',
+    class {
+      text: string;
+      lang = '';
+      constructor(text: string) {
+        this.text = text;
+      }
+    },
+  );
+  vi.stubGlobal('speechSynthesis', {
+    speaking: false,
+    pending: false,
+    getVoices: () => [
+      { name: 'Anna', lang: 'de-DE', localService: true, voiceURI: 'anna' },
+      { name: 'Eddy', lang: 'de-DE', localService: true, voiceURI: 'eddy' },
+    ],
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    speak: (utterance: { text: string; voice?: { name: string } }) => spoken.push(utterance),
+  });
+  render(<AppMenu />);
+
+  await openVoiceSettings(user, 'TTS: Browser');
+  const german = screen.getByRole('combobox', { name: /German/ });
+  expect(german).toHaveValue('');
+  await user.selectOptions(german, 'eddy');
+  expect(german).toHaveValue('eddy');
+  expect(JSON.parse(localStorage.getItem('memonaut:browser-voices')!)).toEqual({ 'de-DE': 'eddy' });
+
+  await user.click(screen.getByRole('button', { name: 'Try the German voice' }));
+  expect(spoken.at(-1)?.voice?.name).toBe('Eddy');
+  vi.unstubAllGlobals();
+});

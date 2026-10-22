@@ -1,4 +1,4 @@
-import { AudioLines, Check, Download, Flag, Menu, Upload } from 'lucide-react';
+import { AudioLines, Check, Download, Flag, Menu, Upload, Volume2 } from 'lucide-react';
 import { useId, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -17,9 +17,15 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { content } from '@/data/bundled-content';
+import type { LanguageSubject } from '@/domain/types';
 import {
+  pickBrowserVoice,
+  previewBrowserVoice,
   removeElevenLabsKey,
   saveElevenLabsKey,
+  useBrowserVoices,
+  usePickedVoice,
   useVoiceStatus,
   type VoiceStatus,
 } from '@/lib/speech';
@@ -171,7 +177,7 @@ function VoiceDialog({
 
   return (
     <Dialog open={open} onOpenChange={(open) => (open ? onOpenChange(true) : close())}>
-      <DialogContent className="gap-5 rounded-2xl border-2 border-line bg-card p-6 shadow-sticker ring-0 sm:max-w-md">
+      <DialogContent className="max-h-[calc(100dvh-2rem)] gap-5 overflow-y-auto rounded-2xl border-2 border-line bg-card p-6 shadow-sticker ring-0 sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl font-bold">Text-to-speech</DialogTitle>
           <DialogDescription>
@@ -231,7 +237,83 @@ function VoiceDialog({
             Save key
           </Button>
         </DialogFooter>
+        <BrowserVoices />
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** One Subject per language read aloud, e.g. German for "de-DE". */
+const LANGUAGE_SUBJECTS = content.subjects.filter(
+  (subject, index, subjects): subject is LanguageSubject =>
+    subject.kind === 'language' &&
+    subjects.findIndex(
+      (other) => other.kind === 'language' && other.foreignLanguage === subject.foreignLanguage,
+    ) === index,
+);
+
+/**
+ * The browser voice per language, for when the one picked automatically reads in the wrong
+ * language, e.g. Anna reading German with an English voice in Brave.
+ */
+function BrowserVoices() {
+  return (
+    <section className="grid gap-3 border-t-2 border-line pt-5">
+      <div className="grid gap-1">
+        <h3 className="font-semibold">Browser voices</h3>
+        <p className="text-sm text-muted-foreground">
+          If a voice reads words with the wrong accent, try another one here.
+        </p>
+      </div>
+      {LANGUAGE_SUBJECTS.map((subject) => (
+        <BrowserVoicePicker key={subject.foreignLanguage} subject={subject} />
+      ))}
+    </section>
+  );
+}
+
+function BrowserVoicePicker({ subject }: { subject: LanguageSubject }) {
+  const lang = subject.foreignLanguage;
+  const voices = useBrowserVoices(lang);
+  const picked = usePickedVoice(lang);
+  const selectId = useId();
+  // A picked voice this browser no longer has is read automatically, so it shows as such.
+  const value = voices.some((voice) => voice.voiceURI === picked) ? picked! : '';
+
+  const pick = (voiceURI: string) => {
+    if (!pickBrowserVoice(lang, voiceURI || null))
+      window.alert('Could not save the voice on this device.');
+  };
+
+  return (
+    <div className="grid grid-cols-[1fr_auto] items-end gap-2">
+      <label htmlFor={selectId} className="col-span-2 font-medium">
+        {subject.emoji} {subject.name}
+      </label>
+      <select
+        id={selectId}
+        value={value}
+        onChange={(event) => pick(event.target.value)}
+        disabled={voices.length === 0}
+        className="h-11 min-w-0 rounded-xl border-2 border-line bg-card px-3 text-base"
+      >
+        <option value="">{voices.length > 0 ? 'Automatic' : 'No voices on this device'}</option>
+        {voices.map((voice) => (
+          <option key={voice.voiceURI} value={voice.voiceURI}>
+            {voice.name} · {voice.lang}
+          </option>
+        ))}
+      </select>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-lg"
+        aria-label={`Try the ${subject.name} voice`}
+        onClick={() => previewBrowserVoice(lang)}
+        disabled={voices.length === 0}
+      >
+        <Volume2 />
+      </Button>
+    </div>
   );
 }
