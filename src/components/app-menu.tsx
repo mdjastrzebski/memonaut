@@ -1,4 +1,4 @@
-import { AudioLines, Check, Download, Flag, Menu, Upload } from 'lucide-react';
+import { AudioLines, Check, Download, Flag, Menu, Upload, Volume2 } from 'lucide-react';
 import { useId, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -17,13 +17,18 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { content } from '@/data/bundled-content';
+import type { LanguageSubject } from '@/domain/types';
 import {
+  pickBrowserVoice,
+  previewBrowserVoice,
   removeElevenLabsKey,
   saveElevenLabsKey,
+  setElevenLabsOn,
+  useBrowserVoices,
+  usePickedVoice,
   useVoiceStatus,
-  type VoiceStatus,
 } from '@/lib/speech';
-import { cn } from '@/lib/utils';
 import { createBackup, getBackupFileName, importBackup } from '@/progress/backup';
 
 const ITEM_CLASS =
@@ -84,7 +89,8 @@ export function AppMenu({ onEnd }: { onEnd?: () => void }) {
           className="w-auto min-w-52 rounded-2xl border-2 border-line bg-card p-1.5 text-foreground shadow-sticker ring-0"
         >
           <DropdownMenuItem className={ITEM_CLASS} onSelect={() => setVoiceOpen(true)}>
-            <AudioLines /> TTS: {voiceStatus === 'off' ? 'Browser' : 'ElevenLabs'}
+            <AudioLines /> TTS:{' '}
+            {voiceStatus === 'off' || voiceStatus === 'standby' ? 'Browser' : 'ElevenLabs'}
             {voiceStatus === 'on' && (
               // The same badge as a picked subject: the better voice is working.
               <span
@@ -133,13 +139,6 @@ export function AppMenu({ onEnd }: { onEnd?: () => void }) {
   );
 }
 
-const VOICE_STATUS_TEXTS: Record<VoiceStatus, string> = {
-  off: "Off: your browser's voice reads words aloud.",
-  on: 'On: ElevenLabs reads words aloud.',
-  paused:
-    "Paused: ElevenLabs rejected the key or ran out of credits, so your browser's voice reads words aloud. Save a key to try again.",
-};
-
 /** Optional ElevenLabs voice, set up with a parent's API key. */
 function VoiceDialog({
   open,
@@ -171,35 +170,29 @@ function VoiceDialog({
 
   return (
     <Dialog open={open} onOpenChange={(open) => (open ? onOpenChange(true) : close())}>
-      <DialogContent className="gap-5 rounded-2xl border-2 border-line bg-card p-6 shadow-sticker ring-0 sm:max-w-md">
+      <DialogContent className="max-h-[calc(100dvh-2rem)] gap-5 overflow-y-auto rounded-2xl border-2 border-line bg-card p-6 shadow-sticker ring-0 sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl font-bold">Text-to-speech</DialogTitle>
           <DialogDescription>
-            Browser voices vary a lot by device and can mispronounce words. With an{' '}
             <a
               href="https://elevenlabs.io/app/settings/api-keys"
               target="_blank"
               rel="noreferrer"
               className="underline underline-offset-2"
             >
-              ElevenLabs API key
+              Get an ElevenLabs key
             </a>
-            , a natural voice reads words instead. Optional: the key stays on this device and each
-            new word uses some of its credits.
           </DialogDescription>
         </DialogHeader>
-        <p
-          className={cn(
-            'rounded-xl border-2 border-line px-4 py-3 font-medium',
-            status === 'on' && 'bg-correct/25',
-            status === 'paused' && 'bg-almost/40',
-          )}
-        >
-          {VOICE_STATUS_TEXTS[status]}
-        </p>
+        {status !== 'off' && <EngineSwitch elevenLabsOn={status !== 'standby'} />}
+        {status === 'paused' && (
+          <p className="rounded-xl border-2 border-line bg-almost/40 px-4 py-3 font-medium">
+            Key rejected or out of credits
+          </p>
+        )}
         <form id={`${inputId}-form`} onSubmit={save} className="grid gap-2">
           <label htmlFor={inputId} className="font-semibold">
-            {status === 'off' ? 'API key' : 'New API key'}
+            ElevenLabs key
           </label>
           {/* The saved key is never shown back. */}
           <Input
@@ -208,14 +201,13 @@ function VoiceDialog({
             autoComplete="off"
             value={key}
             onChange={(event) => setKey(event.target.value)}
-            placeholder="Paste the ElevenLabs API key"
             className="h-11 rounded-xl border-2 border-line px-3 text-base"
           />
         </form>
         <DialogFooter className="sm:justify-between">
           {status !== 'off' ? (
             <Button variant="ghost" size="lg" onClick={remove}>
-              Remove key
+              Remove
             </Button>
           ) : (
             <span />
@@ -228,10 +220,113 @@ function VoiceDialog({
             className="rounded-xl px-4"
             disabled={!key.trim()}
           >
-            Save key
+            Save
           </Button>
         </DialogFooter>
+        <BrowserVoices />
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** Switches between the browser's voice and ElevenLabs once a key is saved, keeping the key. */
+function EngineSwitch({ elevenLabsOn }: { elevenLabsOn: boolean }) {
+  const choose = (on: boolean) => {
+    if (!setElevenLabsOn(on)) window.alert('Could not save the choice on this device.');
+  };
+
+  return (
+    <div
+      role="group"
+      aria-label="Voice"
+      className="grid grid-cols-2 gap-1 rounded-xl border-2 border-line p-1"
+    >
+      {[
+        { label: 'Browser', on: false },
+        { label: 'ElevenLabs', on: true },
+      ].map((option) => (
+        <Button
+          key={option.label}
+          type="button"
+          variant={option.on === elevenLabsOn ? 'cta' : 'ghost'}
+          size="lg"
+          aria-pressed={option.on === elevenLabsOn}
+          onClick={() => choose(option.on)}
+          className="rounded-lg"
+        >
+          {option.label}
+        </Button>
+      ))}
+    </div>
+  );
+}
+
+/** One Subject per language read aloud, e.g. German for "de-DE". */
+const LANGUAGE_SUBJECTS = content.subjects.filter(
+  (subject, index, subjects): subject is LanguageSubject =>
+    subject.kind === 'language' &&
+    subjects.findIndex(
+      (other) => other.kind === 'language' && other.foreignLanguage === subject.foreignLanguage,
+    ) === index,
+);
+
+/**
+ * The browser voice per language, for when the one picked automatically reads in the wrong
+ * language, e.g. Anna reading German with an English voice in Brave.
+ */
+function BrowserVoices() {
+  return (
+    <section className="grid gap-3 border-t-2 border-line pt-5">
+      <h3 className="font-semibold">Browser voices</h3>
+      {LANGUAGE_SUBJECTS.map((subject) => (
+        <BrowserVoicePicker key={subject.foreignLanguage} subject={subject} />
+      ))}
+    </section>
+  );
+}
+
+function BrowserVoicePicker({ subject }: { subject: LanguageSubject }) {
+  const lang = subject.foreignLanguage;
+  const voices = useBrowserVoices(lang);
+  const picked = usePickedVoice(lang);
+  const selectId = useId();
+  // A picked voice this browser no longer has is left to the browser, so it shows as Default.
+  const value = voices.some((voice) => voice.voiceURI === picked) ? picked! : '';
+
+  const pick = (voiceURI: string) => {
+    if (!pickBrowserVoice(lang, voiceURI || null))
+      window.alert('Could not save the voice on this device.');
+  };
+
+  return (
+    <div className="grid grid-cols-[1fr_auto] items-end gap-2">
+      <label htmlFor={selectId} className="col-span-2 font-medium">
+        {subject.emoji} {subject.name}
+      </label>
+      <select
+        id={selectId}
+        value={value}
+        onChange={(event) => pick(event.target.value)}
+        disabled={voices.length === 0}
+        className="h-11 min-w-0 rounded-xl border-2 border-line bg-card px-3 text-base"
+      >
+        <option value="">{voices.length > 0 ? 'Default' : 'None'}</option>
+        {voices.map((voice) => (
+          <option key={voice.voiceURI} value={voice.voiceURI}>
+            {voice.name} · {voice.lang}
+          </option>
+        ))}
+      </select>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-lg"
+        aria-label={`Try ${subject.name}`}
+        onClick={() => previewBrowserVoice(lang)}
+        disabled={voices.length === 0}
+      >
+        <Volume2 />
+      </Button>
+    </div>
   );
 }

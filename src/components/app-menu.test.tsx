@@ -21,21 +21,27 @@ test('offers finishing early only during a session', async () => {
   expect(screen.getByRole('menuitem', { name: 'Finish now' })).toBeInTheDocument();
 });
 
-test('saves and removes the ElevenLabs key without showing it back', async () => {
+test('saves, switches off and removes the ElevenLabs key without showing it back', async () => {
   const user = userEvent.setup();
   render(<AppMenu />);
 
   await openVoiceSettings(user, 'TTS: Browser');
-  expect(screen.getByText(/^Off:/)).toBeInTheDocument();
-  await user.type(screen.getByLabelText('API key'), 'secret-key');
-  await user.click(screen.getByRole('button', { name: 'Save key' }));
+  expect(screen.queryByRole('group', { name: 'Voice' })).not.toBeInTheDocument();
+  await user.type(screen.getByLabelText('ElevenLabs key'), 'secret-key');
+  await user.click(screen.getByRole('button', { name: 'Save' }));
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   expect(localStorage.getItem('memonaut:elevenlabs-key')).toBe('secret-key');
 
   await openVoiceSettings(user, 'TTS: ElevenLabs');
-  expect(screen.getByText(/^On:/)).toBeInTheDocument();
-  expect(screen.getByLabelText('New API key')).toHaveValue('');
-  await user.click(screen.getByRole('button', { name: 'Remove key' }));
+  const elevenLabs = screen.getByRole('button', { name: 'ElevenLabs' });
+  expect(elevenLabs).toHaveAttribute('aria-pressed', 'true');
+  await user.click(screen.getByRole('button', { name: 'Browser' }));
+  expect(screen.getByRole('button', { name: 'Browser' })).toHaveAttribute('aria-pressed', 'true');
+  expect(localStorage.getItem('memonaut:elevenlabs-key')).toBe('secret-key');
+  await user.click(elevenLabs);
+  expect(elevenLabs).toHaveAttribute('aria-pressed', 'true');
+  expect(screen.getByLabelText('ElevenLabs key')).toHaveValue('');
+  await user.click(screen.getByRole('button', { name: 'Remove' }));
   expect(localStorage.getItem('memonaut:elevenlabs-key')).toBeNull();
 });
 
@@ -64,5 +70,43 @@ test('imports progress from a file only outside a session', async () => {
   await waitFor(() => expect(reload).toHaveBeenCalled());
   expect(confirm).toHaveBeenCalled();
   expect(localStorage.getItem('memonaut:pace')).toBe('{"german":7}');
+  vi.unstubAllGlobals();
+});
+
+test('picks a browser voice per language, kept on this device', async () => {
+  const user = userEvent.setup();
+  const spoken: { text: string; voice?: { name: string } }[] = [];
+  vi.stubGlobal(
+    'SpeechSynthesisUtterance',
+    class {
+      text: string;
+      lang = '';
+      constructor(text: string) {
+        this.text = text;
+      }
+    },
+  );
+  vi.stubGlobal('speechSynthesis', {
+    speaking: false,
+    pending: false,
+    getVoices: () => [
+      { name: 'Anna', lang: 'de-DE', localService: true, voiceURI: 'anna' },
+      { name: 'Eddy', lang: 'de-DE', localService: true, voiceURI: 'eddy' },
+    ],
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    speak: (utterance: { text: string; voice?: { name: string } }) => spoken.push(utterance),
+  });
+  render(<AppMenu />);
+
+  await openVoiceSettings(user, 'TTS: Browser');
+  const german = screen.getByRole('combobox', { name: /German/ });
+  expect(german).toHaveValue('');
+  await user.selectOptions(german, 'eddy');
+  expect(german).toHaveValue('eddy');
+  expect(JSON.parse(localStorage.getItem('memonaut:browser-voices')!)).toEqual({ 'de-DE': 'eddy' });
+
+  await user.click(screen.getByRole('button', { name: 'Try German' }));
+  expect(spoken.at(-1)?.voice?.name).toBe('Eddy');
   vi.unstubAllGlobals();
 });

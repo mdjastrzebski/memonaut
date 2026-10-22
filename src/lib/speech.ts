@@ -1,10 +1,12 @@
-import { useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 
 /** Pause between a word and its spoken hint, as in memo-bot. */
 export const HINT_DELAY_MS = 700;
 
 /** A parent's ElevenLabs API key, kept on this device only. */
 const KEY_STORAGE_KEY = 'memonaut:elevenlabs-key';
+/** Set to "browser" while the browser's voice is chosen over ElevenLabs, keeping the key. */
+const ENGINE_STORAGE_KEY = 'memonaut:tts-engine';
 const ELEVENLABS_TTS_URL = 'https://api.elevenlabs.io/v1/text-to-speech';
 const ELEVENLABS_MODEL_ID = 'eleven_multilingual_v2';
 // Voices and context sentences picked in memo-bot by ear, per language.
@@ -42,10 +44,11 @@ const SILENCE_RMS = 0.01;
 const MAX_GAIN = 8;
 
 /**
- * Which voice reads words aloud: the browser's ("off"), ElevenLabs' ("on"), or the browser's again
- * because ElevenLabs rejected the key or ran out of credits ("paused").
+ * Which voice reads words aloud: the browser's, with no key ("off") or with the key kept for later
+ * ("standby"), ElevenLabs' ("on"), or the browser's again because ElevenLabs rejected the key or ran
+ * out of credits ("paused").
  */
-export type VoiceStatus = 'off' | 'on' | 'paused';
+export type VoiceStatus = 'off' | 'standby' | 'on' | 'paused';
 
 const listeners = new Set<() => void>();
 /** The key ElevenLabs rejected; a new key turns it back on. Not saved, so a reload retries. */
@@ -81,9 +84,18 @@ function notify() {
   listeners.forEach((listener) => listener());
 }
 
+function isBrowserChosen() {
+  try {
+    return localStorage.getItem(ENGINE_STORAGE_KEY) === 'browser';
+  } catch {
+    return false;
+  }
+}
+
 export function getVoiceStatus(): VoiceStatus {
   const key = loadKey();
   if (!key) return 'off';
+  if (isBrowserChosen()) return 'standby';
   return key === rejectedKey ? 'paused' : 'on';
 }
 
@@ -98,6 +110,7 @@ export function useVoiceStatus() {
 export function saveElevenLabsKey(key: string) {
   try {
     localStorage.setItem(KEY_STORAGE_KEY, key.trim());
+    localStorage.removeItem(ENGINE_STORAGE_KEY);
   } catch {
     return false;
   }
@@ -107,10 +120,26 @@ export function saveElevenLabsKey(key: string) {
   return true;
 }
 
+/**
+ * Switches between ElevenLabs and the browser's voice, keeping the key either way. Returns false
+ * when the choice can't be saved.
+ */
+export function setElevenLabsOn(on: boolean) {
+  try {
+    if (on) localStorage.removeItem(ENGINE_STORAGE_KEY);
+    else localStorage.setItem(ENGINE_STORAGE_KEY, 'browser');
+  } catch {
+    return false;
+  }
+  notify();
+  return true;
+}
+
 /** Forgets the key and goes back to the browser's voice. */
 export function removeElevenLabsKey() {
   try {
     localStorage.removeItem(KEY_STORAGE_KEY);
+    localStorage.removeItem(ENGINE_STORAGE_KEY);
   } catch {
     return false;
   }
@@ -124,8 +153,8 @@ export function removeElevenLabsKey() {
  * when that fails, the browser's voice.
  */
 export function speak(text: string, lang: string, hint?: string) {
-  const key = loadKey();
-  const output = key && key !== rejectedKey ? getAudioOutput() : null;
+  const key = getVoiceStatus() === 'on' ? loadKey() : null;
+  const output = key ? getAudioOutput() : null;
   if (key && output) void speakWithElevenLabs(text, lang, hint, key, output);
   else speakWithBrowser(text, lang, hint);
 }
@@ -276,12 +305,99 @@ function pause(key: string) {
   notify();
 }
 
+// Chrome loads its voices only once asked, so ask early for the picked one to be ready in time.
+if ('speechSynthesis' in globalThis) speechSynthesis.getVoices?.();
+
+/** The browser voice picked per language, e.g. {"de-DE": "<voiceURI>"}, kept on this device only. */
+const BROWSER_VOICES_STORAGE_KEY = 'memonaut:browser-voices';
+
+function loadPickedVoices(): Record<string, string> {
+  try {
+    const parsed: unknown = JSON.parse(localStorage.getItem(BROWSER_VOICES_STORAGE_KEY) ?? '{}');
+    return parsed && typeof parsed === 'object' ? (parsed as Record<string, string>) : {};
+  } catch {
+    return {};
+  }
+}
+
+/** The `voiceURI` of the browser voice picked for `lang`, or null to leave it to the browser. */
+function getPickedVoice(lang: string) {
+  return loadPickedVoices()[lang] ?? null;
+}
+
+export function usePickedVoice(lang: string) {
+  return useSyncExternalStore(
+    (listener) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    () => getPickedVoice(lang),
+  );
+}
+
 /**
- * Reads `text` with the browser's voice. Does nothing where the browser has no speech synthesis,
- * or while the same word is still being read or waiting to be.
+ * Saves the browser voice to read `lang` with, by its `voiceURI`, or null to leave it to the
+ * browser. Returns false when it can't be saved.
+ */
+export function pickBrowserVoice(lang: string, voiceURI: string | null) {
+  const picked = loadPickedVoices();
+  if (voiceURI) picked[lang] = voiceURI;
+  else delete picked[lang];
+  try {
+    localStorage.setItem(BROWSER_VOICES_STORAGE_KEY, JSON.stringify(picked));
+  } catch {
+    return false;
+  }
+  notify();
+  return true;
+}
+
+const normalizeLang = (tag: string) => tag.replace('_', '-').toLowerCase();
+
+/**
+ * The browser's voices for the language of `lang`, e.g. "de-DE": those for that exact language
+ * first, then those for the same language elsewhere, e.g. "de-AT". Empty while they load.
+ */
+export function getBrowserVoices(lang: string) {
+  if (!('speechSynthesis' in globalThis)) return [];
+  const voices = speechSynthesis.getVoices?.() ?? [];
+  const wanted = normalizeLang(lang);
+  const base = wanted.split('-')[0];
+  const exact = voices.filter((voice) => normalizeLang(voice.lang) === wanted);
+  const related = voices.filter(
+    (voice) =>
+      normalizeLang(voice.lang) !== wanted && normalizeLang(voice.lang).split('-')[0] === base,
+  );
+  return [...exact, ...related];
+}
+
+/** The browser's voices for `lang`, updated once the browser has loaded them. */
+export function useBrowserVoices(lang: string) {
+  const [voices, setVoices] = useState(() => getBrowserVoices(lang));
+  useEffect(() => {
+    if (!('speechSynthesis' in globalThis)) return;
+    const synthesis = speechSynthesis;
+    const update = () => setVoices(getBrowserVoices(lang));
+    update();
+    synthesis.addEventListener?.('voiceschanged', update);
+    return () => synthesis.removeEventListener?.('voiceschanged', update);
+  }, [lang]);
+  return voices;
+}
+
+/** Reads a sample sentence in `lang` with the browser's voice, to try the voice picked for it. */
+export function previewBrowserVoice(lang: string) {
+  stopHint();
+  speakWithBrowser(PREVIOUS_TEXTS[lang] ?? lang, lang);
+}
+
+/**
+ * Reads `text` with the browser's voice: the one picked in the menu, else the one the browser
+ * picks for `lang`, which can be wrong, e.g. Anna reads German with an English voice in Brave. Does
+ * nothing where the browser has no speech synthesis, or while the same word is still being read or
+ * waiting to be.
  *
- * Deliberately minimal, like memo-bot's fallback that works in Brave: no `cancel()` and no voice
- * picked from `getVoices()`, which Brave alters for fingerprinting protection.
+ * Deliberately minimal, like memo-bot's fallback that works in Brave: no `cancel()`.
  */
 function speakWithBrowser(text: string, lang: string, hint?: string) {
   if (!('speechSynthesis' in globalThis)) return;
@@ -291,6 +407,9 @@ function speakWithBrowser(text: string, lang: string, hint?: string) {
 
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = lang;
+  const picked = getPickedVoice(lang);
+  const voice = picked && getBrowserVoices(lang).find((voice) => voice.voiceURI === picked);
+  if (voice) utterance.voice = voice;
   // Slow, as in memo-bot, so a child can follow each sound.
   utterance.rate = 0.6;
   utterance.onerror = (event) => {

@@ -1,19 +1,26 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import {
+  getBrowserVoices,
   getNormalizingGain,
   getVoiceStatus,
   HINT_DELAY_MS,
+  pickBrowserVoice,
   removeElevenLabsKey,
   saveElevenLabsKey,
+  setElevenLabsOn,
   speak,
   stopHint,
 } from './speech';
 
 interface FakeUtterance {
   text: string;
+  voice?: { name: string };
   onend?: () => void;
 }
+
+/** The browser's voices, as `getVoices()` returns them. */
+let voices: Partial<SpeechSynthesisVoice>[] = [];
 
 const queue: FakeUtterance[] = [];
 const spoken: string[] = [];
@@ -74,6 +81,7 @@ beforeEach(() => {
   queue.length = 0;
   spoken.length = 0;
   played.length = 0;
+  voices = [];
   fetchMock.mockReset();
   vi.stubGlobal(
     'SpeechSynthesisUtterance',
@@ -90,6 +98,7 @@ beforeEach(() => {
       return queue.length > 0;
     },
     pending: false,
+    getVoices: () => voices,
     speak: (utterance: FakeUtterance) => {
       queue.push(utterance);
       spoken.push(utterance.text);
@@ -168,6 +177,23 @@ test('uses the browser voice until an ElevenLabs key is saved', () => {
   expect(getVoiceStatus()).toBe('on');
   removeElevenLabsKey();
   expect(getVoiceStatus()).toBe('off');
+});
+
+test('switches to the browser voice and back, keeping the ElevenLabs key', () => {
+  saveElevenLabsKey('key-7');
+  expect(setElevenLabsOn(false)).toBe(true);
+  expect(getVoiceStatus()).toBe('standby');
+  speak('Hund', 'de-DE');
+  expect(spoken).toEqual(['Hund']);
+  expect(fetchMock).not.toHaveBeenCalled();
+  expect(localStorage.getItem('memonaut:elevenlabs-key')).toBe('key-7');
+
+  setElevenLabsOn(true);
+  expect(getVoiceStatus()).toBe('on');
+  // Saving a new key turns ElevenLabs on again.
+  setElevenLabsOn(false);
+  saveElevenLabsKey('key-8');
+  expect(getVoiceStatus()).toBe('on');
 });
 
 test('reads words with ElevenLabs in the German voice and reuses the audio', async () => {
@@ -262,4 +288,39 @@ test('reads the hint with ElevenLabs too, a moment after the word', async () => 
     text: 'zbiornik słonej wody',
   });
   expect(spoken).toEqual([]);
+});
+
+test('lists the voices for the language, those for its exact region first', () => {
+  voices = [
+    { name: 'Helena', lang: 'de-AT' },
+    { name: 'Daniel', lang: 'en-GB' },
+    { name: 'Anna', lang: 'de_DE' },
+  ];
+  expect(getBrowserVoices('de-DE').map((voice) => voice.name)).toEqual(['Anna', 'Helena']);
+});
+
+test('reads with the voice picked for the language, kept on this device', () => {
+  voices = [
+    { name: 'Anna', lang: 'de-DE', voiceURI: 'anna' },
+    { name: 'Eddy', lang: 'de-DE', voiceURI: 'eddy' },
+  ];
+  speak('drei', 'de-DE');
+  expect(queue.shift()?.voice).toBeUndefined();
+
+  expect(pickBrowserVoice('de-DE', 'eddy')).toBe(true);
+  expect(localStorage.getItem('memonaut:browser-voices')).toBe('{"de-DE":"eddy"}');
+  speak('vier', 'de-DE');
+  expect(queue.shift()?.voice?.name).toBe('Eddy');
+
+  pickBrowserVoice('de-DE', null);
+  expect(localStorage.getItem('memonaut:browser-voices')).toBe('{}');
+  speak('fünf', 'de-DE');
+  expect(queue.shift()?.voice).toBeUndefined();
+});
+
+test('leaves the voice to the browser when the picked one is gone', () => {
+  voices = [{ name: 'Anna', lang: 'de-DE', voiceURI: 'anna' }];
+  pickBrowserVoice('de-DE', 'eddy');
+  speak('drei', 'de-DE');
+  expect(queue[0].voice).toBeUndefined();
 });
