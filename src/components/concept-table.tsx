@@ -1,21 +1,9 @@
-import {
-  AlarmClock,
-  ArrowDown,
-  Brain,
-  CalendarClock,
-  ChevronDown,
-  Circle,
-  Gauge,
-  Repeat,
-  RotateCcw,
-  type LucideIcon,
-} from 'lucide-react';
+import { AlarmClock, ArrowDown, ChevronDown, Circle, type LucideIcon } from 'lucide-react';
 import { useId, useState, type ReactNode } from 'react';
 
 import { CONCEPT_NOUNS, getConceptText } from '@/components/concept-text';
 import { EXERCISES } from '@/components/exercise-types';
 import { getProgress, PROGRESS_LABELS, type Progress } from '@/components/grades';
-import { SegmentedToggle } from '@/components/segmented-toggle';
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { Content } from '@/data/content';
 import type { Card, Concept, Deck, ExerciseType } from '@/domain/types';
@@ -24,8 +12,8 @@ import { cn } from '@/lib/utils';
 import { getCardId, getConceptExerciseTypes } from '@/session/session';
 import { getRetrievability, State, type FsrsCard } from '@/srs/scheduler';
 
-/** What each cell of the table shows about its Card. */
-export type CardStat = 'due' | 'recall' | 'difficulty' | 'reviews' | 'lapses';
+/** What the table shows about each Card, one column each. */
+type CardStat = 'due' | 'difficulty';
 
 /** A difficulty from which a Card counts as hard, shown in red. */
 const HARD_DIFFICULTY = 7;
@@ -34,9 +22,8 @@ const STATS: Record<
   CardStat,
   {
     label: string;
-    Icon: LucideIcon;
     /** Sorts a column by it, the most worth a look first, e.g. the hardest Cards. */
-    value: (srs: FsrsCard, now: Date) => number;
+    value: (srs: FsrsCard) => number;
     descending: boolean;
     format: (srs: FsrsCard, now: Date) => ReactNode;
     /** Whether a Card's value is worth a look, e.g. overdue, shown in red. */
@@ -45,7 +32,6 @@ const STATS: Record<
 > = {
   due: {
     label: 'Next review',
-    Icon: CalendarClock,
     value: (srs) => srs.due.getTime(),
     descending: false,
     format: (srs, now) =>
@@ -56,43 +42,16 @@ const STATS: Record<
       ),
     warn: (srs, now) => srs.due <= now,
   },
-  recall: {
-    label: 'Recall',
-    Icon: Brain,
-    value: (srs, now) => getRetrievability(srs, now),
-    descending: false,
-    format: (srs, now) => formatPercent(getRetrievability(srs, now)),
-    warn: (srs, now) => getRetrievability(srs, now) < 0.8,
-  },
   difficulty: {
     label: 'Difficulty',
-    Icon: Gauge,
     value: (srs) => srs.difficulty,
     descending: true,
     format: (srs) => srs.difficulty.toFixed(1),
     warn: (srs) => srs.difficulty >= HARD_DIFFICULTY,
   },
-  reviews: {
-    label: 'Reviews',
-    Icon: Repeat,
-    value: (srs) => srs.reps,
-    descending: true,
-    format: (srs) => String(srs.reps),
-    warn: () => false,
-  },
-  lapses: {
-    label: 'Forgotten',
-    Icon: RotateCcw,
-    value: (srs) => srs.lapses,
-    descending: true,
-    format: (srs) => String(srs.lapses),
-    warn: (srs) => srs.lapses > 0,
-  },
 };
 
-const STAT_OPTIONS = Object.entries(STATS).map(
-  ([stat, { label, Icon }]) => [stat, label, Icon] as [CardStat, string, LucideIcon],
-);
+const STAT_COLUMNS = Object.keys(STATS) as CardStat[];
 
 const PROGRESS_TINTS: Record<Progress, string> = {
   learned: 'bg-correct/20',
@@ -104,20 +63,18 @@ interface ConceptTableProps {
   content: Content;
   deck: Deck;
   cards: Record<string, Card>;
-  /** The Deck's Exercise Types with Cards, one column each. */
+  /** The Deck's Exercise Types with Cards, a column of each stat each. */
   exerciseTypes: ExerciseType[];
   now: Date;
 }
 
 /**
- * A Deck's words as a table that opens on demand: one row per word, one column per Exercise Type,
- * each cell showing its Card's next review, recall, difficulty, reviews or lapses. A column sorts
- * the words by it.
+ * A Deck's words as a table that opens on demand: one row per word, and for each Exercise Type its
+ * Card's next review and difficulty. A column sorts the words by it.
  */
 export function ConceptTable({ content, deck, cards, exerciseTypes, now }: ConceptTableProps) {
   const [open, setOpen] = useState(false);
-  const [stat, setStat] = useState<CardStat>('due');
-  const [sortBy, setSortBy] = useState<ExerciseType>();
+  const [sortBy, setSortBy] = useState<{ exerciseType: ExerciseType; stat: CardStat }>();
   const tableId = useId();
   const subject = content.subjects.find((subject) => subject.id === deck.subjectId);
   const noun = CONCEPT_NOUNS[subject?.kind ?? 'language'];
@@ -128,33 +85,28 @@ export function ConceptTable({ content, deck, cards, exerciseTypes, now }: Conce
     getConceptExerciseTypes(deck, concept.id).includes(exerciseType)
       ? (cards[getCardId(concept.id, exerciseType)]?.srs ?? null)
       : undefined;
-  const sortColumn = sortBy && exerciseTypes.includes(sortBy) ? sortBy : undefined;
+  const sortColumn = sortBy && exerciseTypes.includes(sortBy.exerciseType) ? sortBy : undefined;
   const rows = sortColumn
-    ? sortConcepts(concepts, (c) => getCard(c, sortColumn), stat, now)
+    ? sortConcepts(concepts, (c) => getCard(c, sortColumn.exerciseType), sortColumn.stat)
     : concepts;
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h4 className="font-display font-bold">
-          <button
-            type="button"
-            aria-expanded={open}
-            aria-controls={tableId}
-            onClick={() => setOpen(!open)}
-            className="flex cursor-pointer items-center gap-1 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-          >
-            {noun.Many} by exercise
-            <ChevronDown
-              aria-hidden
-              className={cn('size-4 transition-transform', open && 'rotate-180')}
-            />
-          </button>
-        </h4>
-        {open && (
-          <SegmentedToggle label="Show" options={STAT_OPTIONS} value={stat} onChange={setStat} />
-        )}
-      </div>
+      <h4 className="font-display font-bold">
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={tableId}
+          onClick={() => setOpen(!open)}
+          className="flex cursor-pointer items-center gap-1 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          {noun.Many} by exercise
+          <ChevronDown
+            aria-hidden
+            className={cn('size-4 transition-transform', open && 'rotate-180')}
+          />
+        </button>
+      </h4>
       {open && (
         <div
           id={tableId}
@@ -162,8 +114,8 @@ export function ConceptTable({ content, deck, cards, exerciseTypes, now }: Conce
         >
           <table aria-label={`${noun.Many} in ${deck.name}`} className="w-full text-sm">
             <TableHeader className="sticky top-0 z-10 bg-background">
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="sticky left-0 z-10 bg-background">
+              <TableRow className="border-b-0 hover:bg-transparent">
+                <TableHead rowSpan={2} className="sticky left-0 z-10 bg-background">
                   <button
                     type="button"
                     onClick={() => setSortBy(undefined)}
@@ -175,31 +127,52 @@ export function ConceptTable({ content, deck, cards, exerciseTypes, now }: Conce
                 </TableHead>
                 {exerciseTypes.map((exerciseType) => {
                   const { label, Icon } = EXERCISES[exerciseType];
-                  const sorted = sortColumn === exerciseType;
                   return (
                     <TableHead
                       key={exerciseType}
-                      aria-sort={
-                        sorted ? (STATS[stat].descending ? 'descending' : 'ascending') : undefined
-                      }
-                      className="text-center"
+                      colSpan={STAT_COLUMNS.length}
+                      className="h-8 border-l border-foreground/10 text-center"
                     >
-                      <button
-                        type="button"
-                        onClick={() => setSortBy(sorted ? undefined : exerciseType)}
-                        title={`Sort by ${STATS[stat].label.toLowerCase()} in ${label.toLowerCase()}`}
-                        className={cn(
-                          'mx-auto flex cursor-pointer items-center gap-1 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
-                          !sorted && 'text-muted-foreground hover:text-foreground',
-                        )}
-                      >
+                      <span className="flex items-center justify-center gap-1">
                         <Icon aria-hidden className="size-3.5 shrink-0" />
                         {label}
-                        {sorted && <ArrowDown aria-hidden className="size-3.5 shrink-0" />}
-                      </button>
+                      </span>
                     </TableHead>
                   );
                 })}
+              </TableRow>
+              <TableRow className="hover:bg-transparent">
+                {exerciseTypes.flatMap((exerciseType) =>
+                  STAT_COLUMNS.map((stat, index) => {
+                    const sorted =
+                      sortColumn?.exerciseType === exerciseType && sortColumn.stat === stat;
+                    const { label, descending } = STATS[stat];
+                    return (
+                      <TableHead
+                        key={`${exerciseType}:${stat}`}
+                        aria-sort={sorted ? (descending ? 'descending' : 'ascending') : undefined}
+                        className={cn(
+                          'h-8 text-center text-xs',
+                          index === 0 && 'border-l border-foreground/10',
+                        )}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setSortBy(sorted ? undefined : { exerciseType, stat })}
+                          aria-label={`${EXERCISES[exerciseType].label}: ${label}`}
+                          title={`Sort by ${label.toLowerCase()} in ${EXERCISES[exerciseType].label.toLowerCase()}`}
+                          className={cn(
+                            'mx-auto flex cursor-pointer items-center gap-1 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+                            !sorted && 'text-muted-foreground hover:text-foreground',
+                          )}
+                        >
+                          {label}
+                          {sorted && <ArrowDown aria-hidden className="size-3 shrink-0" />}
+                        </button>
+                      </TableHead>
+                    );
+                  }),
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -218,15 +191,18 @@ export function ConceptTable({ content, deck, cards, exerciseTypes, now }: Conce
                         </span>
                       )}
                     </TableCell>
-                    {exerciseTypes.map((exerciseType) => (
-                      <StatCell
-                        key={exerciseType}
-                        exerciseType={exerciseType}
-                        srs={getCard(concept, exerciseType)}
-                        stat={stat}
-                        now={now}
-                      />
-                    ))}
+                    {exerciseTypes.flatMap((exerciseType) =>
+                      STAT_COLUMNS.map((stat, index) => (
+                        <StatCell
+                          key={`${exerciseType}:${stat}`}
+                          exerciseType={exerciseType}
+                          srs={getCard(concept, exerciseType)}
+                          stat={stat}
+                          now={now}
+                          className={cn(index === 0 && 'border-l border-foreground/10')}
+                        />
+                      )),
+                    )}
                   </TableRow>
                 );
               })}
@@ -240,29 +216,35 @@ export function ConceptTable({ content, deck, cards, exerciseTypes, now }: Conce
 
 /**
  * One Card's stat, tinted by how well it's known; hovering it tells the rest. Empty for an Exercise
- * Type the word isn't practised with, a dash for one not practised yet.
+ * Type the word isn't practised with; a circle in the first column for one not practised yet.
  */
 function StatCell({
   exerciseType,
   srs,
   stat,
   now,
+  className,
 }: {
   exerciseType: ExerciseType;
   /** The Card's review state, null if never practised, undefined if it has no such Card. */
   srs: FsrsCard | null | undefined;
   stat: CardStat;
   now: Date;
+  className?: string;
 }) {
-  if (srs === undefined) return <TableCell aria-label="Not practised with this exercise" />;
+  if (srs === undefined) {
+    return <TableCell aria-label="Not practised with this exercise" className={className} />;
+  }
   const label = EXERCISES[exerciseType].label;
   if (!srs || srs.state === State.New) {
     return (
       <TableCell
         title={`${label}: not practised yet`}
-        className="text-center text-muted-foreground"
+        className={cn('text-center text-muted-foreground', className)}
       >
-        <Symbol Icon={Circle} label="new" className="size-3 opacity-50" />
+        {stat === STAT_COLUMNS[0] && (
+          <Symbol Icon={Circle} label="new" className="size-3 opacity-50" />
+        )}
       </TableCell>
     );
   }
@@ -275,6 +257,7 @@ function StatCell({
         'text-center tabular-nums',
         PROGRESS_TINTS[progress],
         warn(srs, now) && 'font-bold text-wrong-ink',
+        className,
       )}
     >
       {format(srs, now)}
@@ -304,12 +287,11 @@ function sortConcepts<T>(
   concepts: T[],
   getSrs: (concept: T) => FsrsCard | null | undefined,
   stat: CardStat,
-  now: Date,
 ): T[] {
   const { value, descending } = STATS[stat];
   const keyed = concepts.map((concept) => {
     const srs = getSrs(concept);
-    return { concept, key: srs && srs.state !== State.New ? value(srs, now) : undefined };
+    return { concept, key: srs && srs.state !== State.New ? value(srs) : undefined };
   });
   const practised = keyed.filter(({ key }) => key !== undefined);
   const rest = keyed.filter(({ key }) => key === undefined);

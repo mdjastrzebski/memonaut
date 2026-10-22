@@ -52,7 +52,7 @@ test('shows the cards of each exercise in the chosen set', async () => {
   ).toBeInTheDocument();
 });
 
-test("shows a set's words by exercise, sorted by the stat shown", async () => {
+test("shows a set's words with each exercise's next review and difficulty", async () => {
   const user = userEvent.setup();
   const deck = testContent.decks[0];
   const review = (conceptId: string, difficulty: number, dueInDays: number): Card => ({
@@ -87,24 +87,25 @@ test("shows a set's words by exercise, sorted by the stat shown", async () => {
   const translations = () =>
     within(table)
       .getAllByRole('row')
-      .slice(1)
-      .map((row) => {
-        const cells = within(row).getAllByRole('cell');
-        return [cells[0].textContent, cells.at(-1)!.textContent];
-      });
+      .slice(2)
+      .map((row) =>
+        within(row)
+          .getAllByRole('cell')
+          .map((cell) => cell.textContent),
+      )
+      .map((cells) => [cells[0], ...cells.slice(-2)]);
   expect(translations()).toEqual([
-    ['Mondayponiedziałek', '5d'],
-    ['Tuesdaywtorek', 'due'],
-    ['Wednesdayśroda', 'new'],
-    ['Thursdayczwartek', 'new'],
+    ['Mondayponiedziałek', '5d', '3.0'],
+    ['Tuesdaywtorek', 'due', '8.0'],
+    ['Wednesdayśroda', 'new', ''],
+    ['Thursdayczwartek', 'new', ''],
   ]);
 
-  await user.click(screen.getByRole('button', { name: 'Difficulty' }));
-  await user.click(within(table).getByRole('button', { name: 'Translation' }));
-  expect(translations()).toEqual([
-    ['Tuesdaywtorek', '8.0'],
-    ['Mondayponiedziałek', '3.0'],
-    ['Wednesdayśroda', 'new'],
-    ['Thursdayczwartek', 'new'],
+  await user.click(within(table).getByRole('button', { name: 'Translation: Difficulty' }));
+  expect(translations().map(([word]) => word)).toEqual([
+    'Tuesdaywtorek',
+    'Mondayponiedziałek',
+    'Wednesdayśroda',
+    'Thursdayczwartek',
   ]);
 });
