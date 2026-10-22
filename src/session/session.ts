@@ -69,14 +69,10 @@ export const FINAL_EXERCISE_TYPES: ExerciseType[] = [
   'translation-plural',
 ];
 
-function isFinal(card: Card): boolean {
-  return FINAL_EXERCISE_TYPES.includes(card.exerciseType);
-}
-
 /**
  * The Exercise Types a right answer to another one shows are remembered, so it reviews them too.
  * Typing a word from its meaning, article included, shows it's recognized and picked; typing its
- * plural from the local one, that the plural is known. Dictation shows no meaning, so it shows
+ * plural from the local one, that the plural is known. Dictation shows no meaning, so it reviews
  * nothing else.
  */
 export const REVIEWS_ALSO: Partial<Record<ExerciseType, ExerciseType[]>> = {
@@ -189,7 +185,7 @@ export interface Session {
    */
   tricky: string[];
   /**
-   * Started Cards of the session's Concepts that it doesn't practise, keyed by id. A right answer
+   * Learned Cards of the session's Concepts that it doesn't practise, keyed by id. A right answer
    * to another Card of the same Concept can review them too, see `REVIEWS_ALSO`.
    */
   siblings: Record<string, Card>;
@@ -306,16 +302,16 @@ export function createSession({
   const cards = exerciseTypes.flatMap((exerciseType) =>
     picked.map(({ card }) => card).filter((card) => card.exerciseType === exerciseType),
   );
+  const sessionConcepts = Object.fromEntries(picked.map(({ concept }) => [concept.id, concept]));
   const sessionCards = byId(cards);
-  // The picked Concepts' other started Cards, which their practised ones can review too.
-  const siblings = pickedConceptIds(() => true)
+  const siblings = Object.keys(sessionConcepts)
     .flatMap(conceptCards)
-    .filter((card) => card.srs.state !== State.New && !(card.id in sessionCards));
+    .filter((card) => card.srs.state === State.Review && !(card.id in sessionCards));
 
   return {
     startedAt: now,
     deck,
-    concepts: Object.fromEntries(picked.map(({ concept }) => [concept.id, concept])),
+    concepts: sessionConcepts,
     cards: sessionCards,
     queue: exerciseTypes.flatMap((exerciseType) =>
       shuffle(
@@ -405,15 +401,11 @@ function getCandidates(cards: Card[], now: Date, dueBy: Date): { card: Card; ste
   if (practisedToday.length > 0) {
     today = practisedToday.filter(isDue);
   } else {
-    // The due Card most likely forgotten, or else the easiest unlocked. A due Card still well
-    // remembered gives way to the unlocked one, to go deeper, unless it's final.
+    // The due Card most likely forgotten, or else the easiest unlocked, which also goes first if
+    // the due one can give way to it.
     const mostForgotten = getMostForgotten(cards.filter(isDue), now);
     const unlocked = cards.find(isUnlocked);
-    const goDeeper =
-      unlocked &&
-      mostForgotten &&
-      !isFinal(mostForgotten) &&
-      getRetrievability(mostForgotten.srs, now) >= GO_DEEPER_RETRIEVABILITY;
+    const goDeeper = unlocked && mostForgotten && canGiveWay(mostForgotten, now);
     const first = goDeeper ? unlocked : (mostForgotten ?? unlocked);
     today = first ? [first] : [];
   }
@@ -448,6 +440,17 @@ function getMostForgotten(cards: Card[], now: Date): Card | undefined {
     (best, card) =>
       !best || getRetrievability(card.srs, now) < getRetrievability(best.srs, now) ? card : best,
     undefined,
+  );
+}
+
+/**
+ * Whether a due Card can give its Concept's day to the next unlocked Exercise Type: it's still
+ * well remembered, and not final.
+ */
+function canGiveWay(card: Card, now: Date): boolean {
+  return (
+    !FINAL_EXERCISE_TYPES.includes(card.exerciseType) &&
+    getRetrievability(card.srs, now) >= GO_DEEPER_RETRIEVABILITY
   );
 }
 
@@ -653,8 +656,8 @@ export function submitReview(session: Session, { now, ...input }: SubmitReviewIn
 }
 
 /**
- * The session's siblings after a right answer to `card`: its Concept's learned Cards it shows are
- * remembered, by `REVIEWS_ALSO`, are reviewed too, rated Good, unless reviewed today. FSRS
+ * The session's siblings after a right answer to `card`: those of its Concept that `REVIEWS_ALSO`
+ * says it shows are remembered are reviewed too, rated Good, unless reviewed today already. FSRS
  * lengthens a Card's interval less the more likely it's still remembered, so an early review moves
  * it only a little later.
  */
@@ -663,9 +666,10 @@ function reviewAlsoCards(session: Session, card: Card, now: Date): Record<string
   const reviewed = Object.values(session.siblings)
     .filter(
       (sibling) =>
-        sibling.conceptId === card.conceptId && alsoReviewed.includes(sibling.exerciseType),
+        sibling.conceptId === card.conceptId &&
+        alsoReviewed.includes(sibling.exerciseType) &&
+        !wasReviewedToday(sibling, now),
     )
-    .filter((sibling) => sibling.srs.state === State.Review && !wasReviewedToday(sibling, now))
     .map((sibling) => ({ ...sibling, srs: reviewSrsCard(sibling.srs, Rating.Good, now).card }));
   return { ...session.siblings, ...byId(reviewed) };
 }

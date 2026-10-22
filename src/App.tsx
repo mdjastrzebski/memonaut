@@ -103,7 +103,7 @@ export default function App() {
     if (!session) return;
     const next = submitReview(session, input);
     const cardId = next.reviews.at(-1)?.cardId;
-    // A right answer may have reviewed easier Cards of its word too.
+    // A right answer may have reviewed other Cards of its word too.
     const reviewedSiblings = Object.values(next.siblings).filter(
       (card) => card !== session.siblings[card.id],
     );
