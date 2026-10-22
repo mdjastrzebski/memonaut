@@ -55,15 +55,13 @@ export const MISSED_CARD_DELAY_MS = 3 * 60 * 60 * 1000;
 
 /**
  * A due Card still this likely remembered gives its Concept's day to the next unlocked Exercise
- * Type, as a right answer to that reviews it too, unless it's final. FSRS schedules a Card for
- * when this drops to 0.9.
+ * Type, unless it's final. FSRS schedules a Card for when this drops to 0.9.
  */
 export const GO_DEEPER_RETRIEVABILITY = 0.85;
 
 /**
  * The hardest Exercise Types, each a skill of its own: typing a word heard, typing it from its
- * meaning, and typing its plural. No other Exercise Type stands in for them, so they're never
- * reviewed through another one, nor give their day to one.
+ * meaning, and typing its plural. A due one never gives its day to another one.
  */
 export const FINAL_EXERCISE_TYPES: ExerciseType[] = [
   'dictation',
@@ -74,6 +72,18 @@ export const FINAL_EXERCISE_TYPES: ExerciseType[] = [
 function isFinal(card: Card): boolean {
   return FINAL_EXERCISE_TYPES.includes(card.exerciseType);
 }
+
+/**
+ * The Exercise Types a right answer to another one shows are remembered, so it reviews them too.
+ * Typing a word from its meaning, article included, shows it's recognized and picked; typing its
+ * plural from the local one, that the plural is known. Dictation shows no meaning, so it shows
+ * nothing else.
+ */
+export const REVIEWS_ALSO: Partial<Record<ExerciseType, ExerciseType[]>> = {
+  'translation': ['recognition-choice', 'translation-choice', 'article-choice-de'],
+  'translation-plural': ['plural-form'],
+  'question-type': ['question-choice'],
+};
 
 /** Every Exercise Type, easiest first. A Concept unlocks them one at a time, in a Deck's order. */
 export const EXERCISE_TYPES: ExerciseType[] = [
@@ -180,7 +190,7 @@ export interface Session {
   tricky: string[];
   /**
    * Started Cards of the session's Concepts that it doesn't practise, keyed by id. A right answer
-   * to a harder Card of the same Concept reviews them too, see `reviewEasierCards`.
+   * to another Card of the same Concept can review them too, see `REVIEWS_ALSO`.
    */
   siblings: Record<string, Card>;
   reviews: Review[];
@@ -297,7 +307,7 @@ export function createSession({
     picked.map(({ card }) => card).filter((card) => card.exerciseType === exerciseType),
   );
   const sessionCards = byId(cards);
-  // The picked Concepts' other started Cards, which harder ones can review, see `reviewEasierCards`.
+  // The picked Concepts' other started Cards, which their practised ones can review too.
   const siblings = pickedConceptIds(() => true)
     .flatMap(conceptCards)
     .filter((card) => card.srs.state !== State.New && !(card.id in sessionCards));
@@ -632,7 +642,7 @@ export function submitReview(session: Session, { now, ...input }: SubmitReviewIn
   return {
     ...session,
     cards: { ...session.cards, [card.id]: { ...card, srs: srsAfter } },
-    siblings: rightFirstTry ? reviewEasierCards(session, card, now) : session.siblings,
+    siblings: rightFirstTry ? reviewAlsoCards(session, card, now) : session.siblings,
     queue: dueSoon ? [...rest, card.id] : rest,
     intros: reintroduce ? [...session.intros, card.conceptId] : session.intros,
     reviews: [
@@ -643,19 +653,18 @@ export function submitReview(session: Session, { now, ...input }: SubmitReviewIn
 }
 
 /**
- * The session's siblings after a right answer to `card`: its Concept's easier learned Cards not
- * reviewed today are reviewed too, rated Good, as answering the harder one shows they're
- * remembered, but never final ones. FSRS lengthens a Card's interval less the more likely it's still remembered, so an
- * early review moves it only a little later.
+ * The session's siblings after a right answer to `card`: its Concept's learned Cards it shows are
+ * remembered, by `REVIEWS_ALSO`, are reviewed too, rated Good, unless reviewed today. FSRS
+ * lengthens a Card's interval less the more likely it's still remembered, so an early review moves
+ * it only a little later.
  */
-function reviewEasierCards(session: Session, card: Card, now: Date): Record<string, Card> {
-  const exerciseTypes = getConceptExerciseTypes(session.deck, card.conceptId);
-  const typeIndex = (other: Card) => exerciseTypes.indexOf(other.exerciseType);
+function reviewAlsoCards(session: Session, card: Card, now: Date): Record<string, Card> {
+  const alsoReviewed = REVIEWS_ALSO[card.exerciseType] ?? [];
   const reviewed = Object.values(session.siblings)
     .filter(
-      (sibling) => sibling.conceptId === card.conceptId && typeIndex(sibling) < typeIndex(card),
+      (sibling) =>
+        sibling.conceptId === card.conceptId && alsoReviewed.includes(sibling.exerciseType),
     )
-    .filter((sibling) => !isFinal(sibling))
     .filter((sibling) => sibling.srs.state === State.Review && !wasReviewedToday(sibling, now))
     .map((sibling) => ({ ...sibling, srs: reviewSrsCard(sibling.srs, Rating.Good, now).card }));
   return { ...session.siblings, ...byId(reviewed) };

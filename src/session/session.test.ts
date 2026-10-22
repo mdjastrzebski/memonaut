@@ -704,7 +704,7 @@ test('a due card still well remembered gives its day to the next exercise type',
   expect(first(learned, dictation)).toEqual(['one:dictation']);
 });
 
-test('a right answer to a harder card reviews the easier ones of its word, but no final ones', () => {
+test('a right translation reviews the choice exercises of its word, but not its dictation', () => {
   const lastWeek = new Date(start.getTime() - 7 * 24 * 60 * 60_000);
   const nextWeek = new Date(start.getTime() + 7 * 24 * 60 * 60_000);
   const recognition = reviewed('one:recognition-choice', lastWeek, { stability: 30, due: start });
@@ -723,8 +723,7 @@ test('a right answer to a harder card reviews the easier ones of its word, but n
   const session = create();
   expect(Object.keys(session.cards)).toEqual(['one:translation']);
   expect(Object.keys(session.siblings)).toEqual(['one:recognition-choice', 'one:dictation']);
-  // Right: recognition is reviewed now, so it's due later than it was; dictation, a final
-  // exercise type, isn't.
+  // Right: recognition is reviewed now, so it's due later than it was; dictation isn't.
   const right = answer(session, Rating.Good).siblings;
   expect(right['one:recognition-choice'].srs.last_review).toEqual(start);
   expect(right['one:recognition-choice'].srs.due.getTime()).toBeGreaterThan(nextWeek.getTime());
@@ -733,4 +732,25 @@ test('a right answer to a harder card reviews the easier ones of its word, but n
   const missed = answer(create(), Rating.Again);
   expect(missed.siblings['one:recognition-choice']).toEqual(recognition);
   expect(answer(missed, Rating.Good).siblings['one:recognition-choice']).toEqual(recognition);
+});
+
+test('a right dictation reviews nothing else, as it shows no meaning', () => {
+  const lastWeek = new Date(start.getTime() - 7 * 24 * 60 * 60_000);
+  const recognition = reviewed('one:recognition-choice', lastWeek, { stability: 30, due: start });
+  const session = createSession({
+    deck: threeTypes,
+    concepts,
+    cards: byId(recognition),
+    maxCards: 1,
+    now: start,
+  });
+  expect(Object.keys(session.cards)).toEqual(['one:dictation']);
+  const answered = submitReview(session, {
+    input: 'eins',
+    elapsedMs: 1000,
+    issues: [],
+    rating: Rating.Good,
+    now: start,
+  });
+  expect(answered.siblings['one:recognition-choice']).toEqual(recognition);
 });
