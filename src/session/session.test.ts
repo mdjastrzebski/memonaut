@@ -678,32 +678,42 @@ test('a deck can be practised with only some of its exercise types', () => {
   expect(withExerciseTypes(nouns, ['question-type'])).toBe(nouns);
 });
 
+const threeTypes: Deck = {
+  ...deck,
+  conceptIds: ['one'],
+  exerciseTypes: ['recognition-choice', 'dictation', 'translation'],
+};
+
 test('a due card still well remembered gives its day to the next exercise type', () => {
   const lastWeek = new Date(start.getTime() - 7 * 24 * 60 * 60_000);
-  const session = (stability: number) =>
+  const nextWeek = new Date(start.getTime() + 7 * 24 * 60 * 60_000);
+  const first = (...cards: Card[]) =>
     Object.keys(
-      createSession({
-        deck: { ...deck, conceptIds: ['one'] },
-        concepts,
-        cards: byId(reviewed('one:dictation', lastWeek, { stability, due: start })),
-        maxCards: 1,
-        now: start,
-      }).cards,
+      createSession({ deck: threeTypes, concepts, cards: byId(...cards), maxCards: 1, now: start })
+        .cards,
     );
-  // Due after a week, but learned for a month: translation comes instead.
-  expect(session(30)).toEqual(['one:translation']);
-  // Learned for a day, so likely forgotten: dictation comes first.
-  expect(session(1)).toEqual(['one:dictation']);
+  const recognition = (stability: number) =>
+    reviewed('one:recognition-choice', lastWeek, { stability, due: start });
+  // Due after a week, but learned for a month: dictation comes instead.
+  expect(first(recognition(30))).toEqual(['one:dictation']);
+  // Learned for a day, so likely forgotten: recognition comes first.
+  expect(first(recognition(1))).toEqual(['one:recognition-choice']);
+  // A final exercise type never gives way, however well remembered.
+  const dictation = reviewed('one:dictation', lastWeek, { stability: 30, due: start });
+  const learned = reviewed('one:recognition-choice', lastWeek, { stability: 30, due: nextWeek });
+  expect(first(learned, dictation)).toEqual(['one:dictation']);
 });
 
-test('a right answer to a harder card reviews the easier ones of its word too', () => {
+test('a right answer to a harder card reviews the easier ones of its word, but no final ones', () => {
   const lastWeek = new Date(start.getTime() - 7 * 24 * 60 * 60_000);
-  const dictation = reviewed('one:dictation', lastWeek, { stability: 30, due: start });
+  const nextWeek = new Date(start.getTime() + 7 * 24 * 60 * 60_000);
+  const recognition = reviewed('one:recognition-choice', lastWeek, { stability: 30, due: start });
+  const dictation = reviewed('one:dictation', lastWeek, { stability: 30, due: nextWeek });
   const create = () =>
     createSession({
-      deck: { ...deck, conceptIds: ['one'] },
+      deck: threeTypes,
       concepts,
-      cards: byId(dictation),
+      cards: byId(recognition, dictation),
       maxCards: 1,
       now: start,
     });
@@ -712,13 +722,15 @@ test('a right answer to a harder card reviews the easier ones of its word too', 
 
   const session = create();
   expect(Object.keys(session.cards)).toEqual(['one:translation']);
-  expect(session.siblings['one:dictation']).toEqual(dictation);
-  // Right: dictation is reviewed now, so it's due later than it was.
-  const right = answer(session, Rating.Good).siblings['one:dictation'];
-  expect(right.srs.last_review).toEqual(start);
-  expect(right.srs.due.getTime()).toBeGreaterThan(start.getTime() + 7 * 24 * 60 * 60_000);
-  // Missed, even if right on another try: dictation stays as it was.
+  expect(Object.keys(session.siblings)).toEqual(['one:recognition-choice', 'one:dictation']);
+  // Right: recognition is reviewed now, so it's due later than it was; dictation, a final
+  // exercise type, isn't.
+  const right = answer(session, Rating.Good).siblings;
+  expect(right['one:recognition-choice'].srs.last_review).toEqual(start);
+  expect(right['one:recognition-choice'].srs.due.getTime()).toBeGreaterThan(nextWeek.getTime());
+  expect(right['one:dictation']).toEqual(dictation);
+  // Missed, even if right on another try: recognition stays as it was.
   const missed = answer(create(), Rating.Again);
-  expect(missed.siblings['one:dictation']).toEqual(dictation);
-  expect(answer(missed, Rating.Good).siblings['one:dictation']).toEqual(dictation);
+  expect(missed.siblings['one:recognition-choice']).toEqual(recognition);
+  expect(answer(missed, Rating.Good).siblings['one:recognition-choice']).toEqual(recognition);
 });

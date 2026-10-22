@@ -55,9 +55,25 @@ export const MISSED_CARD_DELAY_MS = 3 * 60 * 60 * 1000;
 
 /**
  * A due Card still this likely remembered gives its Concept's day to the next unlocked Exercise
- * Type, as a right answer to that reviews it too. FSRS schedules a Card for when this drops to 0.9.
+ * Type, as a right answer to that reviews it too, unless it's final. FSRS schedules a Card for
+ * when this drops to 0.9.
  */
 export const GO_DEEPER_RETRIEVABILITY = 0.85;
+
+/**
+ * The hardest Exercise Types, each a skill of its own: typing a word heard, typing it from its
+ * meaning, and typing its plural. No other Exercise Type stands in for them, so they're never
+ * reviewed through another one, nor give their day to one.
+ */
+export const FINAL_EXERCISE_TYPES: ExerciseType[] = [
+  'dictation',
+  'translation',
+  'translation-plural',
+];
+
+function isFinal(card: Card): boolean {
+  return FINAL_EXERCISE_TYPES.includes(card.exerciseType);
+}
 
 /** Every Exercise Type, easiest first. A Concept unlocks them one at a time, in a Deck's order. */
 export const EXERCISE_TYPES: ExerciseType[] = [
@@ -380,12 +396,13 @@ function getCandidates(cards: Card[], now: Date, dueBy: Date): { card: Card; ste
     today = practisedToday.filter(isDue);
   } else {
     // The due Card most likely forgotten, or else the easiest unlocked. A due Card still well
-    // remembered gives way to the unlocked one, to go deeper.
+    // remembered gives way to the unlocked one, to go deeper, unless it's final.
     const mostForgotten = getMostForgotten(cards.filter(isDue), now);
     const unlocked = cards.find(isUnlocked);
     const goDeeper =
       unlocked &&
       mostForgotten &&
+      !isFinal(mostForgotten) &&
       getRetrievability(mostForgotten.srs, now) >= GO_DEEPER_RETRIEVABILITY;
     const first = goDeeper ? unlocked : (mostForgotten ?? unlocked);
     today = first ? [first] : [];
@@ -628,7 +645,7 @@ export function submitReview(session: Session, { now, ...input }: SubmitReviewIn
 /**
  * The session's siblings after a right answer to `card`: its Concept's easier learned Cards not
  * reviewed today are reviewed too, rated Good, as answering the harder one shows they're
- * remembered. FSRS lengthens a Card's interval less the more likely it's still remembered, so an
+ * remembered, but never final ones. FSRS lengthens a Card's interval less the more likely it's still remembered, so an
  * early review moves it only a little later.
  */
 function reviewEasierCards(session: Session, card: Card, now: Date): Record<string, Card> {
@@ -638,6 +655,7 @@ function reviewEasierCards(session: Session, card: Card, now: Date): Record<stri
     .filter(
       (sibling) => sibling.conceptId === card.conceptId && typeIndex(sibling) < typeIndex(card),
     )
+    .filter((sibling) => !isFinal(sibling))
     .filter((sibling) => sibling.srs.state === State.Review && !wasReviewedToday(sibling, now))
     .map((sibling) => ({ ...sibling, srs: reviewSrsCard(sibling.srs, Rating.Good, now).card }));
   return { ...session.siblings, ...byId(reviewed) };
