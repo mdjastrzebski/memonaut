@@ -24,6 +24,7 @@ import {
   previewBrowserVoice,
   removeElevenLabsKey,
   saveElevenLabsKey,
+  setElevenLabsOn,
   useBrowserVoices,
   usePickedVoice,
   useVoiceStatus,
@@ -90,7 +91,8 @@ export function AppMenu({ onEnd }: { onEnd?: () => void }) {
           className="w-auto min-w-52 rounded-2xl border-2 border-line bg-card p-1.5 text-foreground shadow-sticker ring-0"
         >
           <DropdownMenuItem className={ITEM_CLASS} onSelect={() => setVoiceOpen(true)}>
-            <AudioLines /> TTS: {voiceStatus === 'off' ? 'Browser' : 'ElevenLabs'}
+            <AudioLines /> TTS:{' '}
+            {voiceStatus === 'off' || voiceStatus === 'standby' ? 'Browser' : 'ElevenLabs'}
             {voiceStatus === 'on' && (
               // The same badge as a picked subject: the better voice is working.
               <span
@@ -141,6 +143,7 @@ export function AppMenu({ onEnd }: { onEnd?: () => void }) {
 
 const VOICE_STATUS_TEXTS: Record<VoiceStatus, string> = {
   off: "Off: your browser's voice reads words aloud.",
+  standby: "Off: your browser's voice reads words aloud. The ElevenLabs key stays saved for later.",
   on: 'On: ElevenLabs reads words aloud.',
   paused:
     "Paused: ElevenLabs rejected the key or ran out of credits, so your browser's voice reads words aloud. Save a key to try again.",
@@ -194,6 +197,7 @@ function VoiceDialog({
             new word uses some of its credits.
           </DialogDescription>
         </DialogHeader>
+        {status !== 'off' && <EngineSwitch elevenLabsOn={status !== 'standby'} />}
         <p
           className={cn(
             'rounded-xl border-2 border-line px-4 py-3 font-medium',
@@ -240,6 +244,38 @@ function VoiceDialog({
         <BrowserVoices />
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** Switches between the browser's voice and ElevenLabs once a key is saved, keeping the key. */
+function EngineSwitch({ elevenLabsOn }: { elevenLabsOn: boolean }) {
+  const choose = (on: boolean) => {
+    if (!setElevenLabsOn(on)) window.alert('Could not save the choice on this device.');
+  };
+
+  return (
+    <div
+      role="group"
+      aria-label="Voice"
+      className="grid grid-cols-2 gap-1 rounded-xl border-2 border-line p-1"
+    >
+      {[
+        { label: 'Browser', on: false },
+        { label: 'ElevenLabs', on: true },
+      ].map((option) => (
+        <Button
+          key={option.label}
+          type="button"
+          variant={option.on === elevenLabsOn ? 'cta' : 'ghost'}
+          size="lg"
+          aria-pressed={option.on === elevenLabsOn}
+          onClick={() => choose(option.on)}
+          className="rounded-lg"
+        >
+          {option.label}
+        </Button>
+      ))}
+    </div>
   );
 }
 

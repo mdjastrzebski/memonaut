@@ -21,7 +21,7 @@ test('offers finishing early only during a session', async () => {
   expect(screen.getByRole('menuitem', { name: 'Finish now' })).toBeInTheDocument();
 });
 
-test('saves and removes the ElevenLabs key without showing it back', async () => {
+test('saves, switches off and removes the ElevenLabs key without showing it back', async () => {
   const user = userEvent.setup();
   render(<AppMenu />);
 
@@ -33,6 +33,12 @@ test('saves and removes the ElevenLabs key without showing it back', async () =>
   expect(localStorage.getItem('memonaut:elevenlabs-key')).toBe('secret-key');
 
   await openVoiceSettings(user, 'TTS: ElevenLabs');
+  expect(screen.getByText(/^On:/)).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: 'Browser' }));
+  expect(screen.getByRole('button', { name: 'Browser' })).toHaveAttribute('aria-pressed', 'true');
+  expect(screen.getByText(/stays saved/)).toBeInTheDocument();
+  expect(localStorage.getItem('memonaut:elevenlabs-key')).toBe('secret-key');
+  await user.click(screen.getByRole('button', { name: 'ElevenLabs' }));
   expect(screen.getByText(/^On:/)).toBeInTheDocument();
   expect(screen.getByLabelText('New API key')).toHaveValue('');
   await user.click(screen.getByRole('button', { name: 'Remove key' }));

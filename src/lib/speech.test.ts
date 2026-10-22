@@ -8,6 +8,7 @@ import {
   pickBrowserVoice,
   removeElevenLabsKey,
   saveElevenLabsKey,
+  setElevenLabsOn,
   speak,
   stopHint,
 } from './speech';
@@ -176,6 +177,23 @@ test('uses the browser voice until an ElevenLabs key is saved', () => {
   expect(getVoiceStatus()).toBe('on');
   removeElevenLabsKey();
   expect(getVoiceStatus()).toBe('off');
+});
+
+test('switches to the browser voice and back, keeping the ElevenLabs key', () => {
+  saveElevenLabsKey('key-7');
+  expect(setElevenLabsOn(false)).toBe(true);
+  expect(getVoiceStatus()).toBe('standby');
+  speak('Hund', 'de-DE');
+  expect(spoken).toEqual(['Hund']);
+  expect(fetchMock).not.toHaveBeenCalled();
+  expect(localStorage.getItem('memonaut:elevenlabs-key')).toBe('key-7');
+
+  setElevenLabsOn(true);
+  expect(getVoiceStatus()).toBe('on');
+  // Saving a new key turns ElevenLabs on again.
+  setElevenLabsOn(false);
+  saveElevenLabsKey('key-8');
+  expect(getVoiceStatus()).toBe('on');
 });
 
 test('reads words with ElevenLabs in the German voice and reuses the audio', async () => {

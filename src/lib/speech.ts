@@ -5,6 +5,8 @@ export const HINT_DELAY_MS = 700;
 
 /** A parent's ElevenLabs API key, kept on this device only. */
 const KEY_STORAGE_KEY = 'memonaut:elevenlabs-key';
+/** Set to "browser" while the browser's voice is chosen over ElevenLabs, keeping the key. */
+const ENGINE_STORAGE_KEY = 'memonaut:tts-engine';
 const ELEVENLABS_TTS_URL = 'https://api.elevenlabs.io/v1/text-to-speech';
 const ELEVENLABS_MODEL_ID = 'eleven_multilingual_v2';
 // Voices and context sentences picked in memo-bot by ear, per language.
@@ -42,10 +44,11 @@ const SILENCE_RMS = 0.01;
 const MAX_GAIN = 8;
 
 /**
- * Which voice reads words aloud: the browser's ("off"), ElevenLabs' ("on"), or the browser's again
- * because ElevenLabs rejected the key or ran out of credits ("paused").
+ * Which voice reads words aloud: the browser's, with no key ("off") or with the key kept for later
+ * ("standby"), ElevenLabs' ("on"), or the browser's again because ElevenLabs rejected the key or ran
+ * out of credits ("paused").
  */
-export type VoiceStatus = 'off' | 'on' | 'paused';
+export type VoiceStatus = 'off' | 'standby' | 'on' | 'paused';
 
 const listeners = new Set<() => void>();
 /** The key ElevenLabs rejected; a new key turns it back on. Not saved, so a reload retries. */
@@ -81,9 +84,18 @@ function notify() {
   listeners.forEach((listener) => listener());
 }
 
+function isBrowserChosen() {
+  try {
+    return localStorage.getItem(ENGINE_STORAGE_KEY) === 'browser';
+  } catch {
+    return false;
+  }
+}
+
 export function getVoiceStatus(): VoiceStatus {
   const key = loadKey();
   if (!key) return 'off';
+  if (isBrowserChosen()) return 'standby';
   return key === rejectedKey ? 'paused' : 'on';
 }
 
@@ -98,6 +110,7 @@ export function useVoiceStatus() {
 export function saveElevenLabsKey(key: string) {
   try {
     localStorage.setItem(KEY_STORAGE_KEY, key.trim());
+    localStorage.removeItem(ENGINE_STORAGE_KEY);
   } catch {
     return false;
   }
@@ -107,10 +120,26 @@ export function saveElevenLabsKey(key: string) {
   return true;
 }
 
+/**
+ * Switches between ElevenLabs and the browser's voice, keeping the key either way. Returns false
+ * when the choice can't be saved.
+ */
+export function setElevenLabsOn(on: boolean) {
+  try {
+    if (on) localStorage.removeItem(ENGINE_STORAGE_KEY);
+    else localStorage.setItem(ENGINE_STORAGE_KEY, 'browser');
+  } catch {
+    return false;
+  }
+  notify();
+  return true;
+}
+
 /** Forgets the key and goes back to the browser's voice. */
 export function removeElevenLabsKey() {
   try {
     localStorage.removeItem(KEY_STORAGE_KEY);
+    localStorage.removeItem(ENGINE_STORAGE_KEY);
   } catch {
     return false;
   }
@@ -124,8 +153,8 @@ export function removeElevenLabsKey() {
  * when that fails, the browser's voice.
  */
 export function speak(text: string, lang: string, hint?: string) {
-  const key = loadKey();
-  const output = key && key !== rejectedKey ? getAudioOutput() : null;
+  const key = getVoiceStatus() === 'on' ? loadKey() : null;
+  const output = key ? getAudioOutput() : null;
   if (key && output) void speakWithElevenLabs(text, lang, hint, key, output);
   else speakWithBrowser(text, lang, hint);
 }
