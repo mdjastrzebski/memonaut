@@ -280,17 +280,17 @@ export function createSession({
   const cards = exerciseTypes.flatMap((exerciseType) =>
     picked.map(({ card }) => card).filter((card) => card.exerciseType === exerciseType),
   );
-  const cardIds = cards.map((card) => card.id);
-  const allPickedConceptIds = pickedConceptIds(() => true);
-  const siblings = allPickedConceptIds
+  const sessionCards = byId(cards);
+  // The picked Concepts' other started Cards, which harder ones can review, see `reviewEasierCards`.
+  const siblings = pickedConceptIds(() => true)
     .flatMap(conceptCards)
-    .filter((card) => card.srs.state !== State.New && !cardIds.includes(card.id));
+    .filter((card) => card.srs.state !== State.New && !(card.id in sessionCards));
 
   return {
     startedAt: now,
     deck,
     concepts: Object.fromEntries(picked.map(({ concept }) => [concept.id, concept])),
-    cards: Object.fromEntries(cards.map((card) => [card.id, card])),
+    cards: sessionCards,
     queue: exerciseTypes.flatMap((exerciseType) =>
       shuffle(
         cards.filter((card) => card.exerciseType === exerciseType).map((card) => card.id),
@@ -300,7 +300,7 @@ export function createSession({
     intros: pickedConceptIds(({ intro }) => intro),
     introduced: [],
     tricky: pickedConceptIds(({ tricky }) => tricky),
-    siblings: Object.fromEntries(siblings.map((card) => [card.id, card])),
+    siblings: byId(siblings),
     reviews: [],
     effort: picked.reduce((total, { effort }) => total + effort, 0),
   };
@@ -374,26 +374,20 @@ function getCandidates(cards: Card[], now: Date, dueBy: Date): { card: Card; ste
   const isUnlocked = (card: Card, index: number) =>
     card.srs.state === State.New && (index === 0 || hasGraduated(cards[index - 1]));
 
-  const dayStart = getDayStart(now);
-  const practisedToday = cards.filter(
-    (card) => card.srs.last_review && card.srs.last_review.getTime() >= dayStart.getTime(),
-  );
+  const practisedToday = cards.filter((card) => wasReviewedToday(card, now));
   let today: Card[];
   if (practisedToday.length > 0) {
     today = practisedToday.filter(isDue);
   } else {
-    // The due Card most likely forgotten, the easier type on a tie, or else the easiest unlocked.
-    // A due Card still well remembered gives way to the unlocked one, to go deeper.
-    const due = cards.filter(isDue);
-    const mostForgotten = due.reduce<Card | undefined>(
-      (best, card) =>
-        !best || getRetrievability(card.srs, now) < getRetrievability(best.srs, now) ? card : best,
-      undefined,
-    );
+    // The due Card most likely forgotten, or else the easiest unlocked. A due Card still well
+    // remembered gives way to the unlocked one, to go deeper.
+    const mostForgotten = getMostForgotten(cards.filter(isDue), now);
     const unlocked = cards.find(isUnlocked);
-    const wellRemembered =
-      mostForgotten && getRetrievability(mostForgotten.srs, now) >= GO_DEEPER_RETRIEVABILITY;
-    const first = wellRemembered ? (unlocked ?? mostForgotten) : (mostForgotten ?? unlocked);
+    const goDeeper =
+      unlocked &&
+      mostForgotten &&
+      getRetrievability(mostForgotten.srs, now) >= GO_DEEPER_RETRIEVABILITY;
+    const first = goDeeper ? unlocked : (mostForgotten ?? unlocked);
     today = first ? [first] : [];
   }
 
@@ -419,6 +413,21 @@ export function isTricky(cards: Card[]): boolean {
       card.srs.state !== State.New &&
       (card.srs.lapses >= TRICKY_LAPSES || card.srs.difficulty >= TRICKY_DIFFICULTY),
   );
+}
+
+/** The Card most likely forgotten, the first one on a tie, i.e. the easier type. */
+function getMostForgotten(cards: Card[], now: Date): Card | undefined {
+  return cards.reduce<Card | undefined>(
+    (best, card) =>
+      !best || getRetrievability(card.srs, now) < getRetrievability(best.srs, now) ? card : best,
+    undefined,
+  );
+}
+
+/** Whether a Card was reviewed in the study day of `now`. */
+function wasReviewedToday(card: Card, now: Date): boolean {
+  const { last_review } = card.srs;
+  return !!last_review && last_review.getTime() >= getDayStart(now).getTime();
 }
 
 /** Whether a Card has reached Review, even if it lapsed since. */
@@ -601,12 +610,12 @@ export function submitReview(session: Session, { now, ...input }: SubmitReviewIn
     !session.introduced.includes(card.conceptId) &&
     !session.intros.includes(card.conceptId);
 
-  const rightFirstTime = answer.rating >= Rating.Good && countMisses(session, card.id) === 0;
+  const rightFirstTry = answer.rating >= Rating.Good && countMisses(session, card.id) === 0;
 
   return {
     ...session,
     cards: { ...session.cards, [card.id]: { ...card, srs: srsAfter } },
-    siblings: rightFirstTime ? reviewEasierCards(session, card, now) : session.siblings,
+    siblings: rightFirstTry ? reviewEasierCards(session, card, now) : session.siblings,
     queue: dueSoon ? [...rest, card.id] : rest,
     intros: reintroduce ? [...session.intros, card.conceptId] : session.intros,
     reviews: [
@@ -617,28 +626,23 @@ export function submitReview(session: Session, { now, ...input }: SubmitReviewIn
 }
 
 /**
- * The session's siblings after a right answer to `card`: those of its Concept with an easier
- * Exercise Type are reviewed too, rated Good, as answering the harder one shows they're remembered.
- * Only learned ones not reviewed today are: FSRS lengthens a Card's interval less the more likely
- * it's still remembered, so an early review moves it only a little later.
+ * The session's siblings after a right answer to `card`: its Concept's easier learned Cards not
+ * reviewed today are reviewed too, rated Good, as answering the harder one shows they're
+ * remembered. FSRS lengthens a Card's interval less the more likely it's still remembered, so an
+ * early review moves it only a little later.
  */
 function reviewEasierCards(session: Session, card: Card, now: Date): Record<string, Card> {
   const exerciseTypes = getConceptExerciseTypes(session.deck, card.conceptId);
-  const isEasier = (sibling: Card) =>
-    sibling.conceptId === card.conceptId &&
-    exerciseTypes.indexOf(sibling.exerciseType) < exerciseTypes.indexOf(card.exerciseType);
-  const dayStart = getDayStart(now);
-  const reviewedToday = (sibling: Card) =>
-    !!sibling.srs.last_review && sibling.srs.last_review.getTime() >= dayStart.getTime();
-
+  const typeIndex = (other: Card) => exerciseTypes.indexOf(other.exerciseType);
   const reviewed = Object.values(session.siblings)
     .filter(
-      (sibling) =>
-        isEasier(sibling) && sibling.srs.state === State.Review && !reviewedToday(sibling),
+      (sibling) => sibling.conceptId === card.conceptId && typeIndex(sibling) < typeIndex(card),
     )
+    .filter((sibling) => sibling.srs.state === State.Review && !wasReviewedToday(sibling, now))
     .map((sibling) => ({ ...sibling, srs: reviewSrsCard(sibling.srs, Rating.Good, now).card }));
-  return {
-    ...session.siblings,
-    ...Object.fromEntries(reviewed.map((sibling) => [sibling.id, sibling])),
-  };
+  return { ...session.siblings, ...byId(reviewed) };
+}
+
+function byId(cards: Card[]): Record<string, Card> {
+  return Object.fromEntries(cards.map((card) => [card.id, card]));
 }

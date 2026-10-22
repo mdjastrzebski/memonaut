@@ -104,10 +104,10 @@ export default function App() {
     const next = submitReview(session, input);
     const cardId = next.reviews.at(-1)?.cardId;
     // A right answer may have reviewed easier Cards of its word too.
-    const siblings = Object.values(next.siblings).filter(
+    const reviewedSiblings = Object.values(next.siblings).filter(
       (card) => card !== session.siblings[card.id],
     );
-    if (cardId) saveProgress(session.deck.subjectId, [next.cards[cardId], ...siblings]);
+    if (cardId) saveProgress(session.deck.subjectId, [next.cards[cardId], ...reviewedSiblings]);
     setSession(next);
     if (getCurrentCard(next)) recordSession(next);
     else measurePace(next);
