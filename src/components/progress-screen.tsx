@@ -377,6 +377,8 @@ function DeckExercises({
   if (!deck) return null;
   const types = getDeckExerciseTypes(deck, cards);
   const total = types.reduce((sum, { progress }) => sum + progress.length, 0);
+  // The biggest Exercise Type's bar spans the whole width, the others in proportion.
+  const most = Math.max(...types.map(({ progress }) => progress.length));
 
   return (
     <Section title="Exercises per set" note="Cards of each exercise in a set">
@@ -430,7 +432,7 @@ function DeckExercises({
                   <ProgressBar
                     progress={progress}
                     className="min-w-3"
-                    style={{ width: `${share * 100}%` }}
+                    style={{ width: `${(progress.length / most) * 100}%` }}
                   />
                 </span>
               </li>
