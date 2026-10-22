@@ -622,8 +622,9 @@ test('a unit unlocks recognition choice, translation choice, then dictation', as
     }
   };
 
-  // 10 minutes fit the 8 translation choices, and 6 new words' recognitions come on top, 3 for
-  // every 5 minutes, each a couple of exercises after its intro.
+  // 10 minutes fit the 8 translation choices. At least 3 new Cards come for every 5 minutes, a
+  // third of them deeper at least: the translation choices already cover that, so 4 new words'
+  // recognitions come on top, each a couple of exercises after its intro.
   await startNewSession(new Date(2026, 0, 6, 10), '10 min');
   const before = await answerUntilOther({ translationChoices: false });
   // Translation choice: a wrong pick is rated Again, and the German word is read aloud.
@@ -642,14 +643,14 @@ test('a unit unlocks recognition choice, translation choice, then dictation', as
   // A fast right pick is rated Easy and graduates at once, so the missed one comes back once and the
   // others are picked once. The new words' recognition counts as Good at most, so comes back once.
   const after = await answerUntilOther();
-  expect(before.recognitions + after.recognitions).toBe(12);
+  expect(before.recognitions + after.recognitions).toBe(8);
   expect(after.translationChoices).toBe(8);
 
-  // Next day, before the recognitions are due again at 10 AM, the 6 newer words' translation choice
+  // Next day, before the recognitions are due again at 10 AM, the 4 newer words' translation choice
   // comes first, then dictation of the words whose translation choice graduated: the German word is
   // read aloud and typed.
   await startNewSession(new Date(2026, 0, 7, 5), '10 min');
-  expect((await answerUntilOther()).translationChoices).toBe(6);
+  expect((await answerUntilOther()).translationChoices).toBe(4);
   expect(screen.getByRole('textbox', { name: 'Answer' })).toBeInTheDocument();
   expect(concepts.some((concept) => concept.foreign === spoken.at(-1))).toBe(true);
 }, 20_000);

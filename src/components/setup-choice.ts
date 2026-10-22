@@ -10,8 +10,8 @@ export const SESSION_MINUTES = [5, 10, 15, 20];
 const DEFAULT_SESSION_MINUTES = 10;
 
 /**
- * While a set has new Cards, a session starts at least this many per 5 minutes picked: new words
- * first, then the next Exercise Types of words already started.
+ * While a set has new Cards, a session starts at least this many per 5 minutes picked, split
+ * between new words and the next Exercise Types of words already started.
  */
 const MIN_NEW_PER_5_MINUTES = 3;
 
