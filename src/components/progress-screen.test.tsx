@@ -38,10 +38,10 @@ test('shows the cards of each exercise in the chosen set', async () => {
       .getAllByRole('listitem')
       .map((item) => item.getAttribute('aria-label')),
   ).toEqual([
-    'Recognition: 4 cards, 25%',
-    'Translation choice: 4 cards, 25%',
-    'Dictation: 4 cards, 25%',
-    'Translation: 4 cards, 25%',
+    'Recognition: 4 cards',
+    'Translation choice: 4 cards',
+    'Dictation: 4 cards',
+    'Translation: 4 cards',
   ]);
 
   const kapitel = testContent.decks.find((deck) => deck.id === 'german/kapitel-1')!;

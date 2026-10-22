@@ -358,7 +358,7 @@ const formatDay = (date: Date) =>
 const formatWeekday = (date: Date) => date.toLocaleDateString(undefined, { weekday: 'short' });
 
 /**
- * A set's Cards per Exercise Type, with each one's share of the set and how well it's known, and
+ * A set's Cards per Exercise Type, with how many there are and how well they're known, and
  * its words by Exercise Type.
  */
 function DeckExercises({
@@ -413,22 +413,20 @@ function DeckExercises({
         <ul aria-label={`Exercises in ${deck.name}`} className="flex flex-col">
           {types.map(({ exerciseType, progress }) => {
             const { label, Icon } = EXERCISES[exerciseType];
-            const share = progress.length / total;
             return (
               <li
                 key={exerciseType}
-                aria-label={`${label}: ${plural(progress.length, 'card')}, ${formatPercent(share)}`}
-                className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 border-b border-foreground/10 py-2.5 last:border-b-0 sm:grid-cols-[minmax(0,12rem)_minmax(0,1fr)_auto]"
+                aria-label={`${label}: ${plural(progress.length, 'card')}`}
+                className="grid grid-cols-1 items-center gap-x-4 gap-y-1 border-b border-foreground/10 py-2.5 last:border-b-0 sm:grid-cols-[minmax(0,14rem)_minmax(0,1fr)]"
               >
                 <span className="flex min-w-0 items-center gap-2 font-semibold">
                   <Icon aria-hidden className="size-4 shrink-0 text-muted-foreground" />
                   <span className="truncate">{label}</span>
+                  <span className="font-normal text-muted-foreground tabular-nums">
+                    ({progress.length})
+                  </span>
                 </span>
-                <span className="text-right text-sm text-muted-foreground tabular-nums sm:order-last">
-                  <span className="font-semibold text-foreground">{progress.length}</span> ·{' '}
-                  {formatPercent(share)}
-                </span>
-                <span className="col-span-2 flex sm:col-span-1">
+                <span className="flex">
                   <ProgressBar
                     progress={progress}
                     className="min-w-3"
