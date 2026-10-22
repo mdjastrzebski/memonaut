@@ -53,6 +53,34 @@ export const MAX_SESSION_MISSES = 2;
  */
 export const MISSED_CARD_DELAY_MS = 3 * 60 * 60 * 1000;
 
+/**
+ * A due Card still this likely remembered gives its Concept's day to the next unlocked Exercise
+ * Type, unless it's final. FSRS schedules a Card for when this drops to 0.9.
+ */
+export const GO_DEEPER_RETRIEVABILITY = 0.85;
+
+/**
+ * The hardest Exercise Types, each a skill of its own: typing a word heard, typing it from its
+ * meaning, and typing its plural. A due one never gives its day to another one.
+ */
+export const FINAL_EXERCISE_TYPES: ExerciseType[] = [
+  'dictation',
+  'translation',
+  'translation-plural',
+];
+
+/**
+ * The Exercise Types a right answer to another one shows are remembered, so it reviews them too.
+ * Typing a word from its meaning, article included, shows it's recognized and picked; typing its
+ * plural from the local one, that the plural is known. Dictation shows no meaning, so it reviews
+ * nothing else.
+ */
+export const REVIEWS_ALSO: Partial<Record<ExerciseType, ExerciseType[]>> = {
+  'translation': ['recognition-choice', 'translation-choice', 'article-choice-de'],
+  'translation-plural': ['plural-form'],
+  'question-type': ['question-choice'],
+};
+
 /** Every Exercise Type, easiest first. A Concept unlocks them one at a time, in a Deck's order. */
 export const EXERCISE_TYPES: ExerciseType[] = [
   'recognition-choice',
@@ -156,6 +184,11 @@ export interface Session {
    * remembered, and introduced again only once it's missed, before it's asked again.
    */
   tricky: string[];
+  /**
+   * Learned Cards of the session's Concepts that it doesn't practise, keyed by id. A right answer
+   * to another Card of the same Concept can review them too, see `REVIEWS_ALSO`.
+   */
+  siblings: Record<string, Card>;
   reviews: Review[];
   /** Effort points the picked Cards were expected to take. */
   effort: number;
@@ -269,12 +302,17 @@ export function createSession({
   const cards = exerciseTypes.flatMap((exerciseType) =>
     picked.map(({ card }) => card).filter((card) => card.exerciseType === exerciseType),
   );
+  const sessionConcepts = Object.fromEntries(picked.map(({ concept }) => [concept.id, concept]));
+  const sessionCards = byId(cards);
+  const siblings = Object.keys(sessionConcepts)
+    .flatMap(conceptCards)
+    .filter((card) => card.srs.state === State.Review && !(card.id in sessionCards));
 
   return {
     startedAt: now,
     deck,
-    concepts: Object.fromEntries(picked.map(({ concept }) => [concept.id, concept])),
-    cards: Object.fromEntries(cards.map((card) => [card.id, card])),
+    concepts: sessionConcepts,
+    cards: sessionCards,
     queue: exerciseTypes.flatMap((exerciseType) =>
       shuffle(
         cards.filter((card) => card.exerciseType === exerciseType).map((card) => card.id),
@@ -284,6 +322,7 @@ export function createSession({
     intros: pickedConceptIds(({ intro }) => intro),
     introduced: [],
     tricky: pickedConceptIds(({ tricky }) => tricky),
+    siblings: byId(siblings),
     reviews: [],
     effort: picked.reduce((total, { effort }) => total + effort, 0),
   };
@@ -357,23 +396,17 @@ function getCandidates(cards: Card[], now: Date, dueBy: Date): { card: Card; ste
   const isUnlocked = (card: Card, index: number) =>
     card.srs.state === State.New && (index === 0 || hasGraduated(cards[index - 1]));
 
-  const dayStart = getDayStart(now);
-  const practisedToday = cards.filter(
-    (card) => card.srs.last_review && card.srs.last_review.getTime() >= dayStart.getTime(),
-  );
+  const practisedToday = cards.filter((card) => wasReviewedToday(card, now));
   let today: Card[];
   if (practisedToday.length > 0) {
     today = practisedToday.filter(isDue);
   } else {
-    // The due Card most likely forgotten, the easier type on a tie, or else the easiest unlocked.
-    const due = cards.filter(isDue);
-    const mostForgotten = due.reduce<Card | undefined>(
-      (best, card) =>
-        !best || getRetrievability(card.srs, now) < getRetrievability(best.srs, now) ? card : best,
-      undefined,
-    );
+    // The due Card most likely forgotten, or else the easiest unlocked, which also goes first if
+    // the due one can give way to it.
+    const mostForgotten = getMostForgotten(cards.filter(isDue), now);
     const unlocked = cards.find(isUnlocked);
-    const first = mostForgotten ?? unlocked;
+    const goDeeper = unlocked && mostForgotten && canGiveWay(mostForgotten, now);
+    const first = goDeeper ? unlocked : (mostForgotten ?? unlocked);
     today = first ? [first] : [];
   }
 
@@ -399,6 +432,32 @@ export function isTricky(cards: Card[]): boolean {
       card.srs.state !== State.New &&
       (card.srs.lapses >= TRICKY_LAPSES || card.srs.difficulty >= TRICKY_DIFFICULTY),
   );
+}
+
+/** The Card most likely forgotten, the first one on a tie, i.e. the easier type. */
+function getMostForgotten(cards: Card[], now: Date): Card | undefined {
+  return cards.reduce<Card | undefined>(
+    (best, card) =>
+      !best || getRetrievability(card.srs, now) < getRetrievability(best.srs, now) ? card : best,
+    undefined,
+  );
+}
+
+/**
+ * Whether a due Card can give its Concept's day to the next unlocked Exercise Type: it's still
+ * well remembered, and not final.
+ */
+function canGiveWay(card: Card, now: Date): boolean {
+  return (
+    !FINAL_EXERCISE_TYPES.includes(card.exerciseType) &&
+    getRetrievability(card.srs, now) >= GO_DEEPER_RETRIEVABILITY
+  );
+}
+
+/** Whether a Card was reviewed in the study day of `now`. */
+function wasReviewedToday(card: Card, now: Date): boolean {
+  const { last_review } = card.srs;
+  return !!last_review && last_review.getTime() >= getDayStart(now).getTime();
 }
 
 /** Whether a Card has reached Review, even if it lapsed since. */
@@ -581,9 +640,12 @@ export function submitReview(session: Session, { now, ...input }: SubmitReviewIn
     !session.introduced.includes(card.conceptId) &&
     !session.intros.includes(card.conceptId);
 
+  const rightFirstTry = answer.rating >= Rating.Good && countMisses(session, card.id) === 0;
+
   return {
     ...session,
     cards: { ...session.cards, [card.id]: { ...card, srs: srsAfter } },
+    siblings: rightFirstTry ? reviewAlsoCards(session, card, now) : session.siblings,
     queue: dueSoon ? [...rest, card.id] : rest,
     intros: reintroduce ? [...session.intros, card.conceptId] : session.intros,
     reviews: [
@@ -591,4 +653,27 @@ export function submitReview(session: Session, { now, ...input }: SubmitReviewIn
       { cardId: card.id, ...answer, earnedRating: input.rating, log, srsAfter },
     ],
   };
+}
+
+/**
+ * The session's siblings after a right answer to `card`: those of its Concept that `REVIEWS_ALSO`
+ * says it shows are remembered are reviewed too, rated Good, unless reviewed today already. FSRS
+ * lengthens a Card's interval less the more likely it's still remembered, so an early review moves
+ * it only a little later.
+ */
+function reviewAlsoCards(session: Session, card: Card, now: Date): Record<string, Card> {
+  const alsoReviewed = REVIEWS_ALSO[card.exerciseType] ?? [];
+  const reviewed = Object.values(session.siblings)
+    .filter(
+      (sibling) =>
+        sibling.conceptId === card.conceptId &&
+        alsoReviewed.includes(sibling.exerciseType) &&
+        !wasReviewedToday(sibling, now),
+    )
+    .map((sibling) => ({ ...sibling, srs: reviewSrsCard(sibling.srs, Rating.Good, now).card }));
+  return { ...session.siblings, ...byId(reviewed) };
+}
+
+function byId(cards: Card[]): Record<string, Card> {
+  return Object.fromEntries(cards.map((card) => [card.id, card]));
 }

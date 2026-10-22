@@ -370,7 +370,8 @@ test('picks cards in the usual order while their effort fits, but at least one',
 
 test('introduces a new word even when due cards take up all the effort', () => {
   const lastWeek = new Date(start.getTime() - 7 * 24 * 60 * 60_000);
-  const cards = byId(reviewed('one:dictation', lastWeek, { due: start }));
+  // Due a week late, so likely forgotten: it keeps its word's day.
+  const cards = byId(reviewed('one:dictation', lastWeek, { stability: 1, due: start }));
   const session = createSession({ deck, concepts, cards, maxEffort: 1, now: start });
   expect(Object.keys(session.cards)).toEqual(['one:dictation', 'two:dictation']);
   expect(session.intros).toEqual(['two']);
@@ -379,7 +380,10 @@ test('introduces a new word even when due cards take up all the effort', () => {
     ...concepts,
     { id: 'three', subjectId: 'german', kind: 'language', local: 'trzy', foreign: 'drei' },
   ];
-  const twoDue = byId(cards['one:dictation'], reviewed('two:dictation', lastWeek, { due: start }));
+  const twoDue = byId(
+    cards['one:dictation'],
+    reviewed('two:dictation', lastWeek, { stability: 1, due: start }),
+  );
   expect(
     Object.keys(
       createSession({
@@ -463,8 +467,8 @@ test('fills minNew with the other kind when new words or deeper exercise types r
 
 test('goes deeper with an exercise type held back for today', () => {
   const lastWeek = new Date(start.getTime() - 7 * 24 * 60 * 60_000);
-  // One is due, so its translation is held back, yet it still counts as going deeper.
-  const cards = byId(reviewed('one:dictation', lastWeek, { due: start }));
+  // One is due and likely forgotten, so its translation is held back, yet still goes deeper.
+  const cards = byId(reviewed('one:dictation', lastWeek, { stability: 1, due: start }));
   const session = createSession({ deck, concepts, cards, maxEffort: 1, minNew: 3, now: start });
   expect(Object.keys(session.cards)).toEqual(['one:dictation', 'two:dictation', 'one:translation']);
 });
@@ -672,4 +676,81 @@ test('a deck can be practised with only some of its exercise types', () => {
   ]);
   // With none of the deck's own types, it's practised as it is.
   expect(withExerciseTypes(nouns, ['question-type'])).toBe(nouns);
+});
+
+const threeTypes: Deck = {
+  ...deck,
+  conceptIds: ['one'],
+  exerciseTypes: ['recognition-choice', 'dictation', 'translation'],
+};
+
+test('a due card still well remembered gives its day to the next exercise type', () => {
+  const lastWeek = new Date(start.getTime() - 7 * 24 * 60 * 60_000);
+  const nextWeek = new Date(start.getTime() + 7 * 24 * 60 * 60_000);
+  const first = (...cards: Card[]) =>
+    Object.keys(
+      createSession({ deck: threeTypes, concepts, cards: byId(...cards), maxCards: 1, now: start })
+        .cards,
+    );
+  const recognition = (stability: number) =>
+    reviewed('one:recognition-choice', lastWeek, { stability, due: start });
+  // Due after a week, but learned for a month: dictation comes instead.
+  expect(first(recognition(30))).toEqual(['one:dictation']);
+  // Learned for a day, so likely forgotten: recognition comes first.
+  expect(first(recognition(1))).toEqual(['one:recognition-choice']);
+  // A final exercise type never gives way, however well remembered.
+  const dictation = reviewed('one:dictation', lastWeek, { stability: 30, due: start });
+  const learned = reviewed('one:recognition-choice', lastWeek, { stability: 30, due: nextWeek });
+  expect(first(learned, dictation)).toEqual(['one:dictation']);
+});
+
+test('a right translation reviews the choice exercises of its word, but not its dictation', () => {
+  const lastWeek = new Date(start.getTime() - 7 * 24 * 60 * 60_000);
+  const nextWeek = new Date(start.getTime() + 7 * 24 * 60 * 60_000);
+  const recognition = reviewed('one:recognition-choice', lastWeek, { stability: 30, due: start });
+  const dictation = reviewed('one:dictation', lastWeek, { stability: 30, due: nextWeek });
+  const create = () =>
+    createSession({
+      deck: threeTypes,
+      concepts,
+      cards: byId(recognition, dictation),
+      maxCards: 1,
+      now: start,
+    });
+  const answer = (session: Session, rating: Grade) =>
+    submitReview(session, { input: '', elapsedMs: 1000, issues: [], rating, now: start });
+
+  const session = create();
+  expect(Object.keys(session.cards)).toEqual(['one:translation']);
+  expect(Object.keys(session.siblings)).toEqual(['one:recognition-choice', 'one:dictation']);
+  // Right: recognition is reviewed now, so it's due later than it was; dictation isn't.
+  const right = answer(session, Rating.Good).siblings;
+  expect(right['one:recognition-choice'].srs.last_review).toEqual(start);
+  expect(right['one:recognition-choice'].srs.due.getTime()).toBeGreaterThan(nextWeek.getTime());
+  expect(right['one:dictation']).toEqual(dictation);
+  // Missed, even if right on another try: recognition stays as it was.
+  const missed = answer(create(), Rating.Again);
+  expect(missed.siblings['one:recognition-choice']).toEqual(recognition);
+  expect(answer(missed, Rating.Good).siblings['one:recognition-choice']).toEqual(recognition);
+});
+
+test('a right dictation reviews nothing else, as it shows no meaning', () => {
+  const lastWeek = new Date(start.getTime() - 7 * 24 * 60 * 60_000);
+  const recognition = reviewed('one:recognition-choice', lastWeek, { stability: 30, due: start });
+  const session = createSession({
+    deck: threeTypes,
+    concepts,
+    cards: byId(recognition),
+    maxCards: 1,
+    now: start,
+  });
+  expect(Object.keys(session.cards)).toEqual(['one:dictation']);
+  const answered = submitReview(session, {
+    input: 'eins',
+    elapsedMs: 1000,
+    issues: [],
+    rating: Rating.Good,
+    now: start,
+  });
+  expect(answered.siblings['one:recognition-choice']).toEqual(recognition);
 });

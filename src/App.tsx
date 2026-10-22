@@ -71,7 +71,7 @@ export default function App() {
   const subject = content.subjects.find((subject) => subject.id === deck.subjectId)!;
   const finished = session !== null && (ended || !getCurrentCard(session));
   const exercising = session !== null && !finished;
-  const allCards = session ? { ...cards, ...session.cards } : cards;
+  const allCards = session ? { ...cards, ...session.siblings, ...session.cards } : cards;
   const { getActiveMs, getIdleMs } = useActiveTime(exercising);
   const pace = paces[subject.id];
   const exerciseTypes = deck.exerciseTypes.filter((type) => !skippedTypes.includes(type));
@@ -103,7 +103,11 @@ export default function App() {
     if (!session) return;
     const next = submitReview(session, input);
     const cardId = next.reviews.at(-1)?.cardId;
-    if (cardId) saveProgress(session.deck.subjectId, [next.cards[cardId]]);
+    // A right answer may have reviewed other Cards of its word too.
+    const reviewedSiblings = Object.values(next.siblings).filter(
+      (card) => card !== session.siblings[card.id],
+    );
+    if (cardId) saveProgress(session.deck.subjectId, [next.cards[cardId], ...reviewedSiblings]);
     setSession(next);
     if (getCurrentCard(next)) recordSession(next);
     else measurePace(next);
