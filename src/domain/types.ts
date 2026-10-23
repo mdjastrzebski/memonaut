@@ -26,6 +26,8 @@ interface SubjectBase {
   exerciseTypes: ExerciseType[];
   /** Spellings marked in a right answer, to remind which ones it got right, e.g. Polish "rz". */
   trickySpellings?: string[];
+  /** Added by the user rather than bundled with the app. */
+  custom?: boolean;
 }
 
 export interface LanguageSubject extends SubjectBase {
@@ -68,6 +70,8 @@ export interface Deck {
    * the Deck's, e.g. a question without choices.
    */
   conceptExerciseTypes?: Record<string, ExerciseType[]>;
+  /** Imported by the user rather than bundled with the app; always a unit. */
+  custom?: boolean;
 }
 
 /**

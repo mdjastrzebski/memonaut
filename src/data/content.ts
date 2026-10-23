@@ -166,189 +166,255 @@ export interface Content {
 }
 
 /**
+ * Subjects and unit Decks the user added on top of the bundled files, each as parsed from its YAML
+ * (see `@/data/user-sets`). A Deck belongs to a bundled Subject or to one of `subjects`.
+ */
+export interface UserContent {
+  subjects: unknown[];
+  decks: { subjectId: string; deck: unknown }[];
+}
+
+/** Where errors in the user's own Subjects and Decks point to. */
+const USER_PATH = 'my sets';
+
+/** A Subject's parsed files: its fields, optional core list and unit Decks. */
+interface SubjectSource {
+  path: string;
+  fields: unknown;
+  core?: { path: string; value: unknown };
+  decks: { path: string; value: unknown; custom: boolean }[];
+  custom: boolean;
+}
+
+/**
  * Builds Subjects, Decks and Concepts from YAML sources keyed by path:
  * `./<subject>/subject.yaml`, `./<subject>/decks/<deck>.yaml`, each a unit Deck, and an optional
- * `./<subject>/core.yaml`.
+ * `./<subject>/core.yaml`, then adds the user's own Subjects and Decks.
  *
- * A Concept may appear in several files, defined the same way in each. The Subject's core Deck
- * holds the Concepts of `core.yaml` followed by those marked `core` in any unit, each once, in the
- * order they first appear. A `disabled` unit is checked but left out, along with its Concepts, unless
- * another Deck has them.
+ * A Concept may appear in several files, defined the same way in each, except that a user's Deck
+ * may define it differently: its definition is then used everywhere, and of two user Decks, the
+ * later one's. The Subject's core Deck holds the Concepts of `core.yaml` followed by those marked
+ * `core` in any unit, each once, in the order they first appear. A `disabled` unit is checked but
+ * left out, along with its Concepts, unless another Deck has them.
  *
  * Ids in the files are unique within a Subject; the built ids are prefixed with the Subject id,
  * e.g. `german/number-3`.
  */
-export function buildContent(files: Record<string, string>): Content {
+export function buildContent(
+  files: Record<string, string>,
+  user: UserContent = { subjects: [], decks: [] },
+): Content {
   const content: Content = { subjects: [], decks: [], concepts: [] };
   const dirs = new Set(Object.keys(files).map((path) => path.split('/')[1]));
+  const sources: SubjectSource[] = [];
 
   for (const dir of dirs) {
     const subjectPath = `./${dir}/subject.yaml`;
     if (!(subjectPath in files)) {
       throw new Error(`${subjectPath}: missing`);
     }
-    const subject = getSubject(subjectPath, read(subjectPath, files[subjectPath], subjectSchema));
-    if (content.subjects.some((other) => other.id === subject.id)) {
-      throw new Error(`${subjectPath}: duplicate subject id "${subject.id}"`);
-    }
-    content.subjects.push(subject);
-
-    const prefix = (conceptId: string) => `${subject.id}/${conceptId}`;
-    const deckPaths = Object.keys(files).filter((path) => path.startsWith(`./${dir}/decks/`));
-    const concepts = new Map<string, Concept>();
-    const deckIds = new Set<string>([CORE_DECK.id]);
-    const coreIds = new Set<string>();
-    /** Concepts of the Decks built, as a disabled unit's are left out. */
-    const usedIds = new Set<string>();
-    let coreStrictSpelling = false;
-    let coreShuffleNew = false;
-    let coreShowIntro = true;
-    let coreExerciseTypes = subject.exerciseTypes;
-
-    const getExerciseTypes = (path: string, listed?: ExerciseType[]) => {
-      const extra = listed?.find((type) => !subject.exerciseTypes.includes(type));
-      if (extra) {
-        throw new Error(`${path}: exercise type "${extra}" is not one of the subject's`);
-      }
-      return listed ?? subject.exerciseTypes;
-    };
-
-    const addConcept = (path: string, fields: ConceptFields) => {
-      const isCloze = fields.cloze !== undefined;
-      const needingLocal = subject.exerciseTypes.find(
-        (type) => type !== 'dictation' && type !== 'cloze',
-      );
-      if (subject.kind === 'language' && !isCloze && fields.local === undefined && needingLocal) {
-        throw new Error(`${path}: concept "${fields.id}" needs a local word for ${needingLocal}`);
-      }
-      const concept = {
-        ...fields,
-        kind: isCloze ? 'cloze' : subject.kind,
-        id: prefix(fields.id),
-        subjectId: subject.id,
-      } as Concept;
-      if (concept.kind === 'language' && concept.localPlural && !concept.foreignPlural) {
-        throw new Error(`${path}: concept "${fields.id}" has a local plural but no foreign plural`);
-      }
-      if (concept.kind === 'language' && concept.plural && concept.foreignPlural) {
-        throw new Error(`${path}: concept "${fields.id}" is a plural, so it has no foreign plural`);
-      }
-      if (concept.kind === 'cloze' && !splitCloze(concept.cloze)) {
-        throw new Error(
-          `${path}: concept "${fields.id}" needs one gap in square brackets in its cloze`,
-        );
-      }
-      if (concept.kind === 'knowledge' && concept.choices?.includes(concept.answer)) {
-        throw new Error(`${path}: concept "${fields.id}" has its answer among its wrong choices`);
-      }
-      const existing = concepts.get(fields.id);
-      if (!existing) {
-        concepts.set(fields.id, concept);
-      } else if (!isSameConcept(existing, concept)) {
-        throw new Error(`${path}: concept "${fields.id}" is defined differently in another deck`);
-      }
-    };
-
-    /**
-     * The Deck's Exercise Types that any of its Concepts can be practised with, e.g. none of the
-     * plural ones without plurals, and fewer for the Concepts that can't be practised with all.
-     */
-    const getDeckExerciseTypes = (
-      path: string,
-      conceptIds: string[],
-      exerciseTypes: ExerciseType[],
-    ): Pick<Deck, 'exerciseTypes' | 'conceptExerciseTypes'> => {
-      const conceptTypes = new Map<string, ExerciseType[]>();
-      for (const conceptId of conceptIds) {
-        const concept = concepts.get(conceptId)!;
-        const types = exerciseTypes.filter((type) => canPractise(concept, type, subject));
-        if (types.length === 0) {
-          throw new Error(`${path}: concept "${conceptId}" fits none of the deck's exercise types`);
-        }
-        conceptTypes.set(conceptId, types);
-      }
-      const used = exerciseTypes.filter((type) =>
-        [...conceptTypes.values()].some((types) => types.includes(type)),
-      );
-      const fewer: Record<string, ExerciseType[]> = {};
-      for (const [conceptId, types] of conceptTypes) {
-        if (types.length < used.length) fewer[prefix(conceptId)] = types;
-      }
-      return {
-        exerciseTypes: used,
-        ...(Object.keys(fewer).length > 0 && { conceptExerciseTypes: fewer }),
-      };
-    };
-
     const corePath = `./${dir}/core.yaml`;
-    if (corePath in files) {
-      const listed = new Set<string>();
-      const core = read(corePath, files[corePath], coreSchema(subject.kind));
-      coreStrictSpelling = core.strictSpelling;
-      coreShuffleNew = core.shuffleNew;
-      coreShowIntro = core.showIntro;
-      coreExerciseTypes = getExerciseTypes(corePath, core.exerciseTypes);
-      for (const fields of core.concepts) {
-        checkUnique(listed, fields.id, `${corePath}: concept listed twice`);
-        addConcept(corePath, fields);
-        coreIds.add(fields.id);
-      }
-    }
+    sources.push({
+      path: subjectPath,
+      fields: parseYaml(subjectPath, files[subjectPath]),
+      ...(corePath in files && {
+        core: { path: corePath, value: parseYaml(corePath, files[corePath]) },
+      }),
+      decks: Object.keys(files)
+        .filter((path) => path.startsWith(`./${dir}/decks/`))
+        .map((path) => ({ path, value: parseYaml(path, files[path]), custom: false })),
+      custom: false,
+    });
+  }
+  for (const fields of user.subjects) {
+    sources.push({
+      path: `${USER_PATH}: subject "${getFieldId(fields)}"`,
+      fields,
+      decks: [],
+      custom: true,
+    });
+  }
 
-    for (const path of deckPaths) {
-      const deck = read(path, files[path], deckSchema(subject.kind));
-      checkUnique(deckIds, deck.id, `${path}: duplicate deck id`);
-      const listed = new Set<string>();
-      const priorityIds: string[] = [];
-      for (const { core, priority, ...fields } of deck.concepts) {
-        checkUnique(listed, fields.id, `${path}: concept listed twice`);
-        if (priority && !deck.shuffleNew) {
-          throw new Error(`${path}: concept "${fields.id}" is marked priority without shuffleNew`);
-        }
-        addConcept(path, fields);
-        if (priority) {
-          priorityIds.push(fields.id);
-        }
-        if (core && !deck.disabled) {
-          coreIds.add(fields.id);
-        }
-      }
-      if (deck.disabled) continue;
-      const exerciseTypes = getExerciseTypes(path, deck.exerciseTypes);
-      const conceptIds = deck.concepts.map((concept) => concept.id);
-      conceptIds.forEach((conceptId) => usedIds.add(conceptId));
-      content.decks.push({
-        id: prefix(deck.id),
-        subjectId: subject.id,
-        kind: 'unit',
-        name: deck.name,
-        conceptIds: conceptIds.map(prefix),
-        ...(deck.strictSpelling && { strictSpelling: true }),
-        ...(deck.shuffleNew && { shuffleNew: true }),
-        ...(priorityIds.length > 0 && { priorityConceptIds: priorityIds.map(prefix) }),
-        ...(!deck.showIntro && { showIntro: false }),
-        ...getDeckExerciseTypes(path, conceptIds, exerciseTypes),
-      });
+  const subjects = sources.map((source) => {
+    const subject = getSubject(source.path, validate(source.path, source.fields, subjectSchema));
+    if (content.subjects.some((other) => other.id === subject.id)) {
+      throw new Error(`${source.path}: duplicate subject id "${subject.id}"`);
     }
+    content.subjects.push(source.custom ? { ...subject, custom: true } : subject);
+    return subject;
+  });
+  for (const { subjectId, deck } of user.decks) {
+    const path = `${USER_PATH}: ${subjectId}/${getFieldId(deck)}`;
+    const index = subjects.findIndex((subject) => subject.id === subjectId);
+    if (index < 0) {
+      throw new Error(`${path}: no subject "${subjectId}"`);
+    }
+    sources[index].decks.push({ path, value: deck, custom: true });
+  }
 
-    coreIds.forEach((conceptId) => usedIds.add(conceptId));
-    content.concepts.push(...[...concepts].filter(([id]) => usedIds.has(id)).map(([, c]) => c));
-    if (coreIds.size > 0) {
-      content.decks.push({
-        id: prefix(CORE_DECK.id),
-        subjectId: subject.id,
-        kind: 'core',
-        name: CORE_DECK.name,
-        conceptIds: [...coreIds].map(prefix),
-        ...(coreStrictSpelling && { strictSpelling: true }),
-        ...(coreShuffleNew && { shuffleNew: true }),
-        ...(!coreShowIntro && { showIntro: false }),
-        ...getDeckExerciseTypes(`./${dir}: core deck`, [...coreIds], coreExerciseTypes),
-      });
+  sources.forEach((source, index) => addSubject(content, subjects[index], source));
+  return content;
+}
+
+/** Adds the Subject's Decks and Concepts to the content. */
+function addSubject(content: Content, subject: Subject, source: SubjectSource) {
+  const prefix = (conceptId: string) => `${subject.id}/${conceptId}`;
+  const concepts = new Map<string, Concept>();
+  const deckIds = new Set<string>([CORE_DECK.id]);
+  const coreIds = new Set<string>();
+  /** Concepts of the Decks built, as a disabled unit's are left out. */
+  const usedIds = new Set<string>();
+  /** Built once every Concept is known, as a user's Deck may change one defined earlier. */
+  const buildDecks: (() => Deck)[] = [];
+  let coreStrictSpelling = false;
+  let coreShuffleNew = false;
+  let coreShowIntro = true;
+  let coreExerciseTypes = subject.exerciseTypes;
+
+  const getExerciseTypes = (path: string, listed?: ExerciseType[]) => {
+    const extra = listed?.find((type) => !subject.exerciseTypes.includes(type));
+    if (extra) {
+      throw new Error(`${path}: exercise type "${extra}" is not one of the subject's`);
+    }
+    return listed ?? subject.exerciseTypes;
+  };
+
+  /** A user's Deck may `redefine` a Concept defined earlier. */
+  const addConcept = (path: string, fields: ConceptFields, redefine = false) => {
+    const isCloze = fields.cloze !== undefined;
+    const needingLocal = subject.exerciseTypes.find(
+      (type) => type !== 'dictation' && type !== 'cloze',
+    );
+    if (subject.kind === 'language' && !isCloze && fields.local === undefined && needingLocal) {
+      throw new Error(`${path}: concept "${fields.id}" needs a local word for ${needingLocal}`);
+    }
+    const concept = {
+      ...fields,
+      kind: isCloze ? 'cloze' : subject.kind,
+      id: prefix(fields.id),
+      subjectId: subject.id,
+    } as Concept;
+    if (concept.kind === 'language' && concept.localPlural && !concept.foreignPlural) {
+      throw new Error(`${path}: concept "${fields.id}" has a local plural but no foreign plural`);
+    }
+    if (concept.kind === 'language' && concept.plural && concept.foreignPlural) {
+      throw new Error(`${path}: concept "${fields.id}" is a plural, so it has no foreign plural`);
+    }
+    if (concept.kind === 'cloze' && !splitCloze(concept.cloze)) {
+      throw new Error(
+        `${path}: concept "${fields.id}" needs one gap in square brackets in its cloze`,
+      );
+    }
+    if (concept.kind === 'knowledge' && concept.choices?.includes(concept.answer)) {
+      throw new Error(`${path}: concept "${fields.id}" has its answer among its wrong choices`);
+    }
+    const existing = concepts.get(fields.id);
+    if (!existing || redefine) {
+      concepts.set(fields.id, concept);
+    } else if (!isSameConcept(existing, concept)) {
+      throw new Error(`${path}: concept "${fields.id}" is defined differently in another deck`);
+    }
+  };
+
+  /**
+   * The Deck's Exercise Types that any of its Concepts can be practised with, e.g. none of the
+   * plural ones without plurals, and fewer for the Concepts that can't be practised with all.
+   */
+  const getDeckExerciseTypes = (
+    path: string,
+    conceptIds: string[],
+    exerciseTypes: ExerciseType[],
+  ): Pick<Deck, 'exerciseTypes' | 'conceptExerciseTypes'> => {
+    const conceptTypes = new Map<string, ExerciseType[]>();
+    for (const conceptId of conceptIds) {
+      const concept = concepts.get(conceptId)!;
+      const types = exerciseTypes.filter((type) => canPractise(concept, type, subject));
+      if (types.length === 0) {
+        throw new Error(`${path}: concept "${conceptId}" fits none of the deck's exercise types`);
+      }
+      conceptTypes.set(conceptId, types);
+    }
+    const used = exerciseTypes.filter((type) =>
+      [...conceptTypes.values()].some((types) => types.includes(type)),
+    );
+    const fewer: Record<string, ExerciseType[]> = {};
+    for (const [conceptId, types] of conceptTypes) {
+      if (types.length < used.length) fewer[prefix(conceptId)] = types;
+    }
+    return {
+      exerciseTypes: used,
+      ...(Object.keys(fewer).length > 0 && { conceptExerciseTypes: fewer }),
+    };
+  };
+
+  if (source.core) {
+    const { path: corePath, value } = source.core;
+    const listed = new Set<string>();
+    const core = validate(corePath, value, coreSchema(subject.kind));
+    coreStrictSpelling = core.strictSpelling;
+    coreShuffleNew = core.shuffleNew;
+    coreShowIntro = core.showIntro;
+    coreExerciseTypes = getExerciseTypes(corePath, core.exerciseTypes);
+    for (const fields of core.concepts) {
+      checkUnique(listed, fields.id, `${corePath}: concept listed twice`);
+      addConcept(corePath, fields);
+      coreIds.add(fields.id);
     }
   }
 
-  return content;
+  for (const { path, value, custom } of source.decks) {
+    const deck = validate(path, value, deckSchema(subject.kind));
+    checkUnique(deckIds, deck.id, `${path}: duplicate deck id`);
+    const listed = new Set<string>();
+    const priorityIds: string[] = [];
+    for (const { core, priority, ...fields } of deck.concepts) {
+      checkUnique(listed, fields.id, `${path}: concept listed twice`);
+      if (priority && !deck.shuffleNew) {
+        throw new Error(`${path}: concept "${fields.id}" is marked priority without shuffleNew`);
+      }
+      addConcept(path, fields, custom);
+      if (priority) {
+        priorityIds.push(fields.id);
+      }
+      if (core && !deck.disabled) {
+        coreIds.add(fields.id);
+      }
+    }
+    if (deck.disabled) continue;
+    const exerciseTypes = getExerciseTypes(path, deck.exerciseTypes);
+    const conceptIds = deck.concepts.map((concept) => concept.id);
+    conceptIds.forEach((conceptId) => usedIds.add(conceptId));
+    buildDecks.push(() => ({
+      id: prefix(deck.id),
+      subjectId: subject.id,
+      kind: 'unit',
+      name: deck.name,
+      conceptIds: conceptIds.map(prefix),
+      ...(deck.strictSpelling && { strictSpelling: true }),
+      ...(deck.shuffleNew && { shuffleNew: true }),
+      ...(priorityIds.length > 0 && { priorityConceptIds: priorityIds.map(prefix) }),
+      ...(!deck.showIntro && { showIntro: false }),
+      ...getDeckExerciseTypes(path, conceptIds, exerciseTypes),
+      ...(custom && { custom: true }),
+    }));
+  }
+
+  content.decks.push(...buildDecks.map((build) => build()));
+  coreIds.forEach((conceptId) => usedIds.add(conceptId));
+  content.concepts.push(...[...concepts].filter(([id]) => usedIds.has(id)).map(([, c]) => c));
+  if (coreIds.size > 0) {
+    content.decks.push({
+      id: prefix(CORE_DECK.id),
+      subjectId: subject.id,
+      kind: 'core',
+      name: CORE_DECK.name,
+      conceptIds: [...coreIds].map(prefix),
+      ...(coreStrictSpelling && { strictSpelling: true }),
+      ...(coreShuffleNew && { shuffleNew: true }),
+      ...(!coreShowIntro && { showIntro: false }),
+      ...getDeckExerciseTypes(`${source.path}: core deck`, [...coreIds], coreExerciseTypes),
+    });
+  }
 }
 
 /**
@@ -375,13 +441,30 @@ function isSameConcept(a: Concept, b: Concept): boolean {
   return [...keys].every((key) => JSON.stringify(first[key]) === JSON.stringify(second[key]));
 }
 
-function read<T>(path: string, source: string, schema: z.ZodType<T>): T {
-  // Failsafe keeps every value a string, so `null` (German zero) or `0` aren't converted.
-  const result = schema.safeParse(parse(source, { schema: 'failsafe' }));
+/** Parsed with the failsafe schema, which keeps every value a string, so `null` (German zero) or
+ * `0` aren't converted. */
+export function parseYaml(path: string, source: string): unknown {
+  try {
+    return parse(source, { schema: 'failsafe' });
+  } catch (error) {
+    throw new Error(`${path}: ${error instanceof Error ? error.message : String(error)}`, {
+      cause: error,
+    });
+  }
+}
+
+function validate<T>(path: string, value: unknown, schema: z.ZodType<T>): T {
+  const result = schema.safeParse(value);
   if (!result.success) {
     throw new Error(`${path}:\n${z.prettifyError(result.error)}`);
   }
   return result.data;
+}
+
+/** The `id` of parsed fields, for errors before they're checked. */
+function getFieldId(fields: unknown): string {
+  const id = typeof fields === 'object' && fields !== null && 'id' in fields ? fields.id : null;
+  return typeof id === 'string' ? id : '?';
 }
 
 function checkUnique(seen: Set<string>, id: string, message: string) {

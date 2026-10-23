@@ -1,4 +1,4 @@
-import { AudioLines, Check, Download, Flag, Menu, Upload } from 'lucide-react';
+import { AudioLines, Check, Download, Flag, Library, Menu, Upload } from 'lucide-react';
 import { useId, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -31,9 +31,9 @@ const ITEM_CLASS =
 
 /**
  * App actions behind a hamburger: voice settings, saving progress to a file and, outside a
- * session, loading it back, and during a session finishing early.
+ * session, loading it back and managing the user's own sets, and during a session finishing early.
  */
-export function AppMenu({ onEnd }: { onEnd?: () => void }) {
+export function AppMenu({ onEnd, onOpenSets }: { onEnd?: () => void; onOpenSets?: () => void }) {
   const [voiceOpen, setVoiceOpen] = useState(false);
   const voiceStatus = useVoiceStatus();
   const fileInput = useRef<HTMLInputElement>(null);
@@ -100,6 +100,11 @@ export function AppMenu({ onEnd }: { onEnd?: () => void }) {
               </span>
             )}
           </DropdownMenuItem>
+          {onOpenSets && (
+            <DropdownMenuItem className={ITEM_CLASS} onSelect={onOpenSets}>
+              <Library /> My sets
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem className={ITEM_CLASS} onSelect={exportProgress}>
             <Download /> Export progress
           </DropdownMenuItem>

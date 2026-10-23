@@ -10,6 +10,7 @@ Memonaut is a spaced-repetition learning web app for school kids. See [README.md
 - Build: `pnpm build`
 - Validate before finishing code changes: `pnpm validate` (typecheck, lint, test, format check)
 - Auto-fix formatting and lint: `pnpm validate:fix`
+- End-to-end smoke tests in Chromium, against the built app: `pnpm e2e`; run them after changes to storage, content loading or layout
 
 ## Code Layout
 
@@ -18,7 +19,7 @@ Memonaut is a spaced-repetition learning web app for school kids. See [README.md
 - `src/exercises/`: answer checking per Exercise Type
 - `src/session/`: pure study-session logic (queue, reviews)
 - `src/progress/`: learning progress saved in localStorage
-- `src/data/`: learning content as YAML (`<subject>/subject.yaml`, `<subject>/decks/*.yaml`), validated by `content.ts` and loaded by `bundled-content.ts`
+- `src/data/`: learning content as YAML (`<subject>/subject.yaml`, `<subject>/decks/*.yaml`), validated by `content.ts` and loaded by `bundled-content.ts`; the user's own Subjects and Decks are stored and added by `user-sets.ts`
 - `src/components/`: React screens; `ui/` holds shadcn/ui components
 - `src/components/exercises/`: one component per Exercise Type, built on shared typed and multiple-choice bodies
 
@@ -27,6 +28,7 @@ Memonaut is a spaced-repetition learning web app for school kids. See [README.md
 - Import from `src` with the `@/` alias, e.g. `@/lib/utils`.
 - Add shadcn/ui components with `pnpm dlx shadcn@latest add <component>`; they land in `src/components/ui/`.
 - Put tests next to the code as `*.test.ts(x)`, using Vitest and Testing Library.
+- End-to-end tests live in `e2e/*.e2e.ts`, using Playwright. Keep them few, for what jsdom can't check: reloads, real storage, downloads, layout. They also don't depend on the bundled words: they add their own sets under My sets.
 - Tests never depend on the bundled word sets: use `testContent` from `@/test/content`, which also stands in for `@/data/bundled-content`, or build small content inline with `buildContent`.
 
 ## Git
