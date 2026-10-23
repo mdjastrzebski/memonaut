@@ -12,6 +12,7 @@
     "typecheck": "tsc -b",
     "lint": "eslint .",
     "test": "vitest --run",
+    "e2e": "playwright test",
     "format": "oxfmt --write .",
     "validate": "pnpm typecheck && pnpm lint && pnpm test && oxfmt --check .",
     "validate:fix": "pnpm format && pnpm lint --fix && pnpm typecheck && pnpm test"
@@ -35,6 +36,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "1.63.0",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",

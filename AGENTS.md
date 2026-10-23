@@ -10,6 +10,7 @@ Memonaut is a spaced-repetition learning web app for school kids. See [README.md
 - Build: `pnpm build`
 - Validate before finishing code changes: `pnpm validate` (typecheck, lint, test, format check)
 - Auto-fix formatting and lint: `pnpm validate:fix`
+- End-to-end smoke tests in Chromium, against the built app: `pnpm e2e`; run them after changes to storage, content loading or layout
 
 ## Code Layout
 
@@ -27,6 +28,7 @@ Memonaut is a spaced-repetition learning web app for school kids. See [README.md
 - Import from `src` with the `@/` alias, e.g. `@/lib/utils`.
 - Add shadcn/ui components with `pnpm dlx shadcn@latest add <component>`; they land in `src/components/ui/`.
 - Put tests next to the code as `*.test.ts(x)`, using Vitest and Testing Library.
+- End-to-end tests live in `e2e/*.e2e.ts`, using Playwright. Keep them few, for what jsdom can't check: reloads, real storage, downloads, layout. They also don't depend on the bundled words: they add their own sets under My sets.
 - Tests never depend on the bundled word sets: use `testContent` from `@/test/content`, which also stands in for `@/data/bundled-content`, or build small content inline with `buildContent`.
 
 ## Git

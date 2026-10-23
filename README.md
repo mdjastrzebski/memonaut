@@ -178,9 +178,10 @@ Requires Node.js and [pnpm](https://pnpm.io).
 pnpm install
 pnpm dev        # start the dev server
 pnpm validate   # typecheck, lint, test and format check
+pnpm e2e        # end-to-end smoke tests in Chromium, against the built app
 ```
 
-Tests use their own small word sets, in `src/test/content.ts`, so changing the bundled ones never makes them pass or fail; the bundled ones are only checked to load.
+Tests use their own small word sets, in `src/test/content.ts`, so changing the bundled ones never makes them pass or fail; the bundled ones are only checked to load. A few end-to-end tests in `e2e/` run the built app in Chromium with [Playwright](https://playwright.dev), for what needs a real browser: reloads, storage, downloads and layout at phone width. They add their own sets under My sets, too. The first run elsewhere needs `pnpm exec playwright install chromium`.
 
 ## Related
 
