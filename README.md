@@ -157,6 +157,14 @@ Answers are rated automatically. An exact typed answer is rated Easy when it's t
 
 Each file under `decks/` is a unit Deck. A Concept can appear in several units of the same Subject, but must be defined the same way in each. The Subject's core Deck is built from the Concepts in an optional `core.yaml` next to `subject.yaml` (a `concepts:` list, without `core:` flags; it is not a unit, so it isn't offered on its own), followed by every Concept marked `core: true` in at least one unit, each listed once, in the order they first appear. A unit with `disabled: true` is hidden, and its Concepts are left out of the core Deck unless another unit marks them `core: true`; it is still checked, so it can be enabled again later. Ids must stay the same once learners have progress, since learning state is keyed by them. Every value is read as a string, so `null` or `0` need no quotes.
 
+### My sets
+
+Learners can add their own sets under **My sets** in the menu (outside a session): pick a Subject and import a Deck's YAML file, written like those under `decks/`, e.g. `food.yaml` with `id`, `name` and `concepts`. It becomes a unit of that Subject, and its Concepts marked `core: true` join its core Deck. Concept ids are unique within a Subject, so a word already in a bundled Deck is the same word with the same progress; if the imported set defines it differently, its definition is used everywhere in the Subject, and of two imported sets, that of the one added later. Importing a set with the same id again replaces it with the new version, in its place; progress is keyed by Concept id, so it's kept, also for words a new version leaves out.
+
+They can also add Subjects of their own there, e.g. French: a name, an optional emoji and its kind, words of a language, read aloud in the language picked (its `foreignLanguage`, which also offers its special characters), or questions with answers. A Subject shows up to study once it has a set. Removing a set or Subject keeps its progress, so adding it again brings it back.
+
+They're kept in localStorage apart from progress, one key each, as JSON of the parsed YAML: `memonaut:area:<subject>` for a Subject and `memonaut:set:<subject>:<deck>` for a Deck, with when it was added and updated. A stored one that no longer loads, e.g. after an app update, is left out and listed under My sets to be removed, so it never keeps the app from starting. **Export progress** saves them too; importing a backup adds those this device doesn't have.
+
 ## Open questions
 
 - Can a Concept exist in no Deck at all, e.g. after its unit is removed, while keeping its review history?

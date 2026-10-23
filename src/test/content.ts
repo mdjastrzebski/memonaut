@@ -10,10 +10,10 @@ function madeUpWords(count: number): string {
 }
 
 /**
- * Content for tests, standing in for the bundled word sets (see `setup.ts`), so tests don't pass or
+ * Files for tests, standing in for the bundled word sets (see `setup.ts`), so tests don't pass or
  * fail when those change. Its Subjects and Decks are named like the bundled ones.
  */
-export const testContent = buildContent({
+export const testFiles: Record<string, string> = {
   './english/subject.yaml': `
 id: english
 name: English
@@ -143,4 +143,7 @@ concepts:
   - { id: duch, foreign: duch }
   - { id: hak, foreign: hak }
 `,
-});
+};
+
+/** The content of `testFiles`. */
+export const testContent = buildContent(testFiles);

@@ -7,13 +7,16 @@ import { EffortStatsPanel } from '@/components/effort-stats-panel';
 import { ExerciseScreen } from '@/components/exercise-screen';
 import { ProgressScreen } from '@/components/progress-screen';
 import { SessionProgress } from '@/components/session-progress';
+import { SetsDialog } from '@/components/sets-dialog';
 import { getMinNew, loadSetupChoice, saveSetupChoice } from '@/components/setup-choice';
 import { SetupScreen } from '@/components/setup-screen';
 import { SummaryScreen } from '@/components/summary-screen';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { content } from '@/data/bundled-content';
+import { files } from '@/data/bundled-content';
+import { getSubjectDecks } from '@/data/decks';
+import { loadContent } from '@/data/user-sets';
 import type { Card, Deck, ExerciseType } from '@/domain/types';
 import { useActiveTime } from '@/lib/use-active-time';
 import { cn } from '@/lib/utils';
@@ -40,6 +43,8 @@ import {
 import { getSessionXp } from '@/session/xp';
 
 export default function App() {
+  // The bundled content with the user's own sets, and those of them that can't be loaded.
+  const [{ content, broken }, setLoaded] = useState(() => loadContent(files));
   // Remembered across reloads, so the next visit starts where the last one left off.
   const [initialChoice] = useState(() => loadSetupChoice(content));
   const [deck, setDeck] = useState(initialChoice.deck);
@@ -63,6 +68,7 @@ export default function App() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   // The progress screen, shown instead of the setup screen.
   const [showProgress, setShowProgress] = useState(false);
+  const [showSets, setShowSets] = useState(false);
   // `?dev=1` in the URL shows tools for tuning the app, such as the effort stats.
   const [devMode] = useState(() => new URLSearchParams(window.location.search).get('dev') === '1');
   // In dev mode, Exercise Types left out of sessions, e.g. all but one to try it out.
@@ -73,7 +79,7 @@ export default function App() {
   const exercising = session !== null && !finished;
   const allCards = session ? { ...cards, ...session.siblings, ...session.cards } : cards;
   const { getActiveMs, getIdleMs } = useActiveTime(exercising);
-  const pace = paces[subject.id];
+  const pace = paces[subject.id] ?? loadPace(subject.id);
   const exerciseTypes = deck.exerciseTypes.filter((type) => !skippedTypes.includes(type));
 
   // As many Cards, in their usual order, as are expected to fit in the minutes picked.
@@ -135,7 +141,7 @@ export default function App() {
   const measurePace = (over: Session) => {
     const { subjectId } = over.deck;
     const activeMs = getActiveMs();
-    const updated = updatePace(paces[subjectId], getEffortDone(over), activeMs);
+    const updated = updatePace(paces[subjectId] ?? pace, getEffortDone(over), activeMs);
     savePace(subjectId, updated);
     setPaces({ ...paces, [subjectId]: updated });
     if (sessionLog) appendEffortLog(finishSessionLog(sessionLog, over, activeMs, updated));
@@ -155,6 +161,23 @@ export default function App() {
     setCards(allCards);
     setSession(null);
     setShowProgress(false);
+  };
+
+  // After the user's sets changed: the Deck picked is kept if it's still there, in its new version.
+  const reloadContent = () => {
+    const loaded = loadContent(files);
+    const { decks, subjects } = loaded.content;
+    setLoaded(loaded);
+    // Progress kept from a removed subject of the same name comes back with it.
+    setCards({
+      ...Object.assign({}, ...subjects.map((subject) => loadProgress(subject.id))),
+      ...cards,
+    });
+    setDeck(
+      decks.find((option) => option.id === deck.id) ??
+        getSubjectDecks(decks, deck.subjectId)[0] ??
+        getSubjectDecks(decks, subjects[0].id)[0],
+    );
   };
 
   const selectDeck = (deck: Deck) => {
@@ -201,7 +224,10 @@ export default function App() {
               </Button>
             )}
             <ThemeToggle />
-            <AppMenu onEnd={exercising ? end : undefined} />
+            <AppMenu
+              onEnd={exercising ? end : undefined}
+              onOpenSets={session === null ? () => setShowSets(true) : undefined}
+            />
           </div>
         </header>
 
@@ -269,6 +295,13 @@ export default function App() {
             }
           />
         )}
+        <SetsDialog
+          open={showSets}
+          onOpenChange={setShowSets}
+          content={content}
+          broken={broken}
+          onChange={reloadContent}
+        />
         {devMode && exercising && (
           <ActiveTimeReadout getActiveMs={getActiveMs} getIdleMs={getIdleMs} />
         )}
