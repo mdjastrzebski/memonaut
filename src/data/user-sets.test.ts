@@ -215,7 +215,7 @@ test("a backup carries the user's subjects and sets", () => {
   importDeck(files, 'french', FOOD);
 
   expect(Object.keys(JSON.parse(createBackup()).data).sort()).toEqual([
-    'memonaut:subject:french',
     'memonaut:set:french:food',
+    'memonaut:subject:french',
   ]);
 });
