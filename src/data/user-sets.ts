@@ -5,7 +5,7 @@ import type { Deck, Subject, SubjectKind } from '@/domain/types';
  * The user's own Subjects and Decks, kept in localStorage apart from learning progress, one key
  * each, as parsed from their YAML:
  *
- * - `memonaut:area:<subject>`: a Subject, e.g.
+ * - `memonaut:subject:<subject>`: a Subject, e.g.
  *   `{ "version": 1, "addedAt": "2026-10-23T…", "subject": { "id": "french", "name": "French", "kind": "language", "foreignLanguage": "fr-FR" } }`
  * - `memonaut:set:<subject>:<deck>`: a unit Deck of a bundled or user Subject, e.g.
  *   `{ "version": 1, "addedAt": "…", "updatedAt": "…", "deck": { "id": "food", "name": "Food", "concepts": [{ "id": "bread", … }] } }`
@@ -15,13 +15,13 @@ import type { Deck, Subject, SubjectKind } from '@/domain/types';
  * replaces it in its place; progress is keyed by Concept id, so it's kept.
  */
 const VERSION = 1;
-const AREA_PREFIX = 'memonaut:area:';
+const SUBJECT_PREFIX = 'memonaut:subject:';
 const SET_PREFIX = 'memonaut:set:';
 
-const getAreaKey = (subjectId: string) => `${AREA_PREFIX}${subjectId}`;
+const getSubjectKey = (subjectId: string) => `${SUBJECT_PREFIX}${subjectId}`;
 const getSetKey = (subjectId: string, deckId: string) => `${SET_PREFIX}${subjectId}:${deckId}`;
 
-interface StoredArea {
+interface StoredSubject {
   key: string;
   addedAt: string;
   subject: Record<string, unknown>;
@@ -97,7 +97,7 @@ export function importDeck(
 
   const accepted = build(files, stored);
   const error = tryBuild(files, {
-    subjects: stored.areas.filter((area) => isAccepted(accepted, area.key)),
+    subjects: stored.subjects.filter((subject) => isAccepted(accepted, subject.key)),
     sets: sets.filter((other) => other === set || isAccepted(accepted, other.key)),
   });
   if (error) return { ok: false, error };
@@ -153,13 +153,13 @@ export function addSubject(
   };
   const stored = readStored();
   const accepted = build(files, stored);
-  const area: StoredArea = { key: getAreaKey(id), addedAt: now.toISOString(), subject };
+  const entry: StoredSubject = { key: getSubjectKey(id), addedAt: now.toISOString(), subject };
   const error = tryBuild(files, {
-    subjects: [...stored.areas.filter((other) => isAccepted(accepted, other.key)), area],
+    subjects: [...stored.subjects.filter((other) => isAccepted(accepted, other.key)), entry],
     sets: [],
   });
   if (error) return { ok: false, error };
-  if (!write(area.key, { version: VERSION, addedAt: area.addedAt, subject })) {
+  if (!write(entry.key, { version: VERSION, addedAt: entry.addedAt, subject })) {
     return { ok: false, error: 'Could not save the subject on this device.' };
   }
   const built = loadContent(files).content.subjects.find((subject) => subject.id === id);
@@ -179,31 +179,31 @@ export function removeBroken(key: string): boolean {
 /** Removes a Subject of the user's with its Decks; its progress stays. */
 export function removeSubject(subjectId: string): boolean {
   const sets = readStored().sets.filter((set) => set.subjectId === subjectId);
-  return remove([getAreaKey(subjectId), ...sets.map((set) => set.key)]);
+  return remove([getSubjectKey(subjectId), ...sets.map((set) => set.key)]);
 }
 
 interface Stored {
-  subjects: StoredArea[];
+  subjects: StoredSubject[];
   sets: StoredSet[];
 }
 
 /** What's stored, and what can't be read, e.g. from a newer app version. */
-function readStored(): { areas: StoredArea[]; sets: StoredSet[]; unreadable: BrokenSet[] } {
-  const areas: StoredArea[] = [];
+function readStored(): { subjects: StoredSubject[]; sets: StoredSet[]; unreadable: BrokenSet[] } {
+  const subjects: StoredSubject[] = [];
   const sets: StoredSet[] = [];
   const unreadable: BrokenSet[] = [];
   for (const key of storedKeys()) {
     const value = read(key);
-    const isArea = key.startsWith(AREA_PREFIX);
-    const fields = isArea ? value?.subject : value?.deck;
+    const isSubject = key.startsWith(SUBJECT_PREFIX);
+    const fields = isSubject ? value?.subject : value?.deck;
     if (!value || !isObject(fields) || Number(value.version) > VERSION) {
       const name = isObject(fields) && typeof fields.name === 'string' ? fields.name : key;
       unreadable.push({ key, name, error: 'Saved by a newer version of Memonaut, or damaged.' });
       continue;
     }
     const addedAt = typeof value.addedAt === 'string' ? value.addedAt : '';
-    if (isArea) {
-      areas.push({ key, addedAt, subject: fields });
+    if (isSubject) {
+      subjects.push({ key, addedAt, subject: fields });
     } else {
       const subjectId = key.slice(SET_PREFIX.length).split(':')[0];
       sets.push({ key, subjectId, addedAt, deck: fields });
@@ -211,7 +211,7 @@ function readStored(): { areas: StoredArea[]; sets: StoredSet[]; unreadable: Bro
   }
   const byAdded = (a: { addedAt: string }, b: { addedAt: string }) =>
     a.addedAt < b.addedAt ? -1 : a.addedAt > b.addedAt ? 1 : 0;
-  return { areas: areas.sort(byAdded), sets: sets.sort(byAdded), unreadable };
+  return { subjects: subjects.sort(byAdded), sets: sets.sort(byAdded), unreadable };
 }
 
 /**
@@ -220,18 +220,19 @@ function readStored(): { areas: StoredArea[]; sets: StoredSet[]; unreadable: Bro
  */
 function build(
   files: Record<string, string>,
-  { areas, sets, unreadable }: ReturnType<typeof readStored>,
+  { subjects, sets, unreadable }: ReturnType<typeof readStored>,
 ): LoadedContent {
-  const all = { subjects: areas, sets };
+  const all = { subjects, sets };
   if (!tryBuild(files, all)) {
     return { content: buildContent(files, toUserContent(all)), broken: unreadable };
   }
   const broken = [...unreadable];
   const accepted: Stored = { subjects: [], sets: [] };
-  for (const area of areas) {
-    const error = tryBuild(files, { ...accepted, subjects: [...accepted.subjects, area] });
-    if (error) broken.push({ key: area.key, name: String(area.subject.name ?? area.key), error });
-    else accepted.subjects.push(area);
+  for (const subject of subjects) {
+    const error = tryBuild(files, { ...accepted, subjects: [...accepted.subjects, subject] });
+    if (error)
+      broken.push({ key: subject.key, name: String(subject.subject.name ?? subject.key), error });
+    else accepted.subjects.push(subject);
   }
   for (const set of sets) {
     const error = tryBuild(files, { ...accepted, sets: [...accepted.sets, set] });
@@ -257,7 +258,7 @@ function tryBuild(files: Record<string, string>, stored: Stored): string | null 
 
 function toUserContent({ subjects, sets }: Stored): UserContent {
   return {
-    subjects: subjects.map((area) => area.subject),
+    subjects: subjects.map((stored) => stored.subject),
     decks: sets.map((set) => ({ subjectId: set.subjectId, deck: set.deck })),
   };
 }
@@ -285,7 +286,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
 function storedKeys(): string[] {
   try {
     return Object.keys(localStorage).filter(
-      (key) => key.startsWith(AREA_PREFIX) || key.startsWith(SET_PREFIX),
+      (key) => key.startsWith(SUBJECT_PREFIX) || key.startsWith(SET_PREFIX),
     );
   } catch {
     return [];

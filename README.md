@@ -163,7 +163,7 @@ Learners can add their own sets under **My sets** in the menu (outside a session
 
 They can also add Subjects of their own there, e.g. French: a name, an optional emoji and its kind, words of a language, read aloud in the language picked (its `foreignLanguage`, which also offers its special characters), or questions with answers. A Subject shows up to study once it has a set. Removing a set or Subject keeps its progress, so adding it again brings it back.
 
-They're kept in localStorage apart from progress, one key each, as JSON of the parsed YAML: `memonaut:area:<subject>` for a Subject and `memonaut:set:<subject>:<deck>` for a Deck, with when it was added and updated. A stored one that no longer loads, e.g. after an app update, is left out and listed under My sets to be removed, so it never keeps the app from starting. **Export progress** saves them too; importing a backup adds those this device doesn't have.
+They're kept in localStorage apart from progress, one key each, as JSON of the parsed YAML: `memonaut:subject:<subject>` for a Subject and `memonaut:set:<subject>:<deck>` for a Deck, with when it was added and updated. A stored one that no longer loads, e.g. after an app update, is left out and listed under My sets to be removed, so it never keeps the app from starting. **Export progress** saves them too; importing a backup adds those this device doesn't have.
 
 ## Open questions
 
