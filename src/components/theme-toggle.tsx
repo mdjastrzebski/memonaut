@@ -51,7 +51,7 @@ export function ThemeToggle() {
       onClick={toggle}
     >
       {dark ? <Moon /> : <Sun />}
-      {dark ? 'Dark' : 'Light'}
+      <span className="max-sm:hidden">{dark ? 'Dark' : 'Light'}</span>
     </Button>
   );
 }
