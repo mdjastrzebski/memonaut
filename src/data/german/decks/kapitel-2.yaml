@@ -40,7 +40,13 @@ concepts:
   # Rodzina i przyjaciele.
   - { id: die-mama, local: mama, foreign: die Mama }
   - { id: der-papa, local: tata, foreign: der Papa }
-  - { id: das-kind, local: dziecko, foreign: das Kind }
+  - {
+      id: das-kind,
+      local: dziecko,
+      foreign: das Kind,
+      localPlural: dzieci,
+      foreignPlural: die Kinder,
+    }
   - { id: die-familie, local: rodzina, foreign: die Familie }
   - { id: der-freund, local: przyjaciel, foreign: der Freund }
   - { id: die-freundin, local: przyjaciółka, foreign: die Freundin }

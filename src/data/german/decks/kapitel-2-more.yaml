@@ -152,14 +152,6 @@ concepts:
     }
   # Liczba mnoga: zawsze die. Od najłatwiejszej: -s, bez końcówki, -n, -e, przegłos z -e, -er.
   - {
-      id: die-kinder,
-      local: dzieci,
-      foreign: die Kinder,
-      explanation: 'das Kind → die Kind[er]',
-      group: person/plural,
-      plural: true,
-    }
-  - {
       id: das-sind-meine-buecher,
       local: to są moje książki,
       foreign: das sind meine Bücher,
