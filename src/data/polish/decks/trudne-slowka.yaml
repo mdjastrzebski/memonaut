@@ -157,7 +157,9 @@ concepts:
   - { id: jarzebina, foreign: jarzębina }
   - { id: jarzyny, foreign: jarzyny }
   - { id: jesien, foreign: jesień }
+  - { id: jeszcze, foreign: jeszcze, priority: true }
   - { id: jezyk, foreign: język }
+  - { id: juz, foreign: już, priority: true }
   - { id: kaluza, foreign: kałuża }
   - { id: kazdy, foreign: każdy }
   - { id: kapiel, foreign: kąpiel }
@@ -221,6 +223,7 @@ concepts:
   - { id: mrowka, foreign: mrówka }
   - { id: mroz, foreign: mróz }
   - { id: mucha, foreign: mucha }
+  - { id: na-komputerze, foreign: na komputerze, priority: true }
   - { id: niebezpieczenstwo, foreign: niebezpieczeństwo }
   - { id: niebezpieczny, foreign: niebezpieczny }
   - { id: niedziela, foreign: niedziela }
@@ -379,7 +382,8 @@ concepts:
   - { id: wrzesien, foreign: wrzesień }
   - { id: wrzos, foreign: wrzos }
   - { id: wrzod, foreign: wrzód }
-  - { id: wstazka, foreign: wstążka }
+  - { id: wstazka, foreign: wstążka, priority: true }
+  - { id: wstazki, foreign: wstążki, priority: true }
   - { id: wstyd, foreign: wstyd }
   - { id: wsuwka, foreign: wsuwka }
   - { id: wszystko, foreign: wszystko }
@@ -399,6 +403,7 @@ concepts:
   - { id: zdarzenie, foreign: zdarzenie }
   - { id: zdjecie, foreign: zdjęcie }
   - { id: zeby, foreign: zęby }
+  - { id: zrobic, foreign: zrobić, priority: true }
   - { id: zwierze, foreign: zwierzę }
   - { id: zrodlo, foreign: źródło }
   - { id: zaba, foreign: żaba }
