@@ -2,8 +2,6 @@ id: kapitel-2-more
 name: Kapitel 2 (more)
 disabled: true
 concepts:
-  # Tak, nie, no jasne: krótkie odpowiedzi.
-  # - { id: na-klar, local: no jasne, foreign: na klar }
   # Słowa podobne do polskich i angielskich, od nich najłatwiej zacząć.
   # - { id: die-musik, local: muzyka, foreign: die Musik, group: hobby }
   # - { id: der-sport, local: sport, foreign: der Sport, group: hobby }
@@ -11,8 +9,6 @@ concepts:
   # Rodzina i przyjaciele.
   #- { id: ich-bin-10-jahre-alt, local: mam 10 lat, foreign: ich bin 10 Jahre alt }
   # Przybory szkolne, zawsze z rodzajnikiem. Rzeczowniki na -e zwykle żeńskiego.
-  # Pozostałe przedmioty osobiste i zwierzęta.
-  - { id: der-schreibtisch, local: biurko, foreign: der Schreibtisch, group: thing/personal }
   # Szkoła: -in tworzy formę żeńską.
   - { id: die-klasse, local: klasa, foreign: die Klasse, explanation: 'na -[e] → zwykle [die]' }
   - { id: der-lehrer, local: nauczyciel, foreign: der Lehrer, group: school-person }
@@ -176,14 +172,6 @@ concepts:
       plural: true,
     }
   - {
-      id: die-lampen,
-      local: lampy,
-      foreign: die Lampen,
-      explanation: 'die Lampe → die Lampe[n]',
-      group: thing/plural,
-      plural: true,
-    }
-  - {
       id: die-sprachen,
       local: języki,
       foreign: die Sprachen,
@@ -197,14 +185,6 @@ concepts:
       foreign: die Lehrerinnen,
       explanation: 'die Lehrerin → die Lehrerin[nen]',
       group: person/plural,
-      plural: true,
-    }
-  - {
-      id: die-baelle,
-      local: piłki,
-      foreign: die Bälle,
-      explanation: 'der Ball → die B[ä]ll[e]',
-      group: thing/plural,
       plural: true,
     }
   - {

@@ -1,9 +1,10 @@
 id: kapitel-2
 name: Kapitel 2
 concepts:
-  # Tak i nie: krótkie odpowiedzi.
+  # Tak, nie, no jasne: krótkie odpowiedzi.
   - { id: ja, local: tak, foreign: ja, core: true }
   - { id: nein, local: nie, foreign: nein, core: true }
+  - { id: na-klar, local: no jasne, foreign: na klar }
   # Zaimki, potrzebne do pytań i odmiany czasowników.
   - { id: ich, local: ja, foreign: ich, group: pronoun, core: true }
   - { id: du, local: ty, foreign: du, group: pronoun, core: true }
@@ -20,6 +21,14 @@ concepts:
   # Hobby, szkoła i świat.
   - { id: das-hobby, local: hobby, foreign: das Hobby }
   - { id: die-schule, local: szkoła, foreign: die Schule, explanation: 'na -[e] → zwykle [die]' }
+  - {
+      id: die-sache,
+      local: rzecz,
+      foreign: die Sache,
+      localPlural: rzeczy,
+      foreignPlural: die Sachen,
+      explanation: 'na -[e] → zwykle [die]',
+    }
   - { id: die-schulsachen, local: przybory szkolne, foreign: die Schulsachen, plural: true }
   - { id: die-welt, local: świat, foreign: die Welt }
   # Początek zdania, do wskazywania rzeczy.
@@ -73,17 +82,48 @@ concepts:
   - { id: das-konzert, local: koncert, foreign: das Konzert, group: hobby }
   - { id: die-gitarre, local: gitara, foreign: die Gitarre }
   - { id: die-schokolade, local: czekolada, foreign: die Schokolade }
-  - { id: der-ball, local: piłka, foreign: der Ball, group: thing/personal }
+  - {
+      id: der-ball,
+      local: piłka,
+      foreign: der Ball,
+      localPlural: piłki,
+      foreignPlural: die Bälle,
+      group: thing/personal,
+    }
   - {
       id: die-lampe,
       local: lampa,
       foreign: die Lampe,
+      localPlural: lampy,
+      foreignPlural: die Lampen,
       explanation: 'na -[e] → zwykle [die]',
       group: thing/personal,
     }
-  - { id: das-skateboard, local: deskorolka, foreign: das Skateboard, group: thing/personal }
+  - {
+      id: das-skateboard,
+      local: deskorolka,
+      foreign: das Skateboard,
+      localPlural: deskorolki,
+      foreignPlural: die Skateboards,
+      group: thing/personal,
+    }
   - { id: das-tier, local: zwierzę, foreign: das Tier, group: animal }
-  - { id: das-stofftier, local: pluszak, foreign: das Stofftier, group: thing/personal }
+  - {
+      id: das-stofftier,
+      local: pluszak,
+      foreign: das Stofftier,
+      localPlural: pluszaki,
+      foreignPlural: die Stofftiere,
+      group: thing/personal,
+    }
+  - {
+      id: der-schreibtisch,
+      local: biurko,
+      foreign: der Schreibtisch,
+      localPlural: biurka,
+      foreignPlural: die Schreibtische,
+      group: thing/personal,
+    }
   - {
       id: der-rucksack,
       local: plecak,
