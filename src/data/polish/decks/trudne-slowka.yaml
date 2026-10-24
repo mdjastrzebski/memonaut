@@ -383,6 +383,7 @@ concepts:
   - { id: wrzos, foreign: wrzos }
   - { id: wrzod, foreign: wrzód }
   - { id: wstazka, foreign: wstążka }
+  - { id: wstazki, foreign: wstążki, priority: true }
   - { id: wstyd, foreign: wstyd }
   - { id: wsuwka, foreign: wsuwka }
   - { id: wszystko, foreign: wszystko }
