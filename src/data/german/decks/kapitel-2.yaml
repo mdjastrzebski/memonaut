@@ -451,3 +451,57 @@ concepts:
       group: number/large,
       core: true,
     }
+  # Języki i lekcje, jak Deutsch.
+  - { id: englisch, local: język angielski, foreign: Englisch, group: language }
+  - { id: polnisch, local: język polski, foreign: Polnisch, group: language }
+  - { id: spanisch, local: język hiszpański, foreign: Spanisch, group: language }
+  - {
+      id: die-sprache,
+      local: język,
+      foreign: die Sprache,
+      localPlural: języki,
+      foreignPlural: die Sprachen,
+      explanation: 'na -[e] → zwykle [die]',
+    }
+  - { id: der-unterricht, local: 'lekcje, zajęcia', foreign: der Unterricht }
+  # Szkoła: -in tworzy formę żeńską.
+  - {
+      id: die-klasse,
+      local: klasa,
+      foreign: die Klasse,
+      localPlural: klasy,
+      foreignPlural: die Klassen,
+      explanation: 'na -[e] → zwykle [die]',
+    }
+  - {
+      id: der-lehrer,
+      local: nauczyciel,
+      foreign: der Lehrer,
+      localPlural: nauczyciele,
+      foreignPlural: die Lehrer,
+      group: school-person,
+    }
+  - {
+      id: die-lehrerin,
+      local: nauczycielka,
+      foreign: die Lehrerin,
+      localPlural: nauczycielki,
+      foreignPlural: die Lehrerinnen,
+      group: school-person,
+    }
+  - {
+      id: der-schueler,
+      local: uczeń,
+      foreign: der Schüler,
+      localPlural: uczniowie,
+      foreignPlural: die Schüler,
+      group: school-person,
+    }
+  - {
+      id: die-schuelerin,
+      local: uczennica,
+      foreign: die Schülerin,
+      localPlural: uczennice,
+      foreignPlural: die Schülerinnen,
+      group: school-person,
+    }
