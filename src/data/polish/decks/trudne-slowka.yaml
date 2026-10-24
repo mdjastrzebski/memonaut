@@ -382,7 +382,7 @@ concepts:
   - { id: wrzesien, foreign: wrzesień }
   - { id: wrzos, foreign: wrzos }
   - { id: wrzod, foreign: wrzód }
-  - { id: wstazka, foreign: wstążka }
+  - { id: wstazka, foreign: wstążka, priority: true }
   - { id: wstazki, foreign: wstążki, priority: true }
   - { id: wstyd, foreign: wstyd }
   - { id: wsuwka, foreign: wsuwka }
